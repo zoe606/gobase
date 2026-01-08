@@ -129,7 +129,7 @@ docker-logs: ## View Docker logs
 .PHONY: swag
 swag: ## Generate Swagger documentation
 	@if command -v swag > /dev/null; then \
-		swag init -g internal/controller/restapi/router.go; \
+		swag init -g internal/handlers/http/router.go; \
 	else \
 		echo "swag not installed. Install with: go install github.com/swaggo/swag/cmd/swag@latest"; \
 	fi

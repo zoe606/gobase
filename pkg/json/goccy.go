@@ -27,3 +27,21 @@ func (c *GoJSONCodec) Unmarshal(data []byte, v any) error {
 func (c *GoJSONCodec) MarshalIndent(v any, prefix, indent string) ([]byte, error) {
 	return gojson.MarshalIndent(v, prefix, indent)
 }
+
+// Package-level convenience functions using goccy/go-json directly.
+// These provide a drop-in replacement for encoding/json.
+
+// Marshal encodes v to JSON bytes.
+func Marshal(v any) ([]byte, error) {
+	return gojson.Marshal(v)
+}
+
+// Unmarshal decodes JSON bytes into v.
+func Unmarshal(data []byte, v any) error {
+	return gojson.Unmarshal(data, v)
+}
+
+// MarshalIndent encodes v to indented JSON bytes.
+func MarshalIndent(v any, prefix, indent string) ([]byte, error) {
+	return gojson.MarshalIndent(v, prefix, indent)
+}

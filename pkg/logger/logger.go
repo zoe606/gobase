@@ -130,37 +130,45 @@ func (l *Logger) Fatal(message interface{}, args ...interface{}) {
 }
 
 func (l *Logger) log(level zapcore.Level, message interface{}, args ...interface{}) {
-	var msg string
+	msg := formatMessage(message)
+	logAtLevel(l.sugar, level, msg, args...)
+}
+
+// formatMessage converts various message types to string.
+func formatMessage(message interface{}) string {
 	switch m := message.(type) {
 	case error:
-		msg = m.Error()
+		return m.Error()
 	case string:
-		msg = m
+		return m
 	default:
-		msg = "unknown message type"
+		return "unknown message type"
 	}
+}
 
-	switch level { //nolint:exhaustive // Only these levels are used in log method.
+// logAtLevel logs a message at the specified level.
+//
+//nolint:exhaustive // Only these levels are used in log method.
+func logAtLevel(sugar *zap.SugaredLogger, level zapcore.Level, msg string, args ...interface{}) {
+	switch level {
 	case zapcore.DebugLevel:
 		if len(args) == 0 {
-			l.sugar.Debug(msg)
+			sugar.Debug(msg)
 		} else {
-			l.sugar.Debugf(msg, args...)
+			sugar.Debugf(msg, args...)
 		}
 	case zapcore.ErrorLevel:
 		if len(args) == 0 {
-			l.sugar.Error(msg)
+			sugar.Error(msg)
 		} else {
-			l.sugar.Errorf(msg, args...)
+			sugar.Errorf(msg, args...)
 		}
 	case zapcore.FatalLevel:
 		if len(args) == 0 {
-			l.sugar.Fatal(msg)
+			sugar.Fatal(msg)
 		} else {
-			l.sugar.Fatalf(msg, args...)
+			sugar.Fatalf(msg, args...)
 		}
-	default:
-		// Other levels use their dedicated methods (Info, Warn, etc.)
 	}
 }
 

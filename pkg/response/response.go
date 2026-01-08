@@ -1,5 +1,11 @@
 // Package response provides standardized HTTP response structures.
 // All API responses follow a consistent format for success and error cases.
+//
+// This package provides:
+// - Response[T]: Generic success response structure
+// - ErrorResponse: Standard error response structure
+// - Helper functions in helpers.go for Fiber handlers (OK, Error, BadRequest, etc.)
+// - Meta struct in meta.go for pagination metadata
 package response
 
 // Response is the standard success response structure.

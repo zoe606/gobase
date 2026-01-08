@@ -12,13 +12,13 @@ import (
 type (
 	// TranslationRepo defines the translation repository interface.
 	TranslationRepo interface {
-		Store(context.Context, entity.Translation) error
+		Store(context.Context, *entity.Translation) error
 		GetHistory(context.Context) ([]entity.Translation, error)
 	}
 
 	// TranslationWebAPI defines the translation web API interface.
 	TranslationWebAPI interface {
-		Translate(entity.Translation) (entity.Translation, error)
+		Translate(*entity.Translation) (*entity.Translation, error)
 	}
 
 	// UserRepo defines the user repository interface.

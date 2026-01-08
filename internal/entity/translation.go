@@ -22,5 +22,5 @@ type Translation struct {
 
 // TableName overrides the table name used by GORM.
 func (Translation) TableName() string {
-	return "history"
+	return "translations"
 }

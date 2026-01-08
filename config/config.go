@@ -9,6 +9,17 @@ import (
 	"github.com/spf13/viper"
 )
 
+// Default configuration values.
+const (
+	DefaultPostgresPort     = 5432
+	DefaultPostgresPoolSize = 10
+	DefaultPostgresIdleConn = 5
+	DefaultRedisPort        = 6379
+	DefaultCORSMaxAge       = 86400
+	DefaultRateLimitMax     = 100
+	DefaultAsynqConcurrency = 10
+)
+
 type (
 	// Config holds all configuration for the application.
 	Config struct {
@@ -167,7 +178,37 @@ func NewConfig(configPath string) (*Config, error) {
 		return nil, fmt.Errorf("config unmarshal error: %w", err)
 	}
 
+	// Validate config
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+
 	return cfg, nil
+}
+
+// Validate checks required configuration values.
+func (c *Config) Validate() error {
+	var errs []string
+
+	// JWT secret is required in production
+	if c.App.IsProduction() {
+		if c.JWT.SecretKey == "" || c.JWT.SecretKey == "change-me-in-production" {
+			errs = append(errs, "JWT_SECRET_KEY must be set in production")
+		}
+	}
+
+	// Database config validation
+	if c.Postgres.Host == "" {
+		errs = append(errs, "POSTGRES_HOST is required")
+	}
+	if c.Postgres.DBName == "" {
+		errs = append(errs, "POSTGRES_DBNAME is required")
+	}
+
+	if len(errs) > 0 {
+		return fmt.Errorf("config validation failed: %s", strings.Join(errs, "; "))
+	}
+	return nil
 }
 
 func setDefaults() {
@@ -187,13 +228,13 @@ func setDefaults() {
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")
-	viper.SetDefault("postgres.port", 5432)
+	viper.SetDefault("postgres.port", DefaultPostgresPort)
 	viper.SetDefault("postgres.user", "postgres")
 	viper.SetDefault("postgres.password", "postgres")
 	viper.SetDefault("postgres.dbname", "app")
 	viper.SetDefault("postgres.sslmode", "disable")
-	viper.SetDefault("postgres.max_pool_size", 10)
-	viper.SetDefault("postgres.max_idle_conns", 5)
+	viper.SetDefault("postgres.max_pool_size", DefaultPostgresPoolSize)
+	viper.SetDefault("postgres.max_idle_conns", DefaultPostgresIdleConn)
 	viper.SetDefault("postgres.conn_max_lifetime", "1h")
 	viper.SetDefault("postgres.conn_max_idle_time", "30m")
 
@@ -205,7 +246,7 @@ func setDefaults() {
 
 	// Redis defaults
 	viper.SetDefault("redis.host", "localhost")
-	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.port", DefaultRedisPort)
 	viper.SetDefault("redis.password", "")
 	viper.SetDefault("redis.db", 0)
 
@@ -219,14 +260,14 @@ func setDefaults() {
 	viper.SetDefault("cors.allow_methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH")
 	viper.SetDefault("cors.allow_headers", "Origin,Content-Type,Accept,Authorization,X-Request-ID")
 	viper.SetDefault("cors.allow_credentials", false)
-	viper.SetDefault("cors.max_age", 86400)
+	viper.SetDefault("cors.max_age", DefaultCORSMaxAge)
 
 	// RateLimit defaults
-	viper.SetDefault("rate_limit.max", 100)
+	viper.SetDefault("rate_limit.max", DefaultRateLimitMax)
 	viper.SetDefault("rate_limit.expiration", "1m")
 
 	// Asynq defaults
-	viper.SetDefault("asynq.concurrency", 10)
+	viper.SetDefault("asynq.concurrency", DefaultAsynqConcurrency)
 	viper.SetDefault("asynq.job_timeout", "5m")
 }
 

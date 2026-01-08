@@ -2,10 +2,11 @@ package tasks
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 
 	"github.com/hibiken/asynq"
+
+	"go-boilerplate/pkg/json"
 	"go-boilerplate/pkg/logger"
 )
 
