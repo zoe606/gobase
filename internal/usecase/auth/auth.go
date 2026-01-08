@@ -1,6 +1,9 @@
 // Package auth provides authentication use cases.
 package auth
 
+//go:generate mockgen -source=../../repo/contracts.go -destination=mocks_repo_test.go -package=auth_test
+//go:generate mockgen -source=../../../pkg/jwt/jwt.go -destination=mocks_jwt_test.go -package=auth_test
+
 import (
 	"context"
 	"fmt"

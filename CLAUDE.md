@@ -84,6 +84,17 @@ go install go.uber.org/mock/mockgen@latest
 go generate ./...
 ```
 
+## Code Quality Requirements
+
+**IMPORTANT**: Before running, building, adding new features, or fixing bugs, you MUST:
+
+1. **Run tests**: `make test` - Ensure all unit tests pass
+2. **Run linter**: `make lint` - Ensure no linting errors
+3. **Run vulnerability check**: `make vuln` - Check for security vulnerabilities
+4. **Or run all checks**: `make check-all` - Runs fmt, lint, vuln, and test together
+
+This ensures code quality and catches issues early. Never skip these checks.
+
 ## Adding New Features
 
 1. **Entity**: Add GORM model in `internal/entity/`
@@ -93,6 +104,7 @@ go generate ./...
 5. **Handler**: Add handler in `internal/handlers/http/v1/*/`
 6. **Routes**: Register in `internal/handlers/http/router.go`
 7. **DI**: Wire up in `internal/app/app.go`
+8. **Tests**: Add tests following the pattern `<method>_test.go` alongside implementation
 
 ## Conventions
 

@@ -1,6 +1,8 @@
 // Package translation provides translation use cases.
 package translation
 
+//go:generate mockgen -source=../../repo/contracts.go -destination=mocks_test.go -package=translation_test
+
 import (
 	"go-boilerplate/internal/repo"
 )

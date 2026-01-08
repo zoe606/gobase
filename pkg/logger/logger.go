@@ -1,12 +1,28 @@
 package logger
 
 import (
+	"io"
 	"os"
 	"strings"
 
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 )
+
+// Option is a functional option for configuring the logger.
+type Option func(*options)
+
+type options struct {
+	fileOutput io.Writer
+}
+
+// WithFileOutput adds file output alongside stdout.
+// The caller is responsible for closing the file when done.
+func WithFileOutput(w io.Writer) Option {
+	return func(o *options) {
+		o.fileOutput = w
+	}
+}
 
 // Interface -.
 type Interface interface {
@@ -26,8 +42,14 @@ type Logger struct {
 
 var _ Interface = (*Logger)(nil)
 
-// New -.
-func New(level string) *Logger {
+// New creates a new logger with the specified level and options.
+func New(level string, opts ...Option) *Logger {
+	// Apply options
+	o := &options{}
+	for _, opt := range opts {
+		opt(o)
+	}
+
 	var l zapcore.Level
 
 	switch strings.ToLower(level) {
@@ -59,12 +81,22 @@ func New(level string) *Logger {
 		EncodeCaller:   zapcore.ShortCallerEncoder,
 	}
 
+	encoder := zapcore.NewJSONEncoder(encoderConfig)
+
+	// Build write syncer(s)
+	var ws zapcore.WriteSyncer
+	if o.fileOutput != nil {
+		// Multi-write to both stdout and file
+		ws = zapcore.NewMultiWriteSyncer(
+			zapcore.AddSync(os.Stdout),
+			zapcore.AddSync(o.fileOutput),
+		)
+	} else {
+		ws = zapcore.AddSync(os.Stdout)
+	}
+
 	// Core
-	core := zapcore.NewCore(
-		zapcore.NewJSONEncoder(encoderConfig),
-		zapcore.AddSync(os.Stdout),
-		l,
-	)
+	core := zapcore.NewCore(encoder, ws, l)
 
 	// Logger with caller info
 	logger := zap.New(core, zap.AddCaller(), zap.AddCallerSkip(1))

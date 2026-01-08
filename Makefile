@@ -40,6 +40,16 @@ lint: ## Run linter
 		go vet ./...; \
 	fi
 
+.PHONY: vuln
+vuln: ## Run vulnerability check on dependencies
+	@if command -v govulncheck > /dev/null; then \
+		govulncheck ./...; \
+	else \
+		echo "Installing govulncheck..."; \
+		go install golang.org/x/vuln/cmd/govulncheck@latest; \
+		govulncheck ./...; \
+	fi
+
 .PHONY: test
 test: ## Run tests
 	go test -v -race -covermode=atomic -coverprofile=coverage.txt ./internal/... ./pkg/...
@@ -152,6 +162,8 @@ tools: ## Install development tools
 	go install github.com/air-verse/air@latest
 	go install github.com/swaggo/swag/cmd/swag@latest
 	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install golang.org/x/vuln/cmd/govulncheck@latest
+	go install go.uber.org/mock/mockgen@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
 
 ##@ Cleanup
@@ -160,7 +172,16 @@ tools: ## Install development tools
 clean: ## Clean build artifacts
 	rm -rf ./bin ./tmp coverage.txt coverage.html
 
+##@ Code Generation
+
+.PHONY: generate
+generate: ## Generate mocks and other code
+	go generate ./...
+
 ##@ Pre-commit
 
 .PHONY: pre-commit
 pre-commit: fmt lint test ## Run all checks before commit
+
+.PHONY: check-all
+check-all: fmt lint vuln test ## Run all quality checks including vulnerability scan

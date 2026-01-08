@@ -54,6 +54,7 @@ type (
 	// Log holds logging configuration.
 	Log struct {
 		Level string `mapstructure:"level"`
+		File  string `mapstructure:"file"` // Optional file path for log output (empty = stdout only)
 	}
 
 	// Postgres holds PostgreSQL configuration.
@@ -225,6 +226,7 @@ func setDefaults() {
 
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
+	viper.SetDefault("log.file", "") // Empty = stdout only
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")
@@ -286,6 +288,7 @@ func bindEnvVars() {
 
 	// Log
 	viper.BindEnv("log.level", "LOG_LEVEL")
+	viper.BindEnv("log.file", "LOG_FILE")
 
 	// Postgres
 	viper.BindEnv("postgres.host", "POSTGRES_HOST", "DB_HOST")

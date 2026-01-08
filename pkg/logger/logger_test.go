@@ -1,6 +1,7 @@
 package logger
 
 import (
+	"bytes"
 	"errors"
 	"os"
 	"os/exec"
@@ -89,5 +90,25 @@ func TestFatal_ExitsAndLogs(t *testing.T) {
 		if status := exitErr.ExitCode(); status != 1 {
 			t.Fatalf("expected exit code 1, got %d", status)
 		}
+	}
+}
+
+func TestWithFileOutput(t *testing.T) {
+	t.Parallel()
+
+	buf := &bytes.Buffer{}
+	l := New("info", WithFileOutput(buf))
+
+	l.Info("test message to file")
+
+	// Sync to ensure output is flushed
+	_ = l.Sync() //nolint:errcheck // test
+
+	output := buf.String()
+	if output == "" {
+		t.Error("expected log output in buffer, got empty string")
+	}
+	if !bytes.Contains(buf.Bytes(), []byte("test message to file")) {
+		t.Errorf("expected buffer to contain 'test message to file', got: %s", output)
 	}
 }
