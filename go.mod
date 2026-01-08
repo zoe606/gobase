@@ -13,7 +13,7 @@ require (
 	github.com/hibiken/asynq v0.25.1
 	github.com/redis/go-redis/v9 v9.17.2
 	github.com/spf13/viper v1.19.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.1
 	github.com/swaggo/swag v1.16.4
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.0
