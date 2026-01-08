@@ -1,0 +1,289 @@
+package config
+
+import (
+	"errors"
+	"fmt"
+	"strings"
+	"time"
+
+	"github.com/spf13/viper"
+)
+
+type (
+	// Config holds all configuration for the application.
+	Config struct {
+		App       App       `mapstructure:"app"`
+		HTTP      HTTP      `mapstructure:"http"`
+		Log       Log       `mapstructure:"log"`
+		Postgres  Postgres  `mapstructure:"postgres"`
+		Redis     Redis     `mapstructure:"redis"`
+		JWT       JWT       `mapstructure:"jwt"`
+		CORS      CORS      `mapstructure:"cors"`
+		RateLimit RateLimit `mapstructure:"rate_limit"`
+		Asynq     Asynq     `mapstructure:"asynq"`
+		Metrics   Metrics   `mapstructure:"metrics"`
+		Swagger   Swagger   `mapstructure:"swagger"`
+	}
+
+	// App holds application-specific configuration.
+	App struct {
+		Name    string `mapstructure:"name"`
+		Version string `mapstructure:"version"`
+		Env     string `mapstructure:"env"`
+	}
+
+	// HTTP holds HTTP server configuration.
+	HTTP struct {
+		Port           string        `mapstructure:"port"`
+		Timeout        time.Duration `mapstructure:"timeout"`         // Network read/write timeout
+		IdleTimeout    time.Duration `mapstructure:"idle_timeout"`    // Keep-alive connection timeout
+		RequestTimeout time.Duration `mapstructure:"request_timeout"` // Handler execution timeout
+	}
+
+	// Log holds logging configuration.
+	Log struct {
+		Level string `mapstructure:"level"`
+	}
+
+	// Postgres holds PostgreSQL configuration.
+	Postgres struct {
+		Host            string        `mapstructure:"host"`
+		Port            int           `mapstructure:"port"`
+		User            string        `mapstructure:"user"`
+		Password        string        `mapstructure:"password"`
+		DBName          string        `mapstructure:"dbname"`
+		SSLMode         string        `mapstructure:"sslmode"`
+		MaxPoolSize     int           `mapstructure:"max_pool_size"`
+		MaxIdleConns    int           `mapstructure:"max_idle_conns"`
+		ConnMaxLifetime time.Duration `mapstructure:"conn_max_lifetime"`
+		ConnMaxIdleTime time.Duration `mapstructure:"conn_max_idle_time"`
+	}
+
+	// Metrics holds metrics configuration.
+	Metrics struct {
+		Enabled bool `mapstructure:"enabled"`
+	}
+
+	// Swagger holds Swagger documentation configuration.
+	Swagger struct {
+		Enabled bool `mapstructure:"enabled"`
+	}
+
+	// Redis holds Redis configuration.
+	Redis struct {
+		Host     string `mapstructure:"host"`
+		Port     int    `mapstructure:"port"`
+		Password string `mapstructure:"password"`
+		DB       int    `mapstructure:"db"`
+	}
+
+	// JWT holds JWT configuration.
+	JWT struct {
+		SecretKey     string        `mapstructure:"secret_key"`
+		AccessExpiry  time.Duration `mapstructure:"access_expiry"`
+		RefreshExpiry time.Duration `mapstructure:"refresh_expiry"`
+	}
+
+	// CORS holds CORS configuration.
+	CORS struct {
+		AllowOrigins     string `mapstructure:"allow_origins"`
+		AllowMethods     string `mapstructure:"allow_methods"`
+		AllowHeaders     string `mapstructure:"allow_headers"`
+		AllowCredentials bool   `mapstructure:"allow_credentials"`
+		MaxAge           int    `mapstructure:"max_age"`
+	}
+
+	// RateLimit holds rate limiting configuration.
+	RateLimit struct {
+		Max        int           `mapstructure:"max"`
+		Expiration time.Duration `mapstructure:"expiration"`
+	}
+
+	// Asynq holds Asynq task queue configuration.
+	Asynq struct {
+		Concurrency int           `mapstructure:"concurrency"`
+		JobTimeout  time.Duration `mapstructure:"job_timeout"` // Default job timeout
+	}
+)
+
+// DSN returns the PostgreSQL connection string.
+func (p *Postgres) DSN() string {
+	return fmt.Sprintf(
+		"host=%s port=%d user=%s password=%s dbname=%s sslmode=%s",
+		p.Host, p.Port, p.User, p.Password, p.DBName, p.SSLMode,
+	)
+}
+
+// URL returns the PostgreSQL connection URL.
+func (p *Postgres) URL() string {
+	return fmt.Sprintf(
+		"postgres://%s:%s@%s:%d/%s?sslmode=%s",
+		p.User, p.Password, p.Host, p.Port, p.DBName, p.SSLMode,
+	)
+}
+
+// Addr returns the Redis address in host:port format.
+func (r *Redis) Addr() string {
+	return fmt.Sprintf("%s:%d", r.Host, r.Port)
+}
+
+// NewConfig reads configuration from file and environment variables.
+func NewConfig(configPath string) (*Config, error) {
+	cfg := &Config{}
+
+	// Set defaults
+	setDefaults()
+
+	// Config file settings
+	if configPath != "" {
+		viper.SetConfigFile(configPath)
+	} else {
+		viper.SetConfigName("config")
+		viper.SetConfigType("yaml")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("./config")
+		viper.AddConfigPath("/etc/app")
+	}
+
+	// Read config file
+	if err := viper.ReadInConfig(); err != nil {
+		var configFileNotFoundError viper.ConfigFileNotFoundError
+		if !errors.As(err, &configFileNotFoundError) {
+			return nil, fmt.Errorf("config error: %w", err)
+		}
+		// Config file not found, will use defaults and env vars
+	}
+
+	// Environment variables
+	viper.SetEnvPrefix("")
+	viper.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	viper.AutomaticEnv()
+
+	// Bind specific environment variables
+	bindEnvVars()
+
+	// Unmarshal config
+	if err := viper.Unmarshal(cfg); err != nil {
+		return nil, fmt.Errorf("config unmarshal error: %w", err)
+	}
+
+	return cfg, nil
+}
+
+func setDefaults() {
+	// App defaults
+	viper.SetDefault("app.name", "go-boilerplate")
+	viper.SetDefault("app.version", "1.0.0")
+	viper.SetDefault("app.env", "development")
+
+	// HTTP defaults
+	viper.SetDefault("http.port", "8080")
+	viper.SetDefault("http.timeout", "15s")         // Network read/write
+	viper.SetDefault("http.idle_timeout", "60s")    // Keep-alive connections
+	viper.SetDefault("http.request_timeout", "30s") // Handler execution
+
+	// Log defaults
+	viper.SetDefault("log.level", "debug")
+
+	// Postgres defaults
+	viper.SetDefault("postgres.host", "localhost")
+	viper.SetDefault("postgres.port", 5432)
+	viper.SetDefault("postgres.user", "postgres")
+	viper.SetDefault("postgres.password", "postgres")
+	viper.SetDefault("postgres.dbname", "app")
+	viper.SetDefault("postgres.sslmode", "disable")
+	viper.SetDefault("postgres.max_pool_size", 10)
+	viper.SetDefault("postgres.max_idle_conns", 5)
+	viper.SetDefault("postgres.conn_max_lifetime", "1h")
+	viper.SetDefault("postgres.conn_max_idle_time", "30m")
+
+	// Metrics defaults
+	viper.SetDefault("metrics.enabled", true)
+
+	// Swagger defaults
+	viper.SetDefault("swagger.enabled", true)
+
+	// Redis defaults
+	viper.SetDefault("redis.host", "localhost")
+	viper.SetDefault("redis.port", 6379)
+	viper.SetDefault("redis.password", "")
+	viper.SetDefault("redis.db", 0)
+
+	// JWT defaults
+	viper.SetDefault("jwt.secret_key", "change-me-in-production")
+	viper.SetDefault("jwt.access_expiry", "15m")
+	viper.SetDefault("jwt.refresh_expiry", "168h")
+
+	// CORS defaults
+	viper.SetDefault("cors.allow_origins", "*")
+	viper.SetDefault("cors.allow_methods", "GET,POST,PUT,DELETE,OPTIONS,PATCH")
+	viper.SetDefault("cors.allow_headers", "Origin,Content-Type,Accept,Authorization,X-Request-ID")
+	viper.SetDefault("cors.allow_credentials", false)
+	viper.SetDefault("cors.max_age", 86400)
+
+	// RateLimit defaults
+	viper.SetDefault("rate_limit.max", 100)
+	viper.SetDefault("rate_limit.expiration", "1m")
+
+	// Asynq defaults
+	viper.SetDefault("asynq.concurrency", 10)
+	viper.SetDefault("asynq.job_timeout", "5m")
+}
+
+//nolint:errcheck // BindEnv only errors if key is empty, which is controlled by us.
+func bindEnvVars() {
+	// App
+	viper.BindEnv("app.name", "APP_NAME")
+	viper.BindEnv("app.version", "APP_VERSION")
+	viper.BindEnv("app.env", "APP_ENV")
+
+	// HTTP
+	viper.BindEnv("http.port", "HTTP_PORT")
+	viper.BindEnv("http.timeout", "HTTP_TIMEOUT")
+	viper.BindEnv("http.idle_timeout", "HTTP_IDLE_TIMEOUT")
+	viper.BindEnv("http.request_timeout", "HTTP_REQUEST_TIMEOUT")
+
+	// Log
+	viper.BindEnv("log.level", "LOG_LEVEL")
+
+	// Postgres
+	viper.BindEnv("postgres.host", "POSTGRES_HOST", "DB_HOST")
+	viper.BindEnv("postgres.port", "POSTGRES_PORT", "DB_PORT")
+	viper.BindEnv("postgres.user", "POSTGRES_USER", "DB_USER")
+	viper.BindEnv("postgres.password", "POSTGRES_PASSWORD", "DB_PASSWORD")
+	viper.BindEnv("postgres.dbname", "POSTGRES_DBNAME", "DB_NAME")
+	viper.BindEnv("postgres.sslmode", "POSTGRES_SSLMODE", "DB_SSLMODE")
+	viper.BindEnv("postgres.max_pool_size", "POSTGRES_MAX_POOL_SIZE", "DB_MAX_POOL_SIZE")
+
+	// Metrics
+	viper.BindEnv("metrics.enabled", "METRICS_ENABLED")
+
+	// Swagger
+	viper.BindEnv("swagger.enabled", "SWAGGER_ENABLED")
+
+	// Redis
+	viper.BindEnv("redis.host", "REDIS_HOST")
+	viper.BindEnv("redis.port", "REDIS_PORT")
+	viper.BindEnv("redis.password", "REDIS_PASSWORD")
+	viper.BindEnv("redis.db", "REDIS_DB")
+
+	// JWT
+	viper.BindEnv("jwt.secret_key", "JWT_SECRET_KEY")
+	viper.BindEnv("jwt.access_expiry", "JWT_ACCESS_EXPIRY")
+	viper.BindEnv("jwt.refresh_expiry", "JWT_REFRESH_EXPIRY")
+
+	// CORS
+	viper.BindEnv("cors.allow_origins", "CORS_ALLOW_ORIGINS")
+	viper.BindEnv("cors.allow_methods", "CORS_ALLOW_METHODS")
+	viper.BindEnv("cors.allow_headers", "CORS_ALLOW_HEADERS")
+	viper.BindEnv("cors.allow_credentials", "CORS_ALLOW_CREDENTIALS")
+	viper.BindEnv("cors.max_age", "CORS_MAX_AGE")
+
+	// RateLimit
+	viper.BindEnv("rate_limit.max", "RATE_LIMIT_MAX")
+	viper.BindEnv("rate_limit.expiration", "RATE_LIMIT_EXPIRATION")
+
+	// Asynq
+	viper.BindEnv("asynq.concurrency", "ASYNQ_CONCURRENCY")
+	viper.BindEnv("asynq.job_timeout", "ASYNQ_JOB_TIMEOUT")
+}

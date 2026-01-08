@@ -1,0 +1,36 @@
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Config (keep config.example.yaml)
+.env
+config/config.yaml
+
+# Air live reload
+tmp/
+build-errors.log
+
+# Binaries
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+bin/
+
+# Test binary
+*.test
+
+# Coverage
+*.out
+coverage.txt
+coverage.html
+
+# Dependencies
+vendor/
+
+# OS files
+.DS_Store
+Thumbs.db
