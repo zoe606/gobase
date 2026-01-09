@@ -11,6 +11,7 @@ import (
 
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
+	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/jwt"
 )
 
@@ -20,6 +21,8 @@ type UseCase struct {
 	roleRepo         repo.RoleRepo
 	refreshTokenRepo repo.RefreshTokenRepo
 	jwtService       jwt.Service
+	asynqClient      *asynq.Client
+	appName          string
 }
 
 // New creates a new auth use case.
@@ -35,6 +38,14 @@ func New(
 		refreshTokenRepo: refreshTokenRepo,
 		jwtService:       jwtService,
 	}
+}
+
+// WithAsynq sets the Asynq client and app name for background jobs.
+func (uc *UseCase) WithAsynq(client *asynq.Client, appName string) *UseCase {
+	uc.asynqClient = client
+	uc.appName = appName
+
+	return uc
 }
 
 // tokenPair holds generated access and refresh tokens.

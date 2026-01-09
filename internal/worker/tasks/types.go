@@ -5,4 +5,5 @@ package tasks
 const (
 	TypeEmailNotification = "email:notification"
 	TypeUserCleanup       = "user:cleanup"
+	TypeImageProcessing   = "media:image_processing"
 )

@@ -14,10 +14,13 @@ import (
 	httphandler "go-boilerplate/internal/handlers/http"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/repo/persistent"
+	"go-boilerplate/internal/repo/storage"
 	"go-boilerplate/internal/repo/webapi"
 	"go-boilerplate/internal/usecase"
 	"go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/internal/usecase/media"
 	"go-boilerplate/internal/usecase/translation"
+	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/httpserver"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
@@ -31,27 +34,35 @@ type repositories struct {
 	user           repo.UserRepo
 	role           repo.RoleRepo
 	refreshToken   repo.RefreshTokenRepo
+	media          repo.MediaRepo
 }
 
 // usecases holds all usecase instances.
 type usecases struct {
 	translation usecase.Translation
 	auth        usecase.Auth
+	media       usecase.Media
 }
 
 // Run creates objects via constructors.
 func Run(cfg *config.Config) {
 	l := initLogger(cfg)
-	defer func() { _ = l.Sync() }()
+
+	defer func() { _ = l.Sync() }() //nolint:errcheck // best effort sync
 
 	l.Info("Starting %s v%s (env: %s)", cfg.App.Name, cfg.App.Version, cfg.App.Env)
 
 	pg := initDatabase(cfg, l)
 	defer pg.Close()
 
+	asynqClient := initAsynqClient(cfg)
+	defer asynqClient.Close()
+
+	storageProvider := initStorage(cfg, l)
+
 	jwtService := initJWT(cfg)
 	repos := initRepositories(pg.DB)
-	uc := initUseCases(repos, jwtService)
+	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l)
 	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg)
 
 	l.Info("Server started on port %s", cfg.HTTP.Port)
@@ -64,6 +75,7 @@ func initLogger(cfg *config.Config) *logger.Logger {
 	if cfg.App.IsProduction() {
 		return logger.New(cfg.Log.Level) // JSON format for production
 	}
+
 	return logger.NewDevelopment() // Console format for development
 }
 
@@ -89,6 +101,7 @@ func initDatabase(cfg *config.Config, l *logger.Logger) *postgres.Postgres {
 func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 	if !cfg.App.ShouldAutoMigrate() {
 		l.Info("Skipping AutoMigrate (production mode) - use CLI migrations")
+
 		return
 	}
 
@@ -100,11 +113,15 @@ func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 		&entity.Role{},
 		&entity.User{},
 		&entity.RefreshToken{},
+		&entity.Media{},
 	); err != nil {
 		l.Fatal(fmt.Errorf("app - Run - AutoMigrate: %w", err))
 	}
 
 	l.Info("Database migration completed")
+
+	// Seed default data in development mode
+	runSeeder(db, l)
 }
 
 // initJWT creates JWT service.
@@ -116,6 +133,29 @@ func initJWT(cfg *config.Config) jwt.Service {
 	)
 }
 
+// initStorage creates storage provider based on configuration.
+func initStorage(cfg *config.Config, l *logger.Logger) storage.Provider {
+	switch cfg.Storage.Driver {
+	case "local":
+		return storage.NewLocalStorage(cfg.Storage.LocalPath, cfg.Storage.LocalURL)
+	case "s3":
+		s3Storage, err := storage.NewS3Storage(
+			cfg.Storage.S3Endpoint,
+			cfg.Storage.S3AccessKey,
+			cfg.Storage.S3SecretKey,
+			cfg.Storage.S3Bucket,
+			cfg.Storage.S3UseSSL,
+		)
+		if err != nil {
+			l.Fatal(fmt.Errorf("app - Run - storage.NewS3Storage: %w", err))
+		}
+		return s3Storage
+	default:
+		l.Fatal(fmt.Errorf("app - Run - unknown storage driver: %s", cfg.Storage.Driver))
+		return nil
+	}
+}
+
 // initRepositories creates all repository instances.
 func initRepositories(db *gorm.DB) *repositories {
 	return &repositories{
@@ -124,14 +164,37 @@ func initRepositories(db *gorm.DB) *repositories {
 		user:           persistent.NewUserRepo(db),
 		role:           persistent.NewRoleRepo(db),
 		refreshToken:   persistent.NewRefreshTokenRepo(db),
+		media:          persistent.NewMediaRepo(db),
 	}
 }
 
+// initAsynqClient creates an Asynq client for background job queuing.
+func initAsynqClient(cfg *config.Config) *asynq.Client {
+	return asynq.NewClient(asynq.Config{
+		RedisAddr:     cfg.Redis.Addr(),
+		RedisPassword: cfg.Redis.Password,
+		RedisDB:       cfg.Redis.DB,
+	})
+}
+
 // initUseCases creates all usecase instances.
-func initUseCases(repos *repositories, jwtService jwt.Service) *usecases {
+func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface) *usecases {
+	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService).
+		WithAsynq(asynqClient, cfg.App.Name)
+
+	mediaUC := media.New(
+		repos.media,
+		storageProvider,
+		asynqClient.Client,
+		l,
+		cfg.Storage.Driver,
+		cfg.Storage.MaxSize,
+	)
+
 	return &usecases{
 		translation: translation.New(repos.translation, repos.translationAPI),
-		auth:        auth.New(repos.user, repos.role, repos.refreshToken, jwtService),
+		auth:        authUC,
+		media:       mediaUC,
 	}
 }
 
@@ -144,7 +207,7 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
 	)
 
-	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, jwtService, l, pg)
+	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, jwtService, l, pg)
 	httpServer.Start()
 
 	return httpServer
@@ -163,6 +226,7 @@ func waitForShutdown(httpServer *httpserver.Server, l *logger.Logger) {
 	}
 
 	l.Info("Shutting down...")
+
 	if err := httpServer.Shutdown(); err != nil {
 		l.Error(fmt.Errorf("app - Run - httpServer.Shutdown: %w", err))
 	}

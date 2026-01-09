@@ -116,23 +116,77 @@ migrate-validate: ## Validate migration files have matching up/down pairs
 	done
 	@echo "All migrations have matching up/down pairs."
 
-##@ Docker
+##@ Environment Migrations
 
-.PHONY: docker-up
-docker-up: ## Start Docker containers (PostgreSQL)
-	docker compose up -d db
+.PHONY: migrate-staging
+migrate-staging: ## Run migrations on staging
+	@if [ -z "$$STAGING_DATABASE_URL" ]; then \
+		echo "Error: STAGING_DATABASE_URL not set"; \
+		echo "Export: export STAGING_DATABASE_URL='postgres://...'"; \
+		exit 1; \
+	fi
+	@echo "=== Running migrations on STAGING ==="
+	migrate -path migrations -database "$$STAGING_DATABASE_URL" up
+	migrate -path migrations -database "$$STAGING_DATABASE_URL" version
 
-.PHONY: docker-down
-docker-down: ## Stop Docker containers
-	docker compose down
+.PHONY: migrate-staging-down
+migrate-staging-down: ## Rollback 1 migration on staging
+	@if [ -z "$$STAGING_DATABASE_URL" ]; then echo "Error: STAGING_DATABASE_URL not set"; exit 1; fi
+	migrate -path migrations -database "$$STAGING_DATABASE_URL" down 1
 
-.PHONY: docker-build
-docker-build: ## Build Docker image
-	docker build -t go-boilerplate:latest .
+.PHONY: migrate-prod
+migrate-prod: ## Run migrations on production (requires confirmation)
+	@if [ -z "$$PROD_DATABASE_URL" ]; then \
+		echo "Error: PROD_DATABASE_URL not set"; exit 1; \
+	fi
+	@echo "WARNING: About to run migrations on PRODUCTION"
+	@echo "Database: $$PROD_DATABASE_URL" | sed 's/:.*@/:***@/'
+	@read -p "Type 'yes' to confirm: " confirm && [ "$$confirm" = "yes" ] || exit 1
+	migrate -path migrations -database "$$PROD_DATABASE_URL" up
+	migrate -path migrations -database "$$PROD_DATABASE_URL" version
+
+.PHONY: migrate-prod-down
+migrate-prod-down: ## Rollback 1 migration on production (requires confirmation)
+	@if [ -z "$$PROD_DATABASE_URL" ]; then echo "Error: PROD_DATABASE_URL not set"; exit 1; fi
+	@echo "WARNING: About to ROLLBACK on PRODUCTION"
+	@read -p "Type 'yes' to confirm: " confirm && [ "$$confirm" = "yes" ] || exit 1
+	migrate -path migrations -database "$$PROD_DATABASE_URL" down 1
+
+##@ Docker (Local Development)
+
+.PHONY: docker-services
+docker-services: ## Start DB and Redis (for air users)
+	docker compose -f deployment/docker/docker-compose.yml --env-file .env up -d
+
+.PHONY: docker-dev
+docker-dev: ## Start full stack in Docker (DB + Redis + App + Worker)
+	docker compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.app.yml --env-file .env up -d
+
+.PHONY: docker-dev-build
+docker-dev-build: ## Rebuild and start full stack
+	docker compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.app.yml --env-file .env up -d --build
+
+.PHONY: docker-stop
+docker-stop: ## Stop all containers
+	docker compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.app.yml down 2>/dev/null || docker compose -f deployment/docker/docker-compose.yml down
 
 .PHONY: docker-logs
 docker-logs: ## View Docker logs
-	docker compose logs -f
+	docker compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.app.yml logs -f
+
+.PHONY: docker-monitoring
+docker-monitoring: ## Start services with Asynqmon dashboard
+	docker compose -f deployment/docker/docker-compose.yml --profile monitoring --env-file .env up -d
+
+##@ Worker
+
+.PHONY: run-worker
+run-worker: ## Run Asynq worker locally
+	go run ./cmd/worker -config ./config/config.yaml
+
+.PHONY: build-worker
+build-worker: ## Build worker binary
+	CGO_ENABLED=0 go build -ldflags="-s -w" -o ./bin/worker ./cmd/worker
 
 ##@ Documentation
 

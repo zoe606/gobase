@@ -41,4 +41,14 @@ type (
 		DeleteByToken(ctx context.Context, token string) error
 		DeleteByUserID(ctx context.Context, userID uint) error
 	}
+
+	// MediaRepo defines media storage operations.
+	MediaRepo interface {
+		Create(ctx context.Context, media *entity.Media) error
+		GetByID(ctx context.Context, id uint) (*entity.Media, error)
+		GetByAttachable(ctx context.Context, attachableType string, attachableID uint, collection string) ([]*entity.Media, error)
+		Update(ctx context.Context, media *entity.Media) error
+		Delete(ctx context.Context, id uint) error
+		DeleteByAttachable(ctx context.Context, attachableType string, attachableID uint) error
+	}
 )

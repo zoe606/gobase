@@ -5,9 +5,12 @@ import (
 	"errors"
 	"fmt"
 
+	"github.com/hibiken/asynq"
+
 	authdto "go-boilerplate/internal/dto/auth"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
+	"go-boilerplate/internal/worker/tasks"
 	"go-boilerplate/pkg/hasher"
 )
 
@@ -64,5 +67,23 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 		return nil, fmt.Errorf("Auth - Register - StoreRefreshToken: %w", err)
 	}
 
+	// Enqueue welcome email (non-blocking, best effort)
+	uc.enqueueWelcomeEmail(user)
+
 	return authdto.NewLoginResponse(user, tokens.AccessToken, tokens.RefreshToken, tokens.AccessExpiresAt), nil
+}
+
+// enqueueWelcomeEmail enqueues a welcome email task if Asynq is configured.
+func (uc *UseCase) enqueueWelcomeEmail(user *entity.User) {
+	if uc.asynqClient == nil {
+		return
+	}
+
+	task, err := tasks.NewWelcomeEmailTask(user.Email, user.Name, uc.appName)
+	if err != nil {
+		// Log error but don't fail registration
+		return
+	}
+
+	_, _ = uc.asynqClient.Enqueue(task, asynq.Queue("default"))
 }

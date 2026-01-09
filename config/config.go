@@ -32,8 +32,10 @@ type (
 		CORS      CORS      `mapstructure:"cors"`
 		RateLimit RateLimit `mapstructure:"rate_limit"`
 		Asynq     Asynq     `mapstructure:"asynq"`
+		Email     Email     `mapstructure:"email"`
 		Metrics   Metrics   `mapstructure:"metrics"`
 		Swagger   Swagger   `mapstructure:"swagger"`
+		Storage   Storage   `mapstructure:"storage"`
 	}
 
 	// App holds application-specific configuration.
@@ -115,6 +117,28 @@ type (
 	Asynq struct {
 		Concurrency int           `mapstructure:"concurrency"`
 		JobTimeout  time.Duration `mapstructure:"job_timeout"` // Default job timeout
+	}
+
+	// Email holds email service configuration.
+	Email struct {
+		Provider  string `mapstructure:"provider"`   // resend, brevo
+		APIKey    string `mapstructure:"api_key"`    // API key for the email provider
+		FromEmail string `mapstructure:"from_email"` // Sender email address
+		FromName  string `mapstructure:"from_name"`  // Sender name
+	}
+
+	// Storage holds file storage configuration.
+	Storage struct {
+		Driver    string `mapstructure:"driver"`     // "local", "s3"
+		MaxSize   int64  `mapstructure:"max_size"`   // Max upload size in bytes
+		LocalPath string `mapstructure:"local_path"` // Local storage base path
+		LocalURL  string `mapstructure:"local_url"`  // Local storage public URL
+		S3Endpoint  string `mapstructure:"s3_endpoint"`   // S3/MinIO endpoint
+		S3Bucket    string `mapstructure:"s3_bucket"`     // S3/MinIO bucket name
+		S3Region    string `mapstructure:"s3_region"`     // S3 region
+		S3AccessKey string `mapstructure:"s3_access_key"` // S3/MinIO access key
+		S3SecretKey string `mapstructure:"s3_secret_key"` // S3/MinIO secret key
+		S3UseSSL    bool   `mapstructure:"s3_use_ssl"`    // Use HTTPS for S3
 	}
 )
 
@@ -271,6 +295,24 @@ func setDefaults() {
 	// Asynq defaults
 	viper.SetDefault("asynq.concurrency", DefaultAsynqConcurrency)
 	viper.SetDefault("asynq.job_timeout", "5m")
+
+	// Email defaults
+	viper.SetDefault("email.provider", "resend")
+	viper.SetDefault("email.api_key", "")
+	viper.SetDefault("email.from_email", "noreply@example.com")
+	viper.SetDefault("email.from_name", "Go Boilerplate")
+
+	// Storage defaults
+	viper.SetDefault("storage.driver", "s3")
+	viper.SetDefault("storage.max_size", 10485760) // 10MB
+	viper.SetDefault("storage.local_path", "./uploads")
+	viper.SetDefault("storage.local_url", "http://localhost:8080/uploads")
+	viper.SetDefault("storage.s3_endpoint", "localhost:9000")
+	viper.SetDefault("storage.s3_bucket", "app-uploads")
+	viper.SetDefault("storage.s3_region", "us-east-1")
+	viper.SetDefault("storage.s3_access_key", "minioadmin")
+	viper.SetDefault("storage.s3_secret_key", "minioadmin")
+	viper.SetDefault("storage.s3_use_ssl", false)
 }
 
 //nolint:errcheck // BindEnv only errors if key is empty, which is controlled by us.
@@ -330,4 +372,22 @@ func bindEnvVars() {
 	// Asynq
 	viper.BindEnv("asynq.concurrency", "ASYNQ_CONCURRENCY")
 	viper.BindEnv("asynq.job_timeout", "ASYNQ_JOB_TIMEOUT")
+
+	// Email
+	viper.BindEnv("email.provider", "EMAIL_PROVIDER")
+	viper.BindEnv("email.api_key", "EMAIL_API_KEY")
+	viper.BindEnv("email.from_email", "EMAIL_FROM_EMAIL")
+	viper.BindEnv("email.from_name", "EMAIL_FROM_NAME")
+
+	// Storage
+	viper.BindEnv("storage.driver", "STORAGE_DRIVER")
+	viper.BindEnv("storage.max_size", "STORAGE_MAX_SIZE")
+	viper.BindEnv("storage.local_path", "STORAGE_LOCAL_PATH")
+	viper.BindEnv("storage.local_url", "STORAGE_LOCAL_URL")
+	viper.BindEnv("storage.s3_endpoint", "STORAGE_S3_ENDPOINT")
+	viper.BindEnv("storage.s3_bucket", "STORAGE_S3_BUCKET")
+	viper.BindEnv("storage.s3_region", "STORAGE_S3_REGION")
+	viper.BindEnv("storage.s3_access_key", "STORAGE_S3_ACCESS_KEY")
+	viper.BindEnv("storage.s3_secret_key", "STORAGE_S3_SECRET_KEY")
+	viper.BindEnv("storage.s3_use_ssl", "STORAGE_S3_USE_SSL")
 }

@@ -95,19 +95,109 @@ go generate ./...
 
 This ensures code quality and catches issues early. Never skip these checks.
 
+## SOLID Architecture - File Organization (IMPORTANT)
+
+**This project follows strict SOLID principles. Each method gets its own file.**
+
+### Usecase Structure (1 file per method + 1 test file per method)
+```
+internal/usecase/<feature>/
+├── <feature>.go           # UseCase struct + New() + shared helpers ONLY
+├── errors.go              # Error definitions (ErrNotFound, ErrInvalid, etc.)
+├── <method1>.go           # Single method implementation
+├── <method1>_test.go      # Tests for that method
+├── <method2>.go           # Single method implementation
+├── <method2>_test.go      # Tests for that method
+├── ...
+└── mocks_test.go          # Mock implementations for testing
+```
+
+**Example - Auth Usecase:**
+```
+internal/usecase/auth/
+├── auth.go                # UseCase struct + New() + generateTokens helper
+├── errors.go              # ErrInvalidCredentials, ErrUserExists, etc.
+├── login.go + login_test.go
+├── logout.go + logout_test.go
+├── register.go + register_test.go
+├── refresh.go + refresh_test.go
+├── get_current_user.go + get_current_user_test.go
+└── mocks_*.go
+```
+
+**Example - Media Usecase:**
+```
+internal/usecase/media/
+├── media.go               # UseCase struct + New() + detectMediaType helper
+├── errors.go              # ErrFileTooLarge, ErrInvalidMimeType
+├── upload.go + upload_test.go
+├── get.go + get_test.go   # GetByID + GetByAttachable
+├── url.go + url_test.go   # GetURL + GetPresignedUploadURL
+├── delete.go + delete_test.go
+└── mocks_test.go
+```
+
+### Handler Structure (1 file per handler method)
+```
+internal/handlers/http/v1/<feature>/
+├── handler.go             # Handler struct + New() + RegisterRoutes ONLY
+├── <method1>.go           # Single handler method with Swagger annotations
+├── <method2>.go           # Single handler method with Swagger annotations
+├── ...
+├── handler_test.go        # All handler tests (can be in one file)
+└── mocks_test.go          # Mock implementations
+```
+
+**Example - Auth Handler:**
+```
+internal/handlers/http/v1/auth/
+├── handler.go             # Handler struct + New() + RegisterRoutes
+├── login.go               # Login handler
+├── logout.go              # Logout handler
+├── register.go            # Register handler
+├── refresh.go             # Refresh handler
+├── me.go                  # GetCurrentUser handler
+├── handler_test.go
+└── mocks_test.go
+```
+
+**Example - Media Handler:**
+```
+internal/handlers/http/v1/media/
+├── handler.go             # Handler struct + New() + RegisterRoutes + parseUint helper
+├── upload.go              # Upload handler
+├── get_by_id.go           # GetByID handler
+├── get_url.go             # GetURL handler
+├── get_presigned_url.go   # GetPresignedURL handler
+├── delete.go              # Delete handler
+├── get_by_attachable.go   # GetByAttachable handler
+├── handler_test.go
+└── mocks_test.go
+```
+
+### Rules
+1. **NEVER put multiple methods in one file** (except closely related like GetByID + GetByAttachable)
+2. **Each usecase method MUST have its own test file** (`<method>_test.go`)
+3. **main struct file** (`<feature>.go` or `handler.go`) contains ONLY: struct, constructor, shared helpers
+4. **errors.go** contains all error definitions for the package
+5. **Follow existing patterns** - look at `auth` package as reference
+
 ## Adding New Features
 
 1. **Entity**: Add GORM model in `internal/entity/`
 2. **Repository**: Add interface in `internal/repo/contracts.go`, implement in `internal/repo/persistent/`
-3. **UseCase**: Add interface in `internal/usecase/contracts.go`, implement in `internal/usecase/*/`
+3. **UseCase**: Add interface in `internal/usecase/contracts.go`, implement in `internal/usecase/*/` **(follow SOLID file structure above)**
 4. **DTOs**: Add request/response in `internal/dto/*/`
-5. **Handler**: Add handler in `internal/handlers/http/v1/*/`
+5. **Handler**: Add handler in `internal/handlers/http/v1/*/` **(follow SOLID file structure above)**
 6. **Routes**: Register in `internal/handlers/http/router.go`
 7. **DI**: Wire up in `internal/app/app.go`
 8. **Tests**: Add tests following the pattern `<method>_test.go` alongside implementation
 
 ## Conventions
 
+- **Migration files**: Use sequential format `000XXX_<descriptive_name>.up.sql` / `.down.sql`
+  - Example: `000001_create_history.up.sql`, `000006_create_media.down.sql`
+  - NEVER use timestamp format like `20210221023242_name.sql`
 - Table names: Plural form (`users`, `translations`, `refresh_tokens`)
 - Use `goccy/go-json` via `pkg/json` for consistent JSON handling
 - Health endpoints: `/healthz` (liveness), `/readyz` (readiness with DB ping)
