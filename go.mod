@@ -27,7 +27,7 @@ require (
 	github.com/sony/gobreaker/v2 v2.4.0
 	github.com/spf13/viper v1.19.0
 	github.com/stretchr/testify v1.11.1
-	github.com/swaggo/swag v1.16.4
+	github.com/swaggo/swag v1.16.6
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/crypto v0.46.0
