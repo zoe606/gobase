@@ -5,6 +5,7 @@ import (
 	"context"
 
 	"go-boilerplate/internal/entity"
+	"go-boilerplate/pkg/pagination"
 )
 
 //go:generate mockgen -source=contracts.go -destination=../usecase/mocks_repo_test.go -package=usecase_test
@@ -13,7 +14,7 @@ type (
 	// TranslationRepo defines the translation repository interface.
 	TranslationRepo interface {
 		Store(context.Context, *entity.Translation) error
-		GetHistory(context.Context) ([]entity.Translation, error)
+		GetHistory(ctx context.Context, params pagination.Params) ([]entity.Translation, int64, error)
 	}
 
 	// TranslationWebAPI defines the translation web API interface.
@@ -27,6 +28,7 @@ type (
 		GetByID(ctx context.Context, id uint) (*entity.User, error)
 		GetByEmail(ctx context.Context, email string) (*entity.User, error)
 		EmailExists(ctx context.Context, email string) (bool, error)
+		Update(ctx context.Context, user *entity.User) error
 	}
 
 	// RoleRepo defines the role repository interface.
@@ -50,5 +52,22 @@ type (
 		Update(ctx context.Context, media *entity.Media) error
 		Delete(ctx context.Context, id uint) error
 		DeleteByAttachable(ctx context.Context, attachableType string, attachableID uint) error
+	}
+
+	// EmailVerificationRepo defines email verification token operations.
+	EmailVerificationRepo interface {
+		Create(ctx context.Context, verification *entity.EmailVerification) error
+		GetByToken(ctx context.Context, token string) (*entity.EmailVerification, error)
+		GetLatestByUserID(ctx context.Context, userID uint) (*entity.EmailVerification, error)
+		MarkAsUsed(ctx context.Context, id uint) error
+		DeleteByUserID(ctx context.Context, userID uint) error
+	}
+
+	// PasswordResetRepo defines password reset token operations.
+	PasswordResetRepo interface {
+		Create(ctx context.Context, reset *entity.PasswordReset) error
+		GetByToken(ctx context.Context, token string) (*entity.PasswordReset, error)
+		MarkAsUsed(ctx context.Context, id uint) error
+		DeleteByUserID(ctx context.Context, userID uint) error
 	}
 )

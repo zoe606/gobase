@@ -8,6 +8,7 @@ import (
 	mediadto "go-boilerplate/internal/dto/media"
 	translationdto "go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
+	"go-boilerplate/internal/usecase/auth"
 )
 
 //go:generate mockgen -source=contracts.go -destination=./mocks_usecase_test.go -package=usecase_test
@@ -16,7 +17,7 @@ type (
 	// Translation defines the translation use case interface.
 	Translation interface {
 		Translate(context.Context, translationdto.TranslateRequest) (*translationdto.TranslationResponse, error)
-		History(context.Context) (*translationdto.HistoryResponse, error)
+		History(context.Context, translationdto.HistoryRequest) (*translationdto.HistoryResponse, error)
 	}
 
 	// Auth defines the authentication use case interface.
@@ -26,6 +27,15 @@ type (
 		Refresh(ctx context.Context, input authdto.RefreshRequest) (*authdto.TokenResponse, error)
 		Logout(ctx context.Context, refreshToken string) error
 		GetCurrentUser(ctx context.Context, userID uint) (*authdto.UserResponse, error)
+
+		// Email verification
+		SendVerificationEmail(ctx context.Context, userID uint) error
+		VerifyEmail(ctx context.Context, token string) error
+		ResendVerification(ctx context.Context, email string) error
+
+		// Password reset
+		RequestPasswordReset(ctx context.Context, email string) error
+		ResetPassword(ctx context.Context, input auth.ResetPasswordInput) error
 	}
 
 	// Media defines the media use case interface.

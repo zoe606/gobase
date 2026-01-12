@@ -35,7 +35,7 @@ func (s *LocalStorage) Put(ctx context.Context, path string, reader io.Reader, s
 	fullPath := filepath.Join(s.basePath, path)
 
 	// Create directory if not exists.
-	if err := os.MkdirAll(filepath.Dir(fullPath), 0755); err != nil {
+	if err := os.MkdirAll(filepath.Dir(fullPath), 0o755); err != nil {
 		return nil, fmt.Errorf("create directory: %w", err)
 	}
 

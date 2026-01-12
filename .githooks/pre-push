@@ -1,0 +1,89 @@
+#!/bin/sh
+#
+# Pre-push hook for Go projects
+# Runs comprehensive checks before pushing to remote
+#
+# Install: make install-hooks
+# Skip: git push --no-verify
+
+set -e
+
+echo "Running pre-push checks..."
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Get the remote and branch being pushed to
+remote="$1"
+url="$2"
+
+# Read stdin to get the refs being pushed
+while read local_ref local_sha remote_ref remote_sha; do
+    # Extract branch name
+    branch=$(echo "$remote_ref" | sed 's|refs/heads/||')
+
+    # Extra checks for main/master branch
+    if [ "$branch" = "main" ] || [ "$branch" = "master" ]; then
+        echo "${YELLOW}Pushing to $branch - running full checks${NC}"
+    fi
+done
+
+# 1. Build check
+echo "Building project..."
+if ! go build ./... 2>&1; then
+    echo "${RED}Build failed!${NC}"
+    exit 1
+fi
+echo "${GREEN}Build OK${NC}"
+
+# 2. Run all tests
+echo "Running tests..."
+if ! go test ./internal/... ./pkg/... 2>&1; then
+    echo "${RED}Tests failed!${NC}"
+    exit 1
+fi
+echo "${GREEN}Tests OK${NC}"
+
+# 3. Run full lint if available
+if command -v golangci-lint > /dev/null 2>&1; then
+    echo "Running full lint..."
+    if ! golangci-lint run 2>&1; then
+        echo "${RED}Linter found issues!${NC}"
+        echo "Fix issues or push with --no-verify to skip"
+        exit 1
+    fi
+    echo "${GREEN}Lint OK${NC}"
+fi
+
+# 4. Run vulnerability check if available
+if command -v govulncheck > /dev/null 2>&1; then
+    echo "Running vulnerability check..."
+    if ! govulncheck ./... 2>&1; then
+        echo "${YELLOW}Vulnerabilities found (check output above)${NC}"
+        # Don't fail on vuln check, just warn
+    else
+        echo "${GREEN}No vulnerabilities found${NC}"
+    fi
+fi
+
+# 5. Check swagger is up to date (if swag is installed)
+if command -v swag > /dev/null 2>&1; then
+    echo "Checking swagger docs..."
+    # Generate to temp and compare
+    TEMP_DIR=$(mktemp -d)
+    swag init -g cmd/app/main.go --parseDependency --parseInternal -o "$TEMP_DIR" 2>/dev/null || true
+
+    if [ -f "$TEMP_DIR/swagger.json" ] && [ -f "docs/swagger.json" ]; then
+        if ! diff -q "$TEMP_DIR/swagger.json" "docs/swagger.json" > /dev/null 2>&1; then
+            echo "${YELLOW}Warning: Swagger docs may be out of date. Run 'make swag'${NC}"
+        fi
+    fi
+    rm -rf "$TEMP_DIR"
+fi
+
+echo ""
+echo "${GREEN}Pre-push checks passed!${NC}"
+exit 0

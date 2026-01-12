@@ -110,7 +110,7 @@ func TestLocalStorage_Get(t *testing.T) {
 	testPath := "test-get.txt"
 	testContent := "test content for get"
 	fullPath := filepath.Join(tempDir, testPath)
-	err := os.WriteFile(fullPath, []byte(testContent), 0644)
+	err := os.WriteFile(fullPath, []byte(testContent), 0o644)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -161,7 +161,7 @@ func TestLocalStorage_Delete(t *testing.T) {
 	// Create a test file
 	testPath := "test-delete.txt"
 	fullPath := filepath.Join(tempDir, testPath)
-	err := os.WriteFile(fullPath, []byte("to be deleted"), 0644)
+	err := os.WriteFile(fullPath, []byte("to be deleted"), 0o644)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -210,7 +210,7 @@ func TestLocalStorage_Exists(t *testing.T) {
 	// Create a test file
 	testPath := "test-exists.txt"
 	fullPath := filepath.Join(tempDir, testPath)
-	err := os.WriteFile(fullPath, []byte("exists"), 0644)
+	err := os.WriteFile(fullPath, []byte("exists"), 0o644)
 	require.NoError(t, err)
 
 	tests := []struct {
@@ -255,10 +255,10 @@ func TestLocalStorage_URL(t *testing.T) {
 	ctx := context.Background()
 
 	tests := []struct {
-		name     string
-		path     string
-		wantURL  string
-		wantErr  bool
+		name    string
+		path    string
+		wantURL string
+		wantErr bool
 	}{
 		{
 			name:    "simple path",

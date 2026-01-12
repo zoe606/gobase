@@ -89,10 +89,10 @@ func TestIsAppError(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name   string
-		err    error
-		isApp  bool
-		code   string
+		name  string
+		err   error
+		isApp bool
+		code  string
 	}{
 		{
 			name:  "is AppError",

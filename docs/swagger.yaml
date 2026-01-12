@@ -1,34 +1,137 @@
-basePath: /v1
 definitions:
-  entity.Translation:
+  go-boilerplate_internal_dto_auth.LoginRequest:
     properties:
-      destination:
-        example: en
+      email:
+        example: user@example.com
         type: string
-      original:
-        example: текст для перевода
+      password:
+        example: password123
         type: string
-      source:
-        example: auto
+    required:
+    - email
+    - password
+    type: object
+  go-boilerplate_internal_dto_auth.LoginResponse:
+    properties:
+      access_token:
         type: string
-      translation:
-        example: text for translation
+      expires_at:
+        type: integer
+      refresh_token:
+        type: string
+      user:
+        $ref: '#/definitions/go-boilerplate_internal_dto_auth.UserResponse'
+    type: object
+  go-boilerplate_internal_dto_auth.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    required:
+    - refresh_token
+    type: object
+  go-boilerplate_internal_dto_auth.RegisterRequest:
+    properties:
+      email:
+        example: user@example.com
+        type: string
+      name:
+        example: John Doe
+        minLength: 2
+        type: string
+      password:
+        example: password123
+        minLength: 8
+        type: string
+    required:
+    - email
+    - name
+    - password
+    type: object
+  go-boilerplate_internal_dto_auth.TokenResponse:
+    properties:
+      access_token:
+        type: string
+      expires_at:
+        type: integer
+      refresh_token:
         type: string
     type: object
-  entity.TranslationHistory:
+  go-boilerplate_internal_dto_auth.UserResponse:
     properties:
-      history:
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      role:
+        type: string
+    type: object
+  go-boilerplate_internal_dto_media.MediaListResponse:
+    properties:
+      items:
         items:
-          $ref: '#/definitions/entity.Translation'
+          $ref: '#/definitions/go-boilerplate_internal_dto_media.MediaResponse'
         type: array
+      total:
+        type: integer
     type: object
-  request.Translate:
+  go-boilerplate_internal_dto_media.MediaResponse:
+    properties:
+      attachable_id:
+        type: integer
+      attachable_type:
+        type: string
+      collection:
+        type: string
+      created_at:
+        type: string
+      filename:
+        type: string
+      height:
+        type: integer
+      id:
+        type: integer
+      mime_type:
+        type: string
+      original_name:
+        type: string
+      size:
+        type: integer
+      type:
+        $ref: '#/definitions/go-boilerplate_internal_entity.MediaType'
+      url:
+        type: string
+      variants:
+        additionalProperties: true
+        type: object
+      width:
+        type: integer
+    type: object
+  go-boilerplate_internal_dto_media.PresignedURLRequest:
+    properties:
+      filename:
+        type: string
+    required:
+    - filename
+    type: object
+  go-boilerplate_internal_dto_media.PresignedURLResponse:
+    properties:
+      expires_in:
+        description: seconds
+        type: integer
+      path:
+        type: string
+      upload_url:
+        type: string
+    type: object
+  go-boilerplate_internal_dto_translation.TranslateRequest:
     properties:
       destination:
         example: en
         type: string
       original:
-        example: текст для перевода
+        example: text to translate
         type: string
       source:
         example: auto
@@ -38,19 +141,741 @@ definitions:
     - original
     - source
     type: object
-  response.Error:
+  go-boilerplate_internal_dto_translation.TranslationResponse:
     properties:
-      error:
-        example: message
+      destination:
+        type: string
+      id:
+        type: integer
+      original:
+        type: string
+      source:
+        type: string
+      translation:
         type: string
     type: object
-host: localhost:8080
+  go-boilerplate_internal_entity.MediaType:
+    enum:
+    - image
+    - document
+    - video
+    - audio
+    - other
+    type: string
+    x-enum-varnames:
+    - MediaTypeImage
+    - MediaTypeDocument
+    - MediaTypeVideo
+    - MediaTypeAudio
+    - MediaTypeOther
+  go-boilerplate_pkg_response.ErrorDetail:
+    properties:
+      code:
+        type: string
+      details:
+        additionalProperties:
+          type: string
+        type: object
+      message:
+        type: string
+    type: object
+  go-boilerplate_pkg_response.ErrorResponse:
+    properties:
+      error:
+        $ref: '#/definitions/go-boilerplate_pkg_response.ErrorDetail'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Meta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  go-boilerplate_pkg_response.Response-array_go-boilerplate_internal_dto_translation_TranslationResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/go-boilerplate_internal_dto_translation.TranslationResponse'
+        type: array
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_LoginResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_auth.LoginResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_TokenResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_auth.TokenResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_UserResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_auth.UserResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_MediaListResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_media.MediaListResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_MediaResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_media.MediaResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_PresignedURLResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_media.PresignedURLResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_translation_TranslationResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_translation.TranslationResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-internal_handlers_http_v1_config_ConfigResponse:
+    properties:
+      data:
+        $ref: '#/definitions/internal_handlers_http_v1_config.ConfigResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-map_string_string:
+    properties:
+      data:
+        $ref: '#/definitions/map_string_string'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  internal_handlers_http_v1_config.AppConfig:
+    properties:
+      env:
+        type: string
+      name:
+        type: string
+      version:
+        type: string
+    type: object
+  internal_handlers_http_v1_config.AsynqConfig:
+    properties:
+      concurrency:
+        type: integer
+      job_timeout:
+        type: string
+    type: object
+  internal_handlers_http_v1_config.CORSConfig:
+    properties:
+      allow_credentials:
+        type: boolean
+      allow_headers:
+        type: string
+      allow_methods:
+        type: string
+      allow_origins:
+        type: string
+      max_age:
+        type: integer
+    type: object
+  internal_handlers_http_v1_config.ConfigResponse:
+    properties:
+      app:
+        $ref: '#/definitions/internal_handlers_http_v1_config.AppConfig'
+      asynq:
+        $ref: '#/definitions/internal_handlers_http_v1_config.AsynqConfig'
+      cached_at:
+        type: string
+      cors:
+        $ref: '#/definitions/internal_handlers_http_v1_config.CORSConfig'
+      email:
+        $ref: '#/definitions/internal_handlers_http_v1_config.EmailConfig'
+      http:
+        $ref: '#/definitions/internal_handlers_http_v1_config.HTTPConfig'
+      jwt:
+        $ref: '#/definitions/internal_handlers_http_v1_config.JWTConfig'
+      log:
+        $ref: '#/definitions/internal_handlers_http_v1_config.LogConfig'
+      metrics:
+        $ref: '#/definitions/internal_handlers_http_v1_config.MetricsConfig'
+      postgres:
+        $ref: '#/definitions/internal_handlers_http_v1_config.PostgresConfig'
+      rate_limit:
+        $ref: '#/definitions/internal_handlers_http_v1_config.RateLimitConfig'
+      redis:
+        $ref: '#/definitions/internal_handlers_http_v1_config.RedisConfig'
+      swagger:
+        $ref: '#/definitions/internal_handlers_http_v1_config.SwaggerConfig'
+    type: object
+  internal_handlers_http_v1_config.EmailConfig:
+    properties:
+      api_key:
+        description: Masked
+        type: string
+      from_email:
+        type: string
+      from_name:
+        type: string
+      provider:
+        type: string
+    type: object
+  internal_handlers_http_v1_config.HTTPConfig:
+    properties:
+      idle_timeout:
+        type: string
+      port:
+        type: string
+      request_timeout:
+        type: string
+      timeout:
+        type: string
+    type: object
+  internal_handlers_http_v1_config.JWTConfig:
+    properties:
+      access_expiry:
+        type: string
+      refresh_expiry:
+        type: string
+      secret_key:
+        description: Masked
+        type: string
+    type: object
+  internal_handlers_http_v1_config.LogConfig:
+    properties:
+      file:
+        type: string
+      level:
+        type: string
+    type: object
+  internal_handlers_http_v1_config.MetricsConfig:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  internal_handlers_http_v1_config.PostgresConfig:
+    properties:
+      conn_max_idle_time:
+        type: string
+      conn_max_lifetime:
+        type: string
+      dbname:
+        type: string
+      host:
+        type: string
+      max_idle_conns:
+        type: integer
+      max_pool_size:
+        type: integer
+      password:
+        description: Masked
+        type: string
+      port:
+        type: integer
+      sslmode:
+        type: string
+      user:
+        type: string
+    type: object
+  internal_handlers_http_v1_config.RateLimitConfig:
+    properties:
+      expiration:
+        type: string
+      max:
+        type: integer
+    type: object
+  internal_handlers_http_v1_config.RedisConfig:
+    properties:
+      db:
+        type: integer
+      host:
+        type: string
+      password:
+        description: Masked
+        type: string
+      port:
+        type: integer
+    type: object
+  internal_handlers_http_v1_config.SwaggerConfig:
+    properties:
+      enabled:
+        type: boolean
+    type: object
+  map_string_string:
+    additionalProperties:
+      type: string
+    type: object
 info:
   contact: {}
-  description: Using a translation service as an example
-  title: Go Clean Template API
-  version: "1.0"
 paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and get tokens
+      operationId: auth-login
+      parameters:
+      - description: Login credentials
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Login
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate refresh token
+      operationId: auth-logout
+      parameters:
+      - description: Refresh token to invalidate
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Logout
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Get currently authenticated user info
+      operationId: auth-me
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_UserResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user
+      tags:
+      - auth
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Refresh access token using refresh token
+      operationId: auth-refresh
+      parameters:
+      - description: Refresh token
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Refresh tokens
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a new user account
+      operationId: auth-register
+      parameters:
+      - description: Registration details
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_LoginResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Register a new user
+      tags:
+      - auth
+  /config:
+    get:
+      description: Returns sanitized application configuration (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-internal_handlers_http_v1_config_ConfigResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get application configuration
+      tags:
+      - config
+  /config/cache/invalidate:
+    post:
+      description: Clears the cached configuration (admin only)
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-map_string_string'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Invalidate config cache
+      tags:
+      - config
+  /media:
+    get:
+      description: Returns all media items for an attachable entity
+      parameters:
+      - description: Entity type (e.g., users, posts)
+        in: query
+        name: attachable_type
+        required: true
+        type: string
+      - description: Entity ID
+        in: query
+        name: attachable_id
+        required: true
+        type: integer
+      - description: Collection name
+        in: query
+        name: collection
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_MediaListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get media by attachable
+      tags:
+      - media
+  /media/{id}:
+    delete:
+      description: Deletes a media item and its associated files
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Delete media
+      tags:
+      - media
+    get:
+      description: Returns a media item by its ID
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_MediaResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get media by ID
+      tags:
+      - media
+  /media/{id}/url:
+    get:
+      description: Returns a signed URL to access the media file
+      parameters:
+      - description: Media ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Variant name (e.g., thumb, medium, large)
+        in: query
+        name: variant
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-map_string_string'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get media URL
+      tags:
+      - media
+  /media/presigned-url:
+    post:
+      consumes:
+      - application/json
+      description: Returns a presigned URL for direct client-to-storage upload
+      parameters:
+      - description: Request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_media.PresignedURLRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_PresignedURLResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get presigned upload URL
+      tags:
+      - media
+  /media/upload:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Uploads a file and attaches it to an entity
+      parameters:
+      - description: File to upload
+        in: formData
+        name: file
+        required: true
+        type: file
+      - description: Entity type (e.g., users, posts)
+        in: formData
+        name: attachable_type
+        required: true
+        type: string
+      - description: Entity ID
+        in: formData
+        name: attachable_id
+        required: true
+        type: integer
+      - description: Collection name (e.g., avatar, gallery)
+        in: formData
+        name: collection
+        type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_media_MediaResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Upload a file
+      tags:
+      - media
   /translation/do-translate:
     post:
       consumes:
@@ -63,22 +888,22 @@ paths:
         name: request
         required: true
         schema:
-          $ref: '#/definitions/request.Translate'
+          $ref: '#/definitions/go-boilerplate_internal_dto_translation.TranslateRequest'
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.Translation'
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_translation_TranslationResponse'
         "400":
           description: Bad Request
           schema:
-            $ref: '#/definitions/response.Error'
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Error'
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
       summary: Translate
       tags:
       - translation
@@ -86,19 +911,45 @@ paths:
     get:
       consumes:
       - application/json
-      description: Show all translation history
+      description: Show all translation history with pagination
       operationId: history
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Items per page
+        in: query
+        name: limit
+        type: integer
+      - description: Sort field
+        enum:
+        - created_at
+        - id
+        in: query
+        name: sort
+        type: string
+      - default: desc
+        description: Sort order
+        enum:
+        - asc
+        - desc
+        in: query
+        name: order
+        type: string
       produces:
       - application/json
       responses:
         "200":
           description: OK
           schema:
-            $ref: '#/definitions/entity.TranslationHistory'
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-array_go-boilerplate_internal_dto_translation_TranslationResponse'
         "500":
           description: Internal Server Error
           schema:
-            $ref: '#/definitions/response.Error'
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
       summary: Show history
       tags:
       - translation

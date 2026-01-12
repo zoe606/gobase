@@ -23,19 +23,24 @@ const (
 type (
 	// Config holds all configuration for the application.
 	Config struct {
-		App       App       `mapstructure:"app"`
-		HTTP      HTTP      `mapstructure:"http"`
-		Log       Log       `mapstructure:"log"`
-		Postgres  Postgres  `mapstructure:"postgres"`
-		Redis     Redis     `mapstructure:"redis"`
-		JWT       JWT       `mapstructure:"jwt"`
-		CORS      CORS      `mapstructure:"cors"`
-		RateLimit RateLimit `mapstructure:"rate_limit"`
-		Asynq     Asynq     `mapstructure:"asynq"`
-		Email     Email     `mapstructure:"email"`
-		Metrics   Metrics   `mapstructure:"metrics"`
-		Swagger   Swagger   `mapstructure:"swagger"`
-		Storage   Storage   `mapstructure:"storage"`
+		App               App               `mapstructure:"app"`
+		HTTP              HTTP              `mapstructure:"http"`
+		Log               Log               `mapstructure:"log"`
+		Postgres          Postgres          `mapstructure:"postgres"`
+		Redis             Redis             `mapstructure:"redis"`
+		JWT               JWT               `mapstructure:"jwt"`
+		CORS              CORS              `mapstructure:"cors"`
+		RateLimit         RateLimit         `mapstructure:"rate_limit"`
+		Asynq             Asynq             `mapstructure:"asynq"`
+		Email             Email             `mapstructure:"email"`
+		Metrics           Metrics           `mapstructure:"metrics"`
+		Swagger           Swagger           `mapstructure:"swagger"`
+		Storage           Storage           `mapstructure:"storage"`
+		Cache             Cache             `mapstructure:"cache"`
+		AuditLog          AuditLog          `mapstructure:"audit_log"`
+		EmailVerification EmailVerification `mapstructure:"email_verification"`
+		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
+		CircuitBreaker    CircuitBreaker    `mapstructure:"circuit_breaker"`
 	}
 
 	// App holds application-specific configuration.
@@ -129,16 +134,52 @@ type (
 
 	// Storage holds file storage configuration.
 	Storage struct {
-		Driver    string `mapstructure:"driver"`     // "local", "s3"
-		MaxSize   int64  `mapstructure:"max_size"`   // Max upload size in bytes
-		LocalPath string `mapstructure:"local_path"` // Local storage base path
-		LocalURL  string `mapstructure:"local_url"`  // Local storage public URL
+		Driver      string `mapstructure:"driver"`        // "local", "s3"
+		MaxSize     int64  `mapstructure:"max_size"`      // Max upload size in bytes
+		LocalPath   string `mapstructure:"local_path"`    // Local storage base path
+		LocalURL    string `mapstructure:"local_url"`     // Local storage public URL
 		S3Endpoint  string `mapstructure:"s3_endpoint"`   // S3/MinIO endpoint
 		S3Bucket    string `mapstructure:"s3_bucket"`     // S3/MinIO bucket name
 		S3Region    string `mapstructure:"s3_region"`     // S3 region
 		S3AccessKey string `mapstructure:"s3_access_key"` // S3/MinIO access key
 		S3SecretKey string `mapstructure:"s3_secret_key"` // S3/MinIO secret key
 		S3UseSSL    bool   `mapstructure:"s3_use_ssl"`    // Use HTTPS for S3
+	}
+
+	// Cache holds caching configuration.
+	Cache struct {
+		Enabled bool          `mapstructure:"enabled"` // Enable/disable caching
+		TTL     time.Duration `mapstructure:"ttl"`     // Default cache TTL
+		Prefix  string        `mapstructure:"prefix"`  // Key prefix for cache entries
+	}
+
+	// AuditLog holds audit logging configuration.
+	AuditLog struct {
+		Enabled bool `mapstructure:"enabled"` // Enable/disable audit logging
+	}
+
+	// EmailVerification holds email verification configuration.
+	EmailVerification struct {
+		Enabled    bool          `mapstructure:"enabled"`     // Enable/disable email verification
+		AutoVerify bool          `mapstructure:"auto_verify"` // Auto-verify in development
+		TokenTTL   time.Duration `mapstructure:"token_ttl"`   // Verification token TTL
+		BaseURL    string        `mapstructure:"base_url"`    // Frontend base URL for verification links
+	}
+
+	// PasswordReset holds password reset configuration.
+	PasswordReset struct {
+		TokenTTL time.Duration `mapstructure:"token_ttl"` // Reset token TTL
+		BaseURL  string        `mapstructure:"base_url"`  // Frontend base URL for reset links
+	}
+
+	// CircuitBreaker holds circuit breaker configuration.
+	CircuitBreaker struct {
+		Enabled      bool          `mapstructure:"enabled"`       // Enable/disable circuit breaker
+		MaxRequests  uint32        `mapstructure:"max_requests"`  // Max requests in half-open state
+		Interval     time.Duration `mapstructure:"interval"`      // Reset interval in closed state
+		Timeout      time.Duration `mapstructure:"timeout"`       // Time in open state before half-open
+		FailureRatio float64       `mapstructure:"failure_ratio"` // Failure ratio to trip (0.0-1.0)
+		MinRequests  uint32        `mapstructure:"min_requests"`  // Min requests before evaluating ratio
 	}
 )
 
@@ -313,6 +354,32 @@ func setDefaults() {
 	viper.SetDefault("storage.s3_access_key", "minioadmin")
 	viper.SetDefault("storage.s3_secret_key", "minioadmin")
 	viper.SetDefault("storage.s3_use_ssl", false)
+
+	// Cache defaults
+	viper.SetDefault("cache.enabled", true)
+	viper.SetDefault("cache.ttl", "5m")
+	viper.SetDefault("cache.prefix", "app:")
+
+	// AuditLog defaults
+	viper.SetDefault("audit_log.enabled", false)
+
+	// EmailVerification defaults
+	viper.SetDefault("email_verification.enabled", true)
+	viper.SetDefault("email_verification.auto_verify", true) // Auto-verify in development
+	viper.SetDefault("email_verification.token_ttl", "24h")
+	viper.SetDefault("email_verification.base_url", "http://localhost:3000")
+
+	// PasswordReset defaults
+	viper.SetDefault("password_reset.token_ttl", "1h")
+	viper.SetDefault("password_reset.base_url", "http://localhost:3000")
+
+	// CircuitBreaker defaults
+	viper.SetDefault("circuit_breaker.enabled", true)
+	viper.SetDefault("circuit_breaker.max_requests", 3)
+	viper.SetDefault("circuit_breaker.interval", "60s")
+	viper.SetDefault("circuit_breaker.timeout", "30s")
+	viper.SetDefault("circuit_breaker.failure_ratio", 0.5)
+	viper.SetDefault("circuit_breaker.min_requests", 10)
 }
 
 //nolint:errcheck // BindEnv only errors if key is empty, which is controlled by us.
@@ -390,4 +457,30 @@ func bindEnvVars() {
 	viper.BindEnv("storage.s3_access_key", "STORAGE_S3_ACCESS_KEY")
 	viper.BindEnv("storage.s3_secret_key", "STORAGE_S3_SECRET_KEY")
 	viper.BindEnv("storage.s3_use_ssl", "STORAGE_S3_USE_SSL")
+
+	// Cache
+	viper.BindEnv("cache.enabled", "CACHE_ENABLED")
+	viper.BindEnv("cache.ttl", "CACHE_TTL")
+	viper.BindEnv("cache.prefix", "CACHE_PREFIX")
+
+	// AuditLog
+	viper.BindEnv("audit_log.enabled", "AUDIT_LOG_ENABLED")
+
+	// EmailVerification
+	viper.BindEnv("email_verification.enabled", "EMAIL_VERIFICATION_ENABLED")
+	viper.BindEnv("email_verification.auto_verify", "EMAIL_VERIFICATION_AUTO_VERIFY")
+	viper.BindEnv("email_verification.token_ttl", "EMAIL_VERIFICATION_TOKEN_TTL")
+	viper.BindEnv("email_verification.base_url", "EMAIL_VERIFICATION_BASE_URL")
+
+	// PasswordReset
+	viper.BindEnv("password_reset.token_ttl", "PASSWORD_RESET_TOKEN_TTL")
+	viper.BindEnv("password_reset.base_url", "PASSWORD_RESET_BASE_URL")
+
+	// CircuitBreaker
+	viper.BindEnv("circuit_breaker.enabled", "CIRCUIT_BREAKER_ENABLED")
+	viper.BindEnv("circuit_breaker.max_requests", "CIRCUIT_BREAKER_MAX_REQUESTS")
+	viper.BindEnv("circuit_breaker.interval", "CIRCUIT_BREAKER_INTERVAL")
+	viper.BindEnv("circuit_breaker.timeout", "CIRCUIT_BREAKER_TIMEOUT")
+	viper.BindEnv("circuit_breaker.failure_ratio", "CIRCUIT_BREAKER_FAILURE_RATIO")
+	viper.BindEnv("circuit_breaker.min_requests", "CIRCUIT_BREAKER_MIN_REQUESTS")
 }

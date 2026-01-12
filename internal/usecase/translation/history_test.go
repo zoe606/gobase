@@ -11,19 +11,24 @@ import (
 	translationdto "go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/usecase/translation"
+	"go-boilerplate/pkg/pagination"
 )
 
 func TestHistory(t *testing.T) {
 	t.Parallel()
 
+	defaultParams := pagination.NewParams()
+
 	tests := []struct {
 		name      string
+		request   translationdto.HistoryRequest
 		setupMock func(repo *MockTranslationRepo)
 		want      *translationdto.HistoryResponse
 		wantErr   error
 	}{
 		{
-			name: "success with results",
+			name:    "success with results",
+			request: translationdto.HistoryRequest{Params: defaultParams},
 			setupMock: func(repo *MockTranslationRepo) {
 				translations := []entity.Translation{
 					{
@@ -40,8 +45,8 @@ func TestHistory(t *testing.T) {
 					},
 				}
 				repo.EXPECT().
-					GetHistory(gomock.Any()).
-					Return(translations, nil)
+					GetHistory(gomock.Any(), gomock.Any()).
+					Return(translations, int64(2), nil)
 			},
 			want: translationdto.NewHistoryResponse([]entity.Translation{
 				{
@@ -56,25 +61,27 @@ func TestHistory(t *testing.T) {
 					Original:    "goodbye",
 					Translation: "au revoir",
 				},
-			}),
+			}, defaultParams, 2),
 			wantErr: nil,
 		},
 		{
-			name: "success with empty result",
+			name:    "success with empty result",
+			request: translationdto.HistoryRequest{Params: defaultParams},
 			setupMock: func(repo *MockTranslationRepo) {
 				repo.EXPECT().
-					GetHistory(gomock.Any()).
-					Return(nil, nil)
+					GetHistory(gomock.Any(), gomock.Any()).
+					Return(nil, int64(0), nil)
 			},
-			want:    translationdto.NewHistoryResponse(nil),
+			want:    translationdto.NewHistoryResponse(nil, defaultParams, 0),
 			wantErr: nil,
 		},
 		{
-			name: "repo error",
+			name:    "repo error",
+			request: translationdto.HistoryRequest{Params: defaultParams},
 			setupMock: func(repo *MockTranslationRepo) {
 				repo.EXPECT().
-					GetHistory(gomock.Any()).
-					Return(nil, errors.New("database error"))
+					GetHistory(gomock.Any(), gomock.Any()).
+					Return(nil, int64(0), errors.New("database error"))
 			},
 			want:    nil,
 			wantErr: errors.New("database error"),
@@ -94,7 +101,7 @@ func TestHistory(t *testing.T) {
 			tt.setupMock(mockRepo)
 
 			uc := translation.New(mockRepo, mockWebAPI)
-			got, err := uc.History(context.Background())
+			got, err := uc.History(context.Background(), tt.request)
 
 			if tt.wantErr != nil {
 				require.Error(t, err)

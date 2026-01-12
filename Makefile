@@ -232,6 +232,25 @@ clean: ## Clean build artifacts
 generate: ## Generate mocks and other code
 	go generate ./...
 
+##@ Git Hooks
+
+.PHONY: install-hooks
+install-hooks: ## Install git hooks for pre-commit and pre-push checks
+	@echo "Installing git hooks..."
+	@cp .githooks/pre-commit .git/hooks/pre-commit 2>/dev/null || \
+		(mkdir -p .git/hooks && cp .githooks/pre-commit .git/hooks/pre-commit)
+	@cp .githooks/pre-push .git/hooks/pre-push 2>/dev/null || \
+		(mkdir -p .git/hooks && cp .githooks/pre-push .git/hooks/pre-push)
+	@chmod +x .git/hooks/pre-commit .git/hooks/pre-push 2>/dev/null || true
+	@echo "Git hooks installed successfully!"
+	@echo "  - pre-commit: Fast checks (format, vet, basic lint)"
+	@echo "  - pre-push: Full checks (build, test, lint, vuln)"
+
+.PHONY: uninstall-hooks
+uninstall-hooks: ## Remove git hooks
+	@rm -f .git/hooks/pre-commit .git/hooks/pre-push
+	@echo "Git hooks removed"
+
 ##@ Pre-commit
 
 .PHONY: pre-commit
@@ -239,3 +258,6 @@ pre-commit: fmt lint test ## Run all checks before commit
 
 .PHONY: check-all
 check-all: fmt lint vuln test ## Run all quality checks including vulnerability scan
+
+.PHONY: ci
+ci: fmt lint vuln test build ## Run full CI pipeline locally

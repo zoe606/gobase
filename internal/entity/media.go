@@ -36,7 +36,7 @@ type Media struct {
 	Size         int64  `json:"size" gorm:"not null"` // bytes
 
 	// Storage info.
-	Disk string `json:"disk" gorm:"size:50;not null"` // "local", "s3"
+	Disk string `json:"disk" gorm:"size:50;not null"`  // "local", "s3"
 	Path string `json:"path" gorm:"size:500;not null"` // storage path
 
 	// Media specific.

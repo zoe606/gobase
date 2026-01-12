@@ -128,10 +128,10 @@ type Handler struct {
 	l          logger.Interface
 
 	// Cache
-	cache      *ConfigResponse
-	cacheMu    sync.RWMutex
-	cacheTTL   time.Duration
-	cachedAt   time.Time
+	cache    *ConfigResponse
+	cacheMu  sync.RWMutex
+	cacheTTL time.Duration
+	cachedAt time.Time
 }
 
 // New creates a new config handler.

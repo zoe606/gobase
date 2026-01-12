@@ -5,10 +5,11 @@ import (
 	"errors"
 	"fmt"
 
+	"gorm.io/gorm"
+
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
-
-	"gorm.io/gorm"
+	"go-boilerplate/pkg/tx"
 )
 
 // MediaRepo implements media repository using GORM.
@@ -23,55 +24,55 @@ func NewMediaRepo(db *gorm.DB) *MediaRepo {
 
 // Create creates a new media record.
 func (r *MediaRepo) Create(ctx context.Context, media *entity.Media) error {
-	result := r.db.WithContext(ctx).Create(media)
-	if result.Error != nil {
-		return fmt.Errorf("MediaRepo - Create: %w", result.Error)
+	db := tx.DBFromContext(ctx, r.db)
+	if err := db.Create(media).Error; err != nil {
+		return fmt.Errorf("MediaRepo - Create: %w", err)
 	}
 	return nil
 }
 
 // GetByID retrieves a media record by ID.
 func (r *MediaRepo) GetByID(ctx context.Context, id uint) (*entity.Media, error) {
+	db := tx.DBFromContext(ctx, r.db)
 	var media entity.Media
-	result := r.db.WithContext(ctx).First(&media, id)
-	if result.Error != nil {
-		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+	if err := db.First(&media, id).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, repo.ErrNotFound
 		}
-		return nil, fmt.Errorf("MediaRepo - GetByID: %w", result.Error)
+		return nil, fmt.Errorf("MediaRepo - GetByID: %w", err)
 	}
 	return &media, nil
 }
 
 // GetByAttachable retrieves media by attachable type, ID, and optional collection.
 func (r *MediaRepo) GetByAttachable(ctx context.Context, attachableType string, attachableID uint, collection string) ([]*entity.Media, error) {
+	db := tx.DBFromContext(ctx, r.db)
 	var media []*entity.Media
-	query := r.db.WithContext(ctx).
-		Where("attachable_type = ? AND attachable_id = ?", attachableType, attachableID)
+	query := db.Where("attachable_type = ? AND attachable_id = ?", attachableType, attachableID)
 
 	if collection != "" {
 		query = query.Where("collection = ?", collection)
 	}
 
-	result := query.Order("created_at DESC").Find(&media)
-	if result.Error != nil {
-		return nil, fmt.Errorf("MediaRepo - GetByAttachable: %w", result.Error)
+	if err := query.Order("created_at DESC").Find(&media).Error; err != nil {
+		return nil, fmt.Errorf("MediaRepo - GetByAttachable: %w", err)
 	}
 	return media, nil
 }
 
 // Update updates a media record.
 func (r *MediaRepo) Update(ctx context.Context, media *entity.Media) error {
-	result := r.db.WithContext(ctx).Save(media)
-	if result.Error != nil {
-		return fmt.Errorf("MediaRepo - Update: %w", result.Error)
+	db := tx.DBFromContext(ctx, r.db)
+	if err := db.Save(media).Error; err != nil {
+		return fmt.Errorf("MediaRepo - Update: %w", err)
 	}
 	return nil
 }
 
 // Delete soft-deletes a media record by ID.
 func (r *MediaRepo) Delete(ctx context.Context, id uint) error {
-	result := r.db.WithContext(ctx).Delete(&entity.Media{}, id)
+	db := tx.DBFromContext(ctx, r.db)
+	result := db.Delete(&entity.Media{}, id)
 	if result.Error != nil {
 		return fmt.Errorf("MediaRepo - Delete: %w", result.Error)
 	}
@@ -83,11 +84,9 @@ func (r *MediaRepo) Delete(ctx context.Context, id uint) error {
 
 // DeleteByAttachable soft-deletes all media for an attachable entity.
 func (r *MediaRepo) DeleteByAttachable(ctx context.Context, attachableType string, attachableID uint) error {
-	result := r.db.WithContext(ctx).
-		Where("attachable_type = ? AND attachable_id = ?", attachableType, attachableID).
-		Delete(&entity.Media{})
-	if result.Error != nil {
-		return fmt.Errorf("MediaRepo - DeleteByAttachable: %w", result.Error)
+	db := tx.DBFromContext(ctx, r.db)
+	if err := db.Where("attachable_type = ? AND attachable_id = ?", attachableType, attachableID).Delete(&entity.Media{}).Error; err != nil {
+		return fmt.Errorf("MediaRepo - DeleteByAttachable: %w", err)
 	}
 	return nil
 }

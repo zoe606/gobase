@@ -13,6 +13,7 @@ import (
 	context "context"
 	auth "go-boilerplate/internal/dto/auth"
 	translation "go-boilerplate/internal/dto/translation"
+	authusecase "go-boilerplate/internal/usecase/auth"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -43,18 +44,18 @@ func (m *MockTranslation) EXPECT() *MockTranslationMockRecorder {
 }
 
 // History mocks base method.
-func (m *MockTranslation) History(arg0 context.Context) (*translation.HistoryResponse, error) {
+func (m *MockTranslation) History(arg0 context.Context, arg1 translation.HistoryRequest) (*translation.HistoryResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "History", arg0)
+	ret := m.ctrl.Call(m, "History", arg0, arg1)
 	ret0, _ := ret[0].(*translation.HistoryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // History indicates an expected call of History.
-func (mr *MockTranslationMockRecorder) History(arg0 any) *gomock.Call {
+func (mr *MockTranslationMockRecorder) History(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "History", reflect.TypeOf((*MockTranslation)(nil).History), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "History", reflect.TypeOf((*MockTranslation)(nil).History), arg0, arg1)
 }
 
 // Translate mocks base method.
@@ -168,4 +169,74 @@ func (m *MockAuth) Register(ctx context.Context, input auth.RegisterRequest) (*a
 func (mr *MockAuthMockRecorder) Register(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuth)(nil).Register), ctx, input)
+}
+
+// SendVerificationEmail mocks base method.
+func (m *MockAuth) SendVerificationEmail(ctx context.Context, userID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendVerificationEmail", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendVerificationEmail indicates an expected call of SendVerificationEmail.
+func (mr *MockAuthMockRecorder) SendVerificationEmail(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendVerificationEmail", reflect.TypeOf((*MockAuth)(nil).SendVerificationEmail), ctx, userID)
+}
+
+// VerifyEmail mocks base method.
+func (m *MockAuth) VerifyEmail(ctx context.Context, token string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyEmail", ctx, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// VerifyEmail indicates an expected call of VerifyEmail.
+func (mr *MockAuthMockRecorder) VerifyEmail(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockAuth)(nil).VerifyEmail), ctx, token)
+}
+
+// ResendVerification mocks base method.
+func (m *MockAuth) ResendVerification(ctx context.Context, email string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResendVerification", ctx, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResendVerification indicates an expected call of ResendVerification.
+func (mr *MockAuthMockRecorder) ResendVerification(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResendVerification", reflect.TypeOf((*MockAuth)(nil).ResendVerification), ctx, email)
+}
+
+// RequestPasswordReset mocks base method.
+func (m *MockAuth) RequestPasswordReset(ctx context.Context, email string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequestPasswordReset", ctx, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequestPasswordReset indicates an expected call of RequestPasswordReset.
+func (mr *MockAuthMockRecorder) RequestPasswordReset(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestPasswordReset", reflect.TypeOf((*MockAuth)(nil).RequestPasswordReset), ctx, email)
+}
+
+// ResetPassword mocks base method.
+func (m *MockAuth) ResetPassword(ctx context.Context, input authusecase.ResetPasswordInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockAuthMockRecorder) ResetPassword(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockAuth)(nil).ResetPassword), ctx, input)
 }

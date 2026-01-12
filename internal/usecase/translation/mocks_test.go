@@ -12,6 +12,7 @@ package translation_test
 import (
 	context "context"
 	entity "go-boilerplate/internal/entity"
+	pagination "go-boilerplate/pkg/pagination"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -42,18 +43,19 @@ func (m *MockTranslationRepo) EXPECT() *MockTranslationRepoMockRecorder {
 }
 
 // GetHistory mocks base method.
-func (m *MockTranslationRepo) GetHistory(arg0 context.Context) ([]entity.Translation, error) {
+func (m *MockTranslationRepo) GetHistory(arg0 context.Context, arg1 pagination.Params) ([]entity.Translation, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHistory", arg0)
+	ret := m.ctrl.Call(m, "GetHistory", arg0, arg1)
 	ret0, _ := ret[0].([]entity.Translation)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetHistory indicates an expected call of GetHistory.
-func (mr *MockTranslationRepoMockRecorder) GetHistory(arg0 any) *gomock.Call {
+func (mr *MockTranslationRepoMockRecorder) GetHistory(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockTranslationRepo)(nil).GetHistory), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockTranslationRepo)(nil).GetHistory), arg0, arg1)
 }
 
 // Store mocks base method.

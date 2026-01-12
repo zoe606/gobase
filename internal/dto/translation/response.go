@@ -1,6 +1,9 @@
 package translation
 
-import "go-boilerplate/internal/entity"
+import (
+	"go-boilerplate/internal/entity"
+	"go-boilerplate/pkg/pagination"
+)
 
 // TranslationResponse represents a translation in API responses.
 type TranslationResponse struct {
@@ -24,14 +27,15 @@ func NewTranslationResponse(t *entity.Translation) *TranslationResponse {
 
 // HistoryResponse represents translation history in API responses.
 type HistoryResponse struct {
-	History []TranslationResponse `json:"history"`
+	Items []TranslationResponse
+	Meta  *pagination.Meta
 }
 
-// NewHistoryResponse creates a HistoryResponse from entities.
-func NewHistoryResponse(translations []entity.Translation) *HistoryResponse {
-	history := make([]TranslationResponse, len(translations))
+// NewHistoryResponse creates a HistoryResponse from entities with pagination.
+func NewHistoryResponse(translations []entity.Translation, params pagination.Params, total int64) *HistoryResponse {
+	items := make([]TranslationResponse, len(translations))
 	for i := range translations {
-		history[i] = TranslationResponse{
+		items[i] = TranslationResponse{
 			ID:          translations[i].ID,
 			Source:      translations[i].Source,
 			Destination: translations[i].Destination,
@@ -39,5 +43,11 @@ func NewHistoryResponse(translations []entity.Translation) *HistoryResponse {
 			Translation: translations[i].Translation,
 		}
 	}
-	return &HistoryResponse{History: history}
+
+	params.Normalize()
+
+	return &HistoryResponse{
+		Items: items,
+		Meta:  pagination.NewMeta(params.Page, params.Limit, total),
+	}
 }

@@ -28,6 +28,7 @@ type mockJWTService struct{}
 func (m *mockJWTService) GenerateAccessToken(userID uint, email, role string, permissions []string) (string, int64, error) {
 	return "test-token", time.Now().Add(time.Hour).Unix(), nil
 }
+
 func (m *mockJWTService) GenerateRefreshToken() (string, time.Time, error) {
 	return "refresh-token", time.Now().Add(24 * time.Hour), nil
 }

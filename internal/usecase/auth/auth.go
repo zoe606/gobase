@@ -17,12 +17,30 @@ import (
 
 // UseCase implements authentication business logic.
 type UseCase struct {
-	userRepo         repo.UserRepo
-	roleRepo         repo.RoleRepo
-	refreshTokenRepo repo.RefreshTokenRepo
-	jwtService       jwt.Service
-	asynqClient      *asynq.Client
-	appName          string
+	userRepo              repo.UserRepo
+	roleRepo              repo.RoleRepo
+	refreshTokenRepo      repo.RefreshTokenRepo
+	emailVerificationRepo repo.EmailVerificationRepo
+	passwordResetRepo     repo.PasswordResetRepo
+	jwtService            jwt.Service
+	asynqClient           *asynq.Client
+	appName               string
+	verificationConfig    VerificationConfig
+	resetConfig           ResetConfig
+}
+
+// VerificationConfig holds email verification configuration.
+type VerificationConfig struct {
+	Enabled    bool
+	AutoVerify bool
+	TokenTTL   time.Duration
+	BaseURL    string
+}
+
+// ResetConfig holds password reset configuration.
+type ResetConfig struct {
+	TokenTTL time.Duration
+	BaseURL  string
 }
 
 // New creates a new auth use case.
@@ -37,7 +55,31 @@ func New(
 		roleRepo:         roleRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		jwtService:       jwtService,
+		verificationConfig: VerificationConfig{
+			Enabled:    true,
+			AutoVerify: true,
+			TokenTTL:   24 * time.Hour,
+			BaseURL:    "http://localhost:3000",
+		},
+		resetConfig: ResetConfig{
+			TokenTTL: time.Hour,
+			BaseURL:  "http://localhost:3000",
+		},
 	}
+}
+
+// WithEmailVerification sets the email verification repository and config.
+func (uc *UseCase) WithEmailVerification(repo repo.EmailVerificationRepo, cfg VerificationConfig) *UseCase {
+	uc.emailVerificationRepo = repo
+	uc.verificationConfig = cfg
+	return uc
+}
+
+// WithPasswordReset sets the password reset repository and config.
+func (uc *UseCase) WithPasswordReset(repo repo.PasswordResetRepo, cfg ResetConfig) *UseCase {
+	uc.passwordResetRepo = repo
+	uc.resetConfig = cfg
+	return uc
 }
 
 // WithAsynq sets the Asynq client and app name for background jobs.

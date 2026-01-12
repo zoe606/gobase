@@ -12,7 +12,7 @@ package response
 // Uses generics for type-safe data field.
 type Response[T any] struct {
 	Success   bool   `json:"success"`
-	Data      T      `json:"data,omitempty"`
+	Data      T      `json:"data"`
 	Meta      *Meta  `json:"meta,omitempty"`
 	RequestID string `json:"request_id,omitempty"`
 }
