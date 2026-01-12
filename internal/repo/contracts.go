@@ -70,4 +70,12 @@ type (
 		MarkAsUsed(ctx context.Context, id uint) error
 		DeleteByUserID(ctx context.Context, userID uint) error
 	}
+
+	// ProfileRepo defines profile repository operations.
+	ProfileRepo interface {
+		Create(ctx context.Context, profile *entity.Profile) error
+		GetByUserID(ctx context.Context, userID uint) (*entity.Profile, error)
+		Update(ctx context.Context, profile *entity.Profile) error
+		Upsert(ctx context.Context, profile *entity.Profile) error
+	}
 )

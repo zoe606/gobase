@@ -6,6 +6,7 @@ import (
 
 	authdto "go-boilerplate/internal/dto/auth"
 	mediadto "go-boilerplate/internal/dto/media"
+	profiledto "go-boilerplate/internal/dto/profile"
 	translationdto "go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/usecase/auth"
@@ -46,5 +47,11 @@ type (
 		GetURL(ctx context.Context, media *entity.Media, variant string) (string, error)
 		GetPresignedUploadURL(ctx context.Context, filename string) (*mediadto.PresignedURLResponse, error)
 		Delete(ctx context.Context, id uint) error
+	}
+
+	// Profile defines the profile use case interface.
+	Profile interface {
+		GetProfile(ctx context.Context, userID uint) (*profiledto.ProfileResponse, error)
+		UpdateProfile(ctx context.Context, userID uint, req profiledto.UpdateProfileRequest) (*profiledto.ProfileResponse, error)
 	}
 )

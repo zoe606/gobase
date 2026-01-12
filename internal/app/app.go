@@ -19,6 +19,7 @@ import (
 	"go-boilerplate/internal/usecase"
 	"go-boilerplate/internal/usecase/auth"
 	"go-boilerplate/internal/usecase/media"
+	"go-boilerplate/internal/usecase/profile"
 	"go-boilerplate/internal/usecase/translation"
 	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/httpserver"
@@ -35,6 +36,7 @@ type repositories struct {
 	role           repo.RoleRepo
 	refreshToken   repo.RefreshTokenRepo
 	media          repo.MediaRepo
+	profile        repo.ProfileRepo
 }
 
 // usecases holds all usecase instances.
@@ -42,6 +44,7 @@ type usecases struct {
 	translation usecase.Translation
 	auth        usecase.Auth
 	media       usecase.Media
+	profile     usecase.Profile
 }
 
 // Run creates objects via constructors.
@@ -114,6 +117,7 @@ func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 		&entity.User{},
 		&entity.RefreshToken{},
 		&entity.Media{},
+		&entity.Profile{},
 	); err != nil {
 		l.Fatal(fmt.Errorf("app - Run - AutoMigrate: %w", err))
 	}
@@ -165,6 +169,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		role:           persistent.NewRoleRepo(db),
 		refreshToken:   persistent.NewRefreshTokenRepo(db),
 		media:          persistent.NewMediaRepo(db),
+		profile:        persistent.NewProfileRepo(db),
 	}
 }
 
@@ -191,10 +196,18 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 		cfg.Storage.MaxSize,
 	)
 
+	profileUC := profile.New(
+		repos.profile,
+		repos.media,
+		storageProvider,
+		l,
+	)
+
 	return &usecases{
 		translation: translation.New(repos.translation, repos.translationAPI),
 		auth:        authUC,
 		media:       mediaUC,
+		profile:     profileUC,
 	}
 }
 
@@ -207,7 +220,7 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
 	)
 
-	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, jwtService, l, pg)
+	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, jwtService, l, pg)
 	httpServer.Start()
 
 	return httpServer
