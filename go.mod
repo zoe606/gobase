@@ -15,7 +15,7 @@ require (
 	github.com/ansrivas/fiberprometheus/v2 v2.7.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/validator/v10 v10.23.0
-	github.com/goccy/go-json v0.10.4
+	github.com/goccy/go-json v0.10.5
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/swagger v1.1.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
