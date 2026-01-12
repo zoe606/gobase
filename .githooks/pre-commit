@@ -57,10 +57,10 @@ if ! go vet ./... 2>&1; then
 fi
 echo "${GREEN}go vet OK${NC}"
 
-# 4. Run golangci-lint (fast mode) if available
+# 4. Run golangci-lint (only on changed files) if available
 if command -v golangci-lint > /dev/null 2>&1; then
-    echo "Running golangci-lint (fast)..."
-    if ! golangci-lint run --fast --new-from-rev=HEAD~1 2>&1; then
+    echo "Running golangci-lint..."
+    if ! golangci-lint run --new-from-rev=HEAD~1 --timeout=2m 2>&1; then
         echo "${YELLOW}Linter found issues (run 'make lint' for details)${NC}"
         # Don't fail on lint in pre-commit, just warn
     else
