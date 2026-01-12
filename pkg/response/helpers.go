@@ -3,8 +3,9 @@ package response
 import (
 	"net/http"
 
-	"github.com/gofiber/fiber/v2"
 	"go-boilerplate/pkg/apperror"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 // getRequestID extracts the request ID from Fiber context.

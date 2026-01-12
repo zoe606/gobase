@@ -77,7 +77,8 @@ func TestFatal_ExitsAndLogs(t *testing.T) {
 		return
 	}
 
-	cmd := exec.Command(os.Args[0], "-test.run", "TestFatal_ExitsAndLogs")
+	//nolint:gosec // G204: subprocess args are static test values, not user input
+	cmd := exec.Command(os.Args[0], "-test.run", "TestFatal_ExitsAndLogs") //nolint:noctx // context not needed for test subprocess
 	cmd.Env = append(os.Environ(), "LOGGER_FATAL_SUBPROC=1")
 
 	err := cmd.Run()

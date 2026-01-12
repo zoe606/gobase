@@ -18,7 +18,7 @@ func (uc *UseCase) Login(ctx context.Context, input authdto.LoginRequest) (*auth
 		if errors.Is(err, repo.ErrNotFound) {
 			return nil, ErrInvalidCredentials
 		}
-		return nil, fmt.Errorf("Auth - Login - GetByEmail: %w", err)
+		return nil, fmt.Errorf("auth - Login - GetByEmail: %w", err)
 	}
 
 	// Check password
@@ -34,12 +34,12 @@ func (uc *UseCase) Login(ctx context.Context, input authdto.LoginRequest) (*auth
 	// Generate tokens
 	tokens, err := uc.generateTokens(user)
 	if err != nil {
-		return nil, fmt.Errorf("Auth - Login - %w", err)
+		return nil, fmt.Errorf("auth - Login - %w", err)
 	}
 
 	// Store refresh token
 	if err := uc.storeRefreshToken(ctx, user.ID, tokens.RefreshToken, tokens.RefreshExpiresAt); err != nil {
-		return nil, fmt.Errorf("Auth - Login - StoreRefreshToken: %w", err)
+		return nil, fmt.Errorf("auth - Login - storeRefreshToken: %w", err)
 	}
 
 	return authdto.NewLoginResponse(user, tokens.AccessToken, tokens.RefreshToken, tokens.AccessExpiresAt), nil

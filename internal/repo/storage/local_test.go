@@ -14,14 +14,15 @@ import (
 	"go-boilerplate/internal/repo/storage"
 )
 
-func setupTestStorage(t *testing.T) (*storage.LocalStorage, string) {
+func setupTestStorage(t *testing.T) (s *storage.LocalStorage, tempDir string) {
 	t.Helper()
 
 	// Create temp directory for tests
-	tempDir, err := os.MkdirTemp("", "storage-test-*")
+	var err error
+	tempDir, err = os.MkdirTemp("", "storage-test-*")
 	require.NoError(t, err)
 
-	s := storage.NewLocalStorage(tempDir, "http://localhost:8080/uploads")
+	s = storage.NewLocalStorage(tempDir, "http://localhost:8080/uploads")
 
 	t.Cleanup(func() {
 		os.RemoveAll(tempDir)

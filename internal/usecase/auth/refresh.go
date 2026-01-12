@@ -17,7 +17,7 @@ func (uc *UseCase) Refresh(ctx context.Context, input authdto.RefreshRequest) (*
 		if errors.Is(err, repo.ErrNotFound) {
 			return nil, ErrInvalidToken
 		}
-		return nil, fmt.Errorf("Auth - Refresh - GetByToken: %w", err)
+		return nil, fmt.Errorf("auth - Refresh - GetByToken: %w", err)
 	}
 	if token.IsExpired() {
 		return nil, ErrInvalidToken
@@ -29,7 +29,7 @@ func (uc *UseCase) Refresh(ctx context.Context, input authdto.RefreshRequest) (*
 		if errors.Is(err, repo.ErrNotFound) {
 			return nil, ErrInvalidToken
 		}
-		return nil, fmt.Errorf("Auth - Refresh - GetByID: %w", err)
+		return nil, fmt.Errorf("auth - Refresh - GetByID: %w", err)
 	}
 	if !user.Active {
 		return nil, ErrInvalidToken
@@ -37,18 +37,18 @@ func (uc *UseCase) Refresh(ctx context.Context, input authdto.RefreshRequest) (*
 
 	// Delete old refresh token
 	if err := uc.refreshTokenRepo.DeleteByToken(ctx, input.RefreshToken); err != nil {
-		return nil, fmt.Errorf("Auth - Refresh - DeleteByToken: %w", err)
+		return nil, fmt.Errorf("auth - Refresh - DeleteByToken: %w", err)
 	}
 
 	// Generate new tokens
 	tokens, err := uc.generateTokens(user)
 	if err != nil {
-		return nil, fmt.Errorf("Auth - Refresh - %w", err)
+		return nil, fmt.Errorf("auth - Refresh - %w", err)
 	}
 
 	// Store new refresh token
 	if err := uc.storeRefreshToken(ctx, user.ID, tokens.RefreshToken, tokens.RefreshExpiresAt); err != nil {
-		return nil, fmt.Errorf("Auth - Refresh - StoreRefreshToken: %w", err)
+		return nil, fmt.Errorf("auth - Refresh - StoreRefreshToken: %w", err)
 	}
 
 	return authdto.NewTokenResponse(tokens.AccessToken, tokens.RefreshToken, tokens.AccessExpiresAt), nil

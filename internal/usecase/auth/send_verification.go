@@ -65,10 +65,8 @@ func (uc *UseCase) SendVerificationEmail(ctx context.Context, userID uint) error
 	}
 
 	// Queue email sending task if asynq is configured
-	if uc.asynqClient != nil {
-		// TODO: Enqueue email verification task
-		// This would be implemented similar to the welcome email task
-	}
+	// TODO: Enqueue email verification task when asynq is available
+	_ = uc.asynqClient // Placeholder for future async email task
 
 	return nil
 }

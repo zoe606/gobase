@@ -1,3 +1,4 @@
+//nolint:revive // json package name is intentional for drop-in replacement
 package json
 
 import (

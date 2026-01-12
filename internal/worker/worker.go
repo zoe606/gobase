@@ -20,13 +20,13 @@ type Worker struct {
 }
 
 // New creates a new Worker instance.
-func New(server *asynq.Server, l logger.Interface, mailer email.Sender, mediaRepo repo.MediaRepo, storage storage.Provider) *Worker {
+func New(server *asynq.Server, l logger.Interface, mailer email.Sender, mediaRepo repo.MediaRepo, storageProvider storage.Provider) *Worker {
 	return &Worker{
 		server:    server,
 		l:         l,
 		mailer:    mailer,
 		mediaRepo: mediaRepo,
-		storage:   storage,
+		storage:   storageProvider,
 	}
 }
 

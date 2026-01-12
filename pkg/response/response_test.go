@@ -3,6 +3,7 @@ package response_test
 import (
 	"encoding/json"
 	"io"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -20,9 +21,10 @@ func TestOK(t *testing.T) {
 		return response.OK(c, map[string]string{"message": "success"})
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusOK, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body) //nolint:errcheck // test
@@ -41,9 +43,10 @@ func TestCreated(t *testing.T) {
 		return response.Created(c, map[string]int{"id": 1})
 	})
 
-	req := httptest.NewRequest("POST", "/test", nil)
+	req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusCreated, resp.StatusCode)
 }
 
@@ -51,13 +54,12 @@ func TestNoContent(t *testing.T) {
 	t.Parallel()
 
 	app := fiber.New()
-	app.Delete("/test", func(c *fiber.Ctx) error {
-		return response.NoContent(c)
-	})
+	app.Delete("/test", response.NoContent)
 
-	req := httptest.NewRequest("DELETE", "/test", nil)
+	req := httptest.NewRequest(http.MethodDelete, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusNoContent, resp.StatusCode)
 }
 
@@ -69,9 +71,10 @@ func TestBadRequest(t *testing.T) {
 		return response.BadRequest(c, "INVALID_INPUT", "Invalid input provided")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusBadRequest, resp.StatusCode)
 
 	body, _ := io.ReadAll(resp.Body) //nolint:errcheck // test
@@ -91,9 +94,10 @@ func TestUnauthorized(t *testing.T) {
 		return response.Unauthorized(c, "Invalid credentials")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusUnauthorized, resp.StatusCode)
 }
 
@@ -105,9 +109,10 @@ func TestForbidden(t *testing.T) {
 		return response.Forbidden(c, "Access denied")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusForbidden, resp.StatusCode)
 }
 
@@ -119,9 +124,10 @@ func TestNotFound(t *testing.T) {
 		return response.NotFound(c, "Resource not found")
 	})
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusNotFound, resp.StatusCode)
 }
 
@@ -133,9 +139,10 @@ func TestConflict(t *testing.T) {
 		return response.Conflict(c, "Resource already exists")
 	})
 
-	req := httptest.NewRequest("POST", "/test", nil)
+	req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusConflict, resp.StatusCode)
 }
 
@@ -151,9 +158,10 @@ func TestValidationError(t *testing.T) {
 		return response.ValidationError(c, errors)
 	})
 
-	req := httptest.NewRequest("POST", "/test", nil)
+	req := httptest.NewRequest(http.MethodPost, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close()                                   //nolint:errcheck // test
 	require.Equal(t, fiber.StatusBadRequest, resp.StatusCode) // ValidationError returns 400
 
 	body, _ := io.ReadAll(resp.Body) //nolint:errcheck // test
@@ -169,12 +177,11 @@ func TestInternalError(t *testing.T) {
 	t.Parallel()
 
 	app := fiber.New()
-	app.Get("/test", func(c *fiber.Ctx) error {
-		return response.InternalError(c)
-	})
+	app.Get("/test", response.InternalError)
 
-	req := httptest.NewRequest("GET", "/test", nil)
+	req := httptest.NewRequest(http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
 	require.Equal(t, fiber.StatusInternalServerError, resp.StatusCode)
 }

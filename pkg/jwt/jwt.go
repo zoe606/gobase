@@ -50,8 +50,8 @@ func New(secretKey string, accessExpiry, refreshExpiry time.Duration) Service {
 }
 
 // GenerateAccessToken generates a new access token.
-func (s *service) GenerateAccessToken(userID uint, email, role string, permissions []string) (string, int64, error) {
-	expiresAt := time.Now().Add(s.accessExpiry)
+func (s *service) GenerateAccessToken(userID uint, email, role string, permissions []string) (tokenStr string, expiresAtUnix int64, err error) {
+	expiresAtTime := time.Now().Add(s.accessExpiry)
 
 	claims := &Claims{
 		UserID:      userID,
@@ -59,7 +59,7 @@ func (s *service) GenerateAccessToken(userID uint, email, role string, permissio
 		Role:        role,
 		Permissions: permissions,
 		RegisteredClaims: jwt.RegisteredClaims{
-			ExpiresAt: jwt.NewNumericDate(expiresAt),
+			ExpiresAt: jwt.NewNumericDate(expiresAtTime),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			NotBefore: jwt.NewNumericDate(time.Now()),
 		},
@@ -71,7 +71,7 @@ func (s *service) GenerateAccessToken(userID uint, email, role string, permissio
 		return "", 0, err
 	}
 
-	return tokenString, expiresAt.Unix(), nil
+	return tokenString, expiresAtTime.Unix(), nil
 }
 
 // GenerateRefreshToken generates a new refresh token.

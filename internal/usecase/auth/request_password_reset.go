@@ -50,9 +50,8 @@ func (uc *UseCase) RequestPasswordReset(ctx context.Context, email string) error
 	}
 
 	// Queue password reset email task if asynq is configured
-	if uc.asynqClient != nil {
-		// TODO: Enqueue password reset email task
-	}
+	// TODO: Enqueue password reset email task when asynq is available
+	_ = uc.asynqClient // Placeholder for future async email task
 
 	return nil
 }

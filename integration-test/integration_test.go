@@ -26,9 +26,6 @@ const (
 
 	// HTTP REST
 	basePathV1 = httpURL + "/v1"
-
-	// Test data
-	expectedOriginal = "текст для перевода"
 )
 
 var errHealthCheck = fmt.Errorf("url %s is not available", healthPath)

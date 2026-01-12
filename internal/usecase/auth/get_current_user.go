@@ -16,7 +16,7 @@ func (uc *UseCase) GetCurrentUser(ctx context.Context, userID uint) (*authdto.Us
 		if errors.Is(err, repo.ErrNotFound) {
 			return nil, repo.ErrNotFound
 		}
-		return nil, fmt.Errorf("Auth - GetCurrentUser - GetByID: %w", err)
+		return nil, fmt.Errorf("auth - GetCurrentUser - GetByID: %w", err)
 	}
 	resp := authdto.NewUserResponse(user)
 	return &resp, nil

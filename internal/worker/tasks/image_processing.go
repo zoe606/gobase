@@ -35,11 +35,11 @@ type ImageProcessingHandler struct {
 }
 
 // NewImageProcessingHandler creates a new image processing handler.
-func NewImageProcessingHandler(l logger.Interface, mediaRepo repo.MediaRepo, storage storage.Provider) *ImageProcessingHandler {
+func NewImageProcessingHandler(l logger.Interface, mediaRepo repo.MediaRepo, storageProvider storage.Provider) *ImageProcessingHandler {
 	return &ImageProcessingHandler{
 		l:         l,
 		mediaRepo: mediaRepo,
-		storage:   storage,
+		storage:   storageProvider,
 		variants:  entity.DefaultImageVariants(),
 	}
 }

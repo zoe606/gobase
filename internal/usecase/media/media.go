@@ -28,7 +28,7 @@ type UseCase struct {
 // New creates a new media use case.
 func New(
 	mediaRepo repo.MediaRepo,
-	storage storage.Provider,
+	storageProvider storage.Provider,
 	asynqClient *asynq.Client,
 	l logger.Interface,
 	disk string,
@@ -36,7 +36,7 @@ func New(
 ) *UseCase {
 	return &UseCase{
 		mediaRepo:   mediaRepo,
-		storage:     storage,
+		storage:     storageProvider,
 		asynqClient: asynqClient,
 		l:           l,
 		disk:        disk,

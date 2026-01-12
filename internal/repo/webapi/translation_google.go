@@ -51,7 +51,11 @@ func (t *TranslationWebAPI) Translate(translation *entity.Translation) (*entity.
 		return nil, fmt.Errorf("TranslationWebAPI - Translate: %w (circuit: %s)", err, t.cb.State())
 	}
 
-	translated := result.(*translator.Translated)
+	translated, ok := result.(*translator.Translated)
+	if !ok {
+		return nil, fmt.Errorf("TranslationWebAPI - Translate: unexpected result type")
+	}
+
 	translation.Translation = translated.Text
 
 	return translation, nil

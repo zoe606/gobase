@@ -68,9 +68,8 @@ func (uc *UseCase) ResendVerification(ctx context.Context, email string) error {
 	}
 
 	// Queue email sending task if asynq is configured
-	if uc.asynqClient != nil {
-		// TODO: Enqueue email verification task
-	}
+	// TODO: Enqueue email verification task when asynq is available
+	_ = uc.asynqClient // Placeholder for future async email task
 
 	return nil
 }

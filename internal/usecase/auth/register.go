@@ -19,7 +19,7 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 	// Check if email exists
 	exists, err := uc.userRepo.EmailExists(ctx, input.Email)
 	if err != nil {
-		return nil, fmt.Errorf("Auth - Register - EmailExists: %w", err)
+		return nil, fmt.Errorf("auth - Register - EmailExists: %w", err)
 	}
 	if exists {
 		return nil, ErrEmailExists
@@ -29,15 +29,15 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 	role, err := uc.roleRepo.GetByName(ctx, "user")
 	if err != nil {
 		if errors.Is(err, repo.ErrNotFound) {
-			return nil, fmt.Errorf("Auth - Register: %w", ErrDefaultRoleNotFound)
+			return nil, fmt.Errorf("auth - Register: %w", ErrDefaultRoleNotFound)
 		}
-		return nil, fmt.Errorf("Auth - Register - GetRole: %w", err)
+		return nil, fmt.Errorf("auth - Register - GetRole: %w", err)
 	}
 
 	// Hash password
 	passwordHash, err := hasher.Hash(input.Password)
 	if err != nil {
-		return nil, fmt.Errorf("Auth - Register - Hash: %w", err)
+		return nil, fmt.Errorf("auth - Register - Hash: %w", err)
 	}
 
 	// Create user
@@ -50,7 +50,7 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 	}
 
 	if err := uc.userRepo.Create(ctx, user); err != nil {
-		return nil, fmt.Errorf("Auth - Register - Create: %w", err)
+		return nil, fmt.Errorf("auth - Register - Create: %w", err)
 	}
 
 	// Load role for token generation
@@ -59,12 +59,12 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 	// Generate tokens
 	tokens, err := uc.generateTokens(user)
 	if err != nil {
-		return nil, fmt.Errorf("Auth - Register - %w", err)
+		return nil, fmt.Errorf("auth - Register - %w", err)
 	}
 
 	// Store refresh token
 	if err := uc.storeRefreshToken(ctx, user.ID, tokens.RefreshToken, tokens.RefreshExpiresAt); err != nil {
-		return nil, fmt.Errorf("Auth - Register - StoreRefreshToken: %w", err)
+		return nil, fmt.Errorf("auth - Register - StoreRefreshToken: %w", err)
 	}
 
 	// Enqueue welcome email (non-blocking, best effort)

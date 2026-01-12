@@ -6,9 +6,10 @@ import (
 	"errors"
 	"time"
 
+	"go-boilerplate/pkg/logger"
+
 	"github.com/goccy/go-json"
 	"github.com/gofiber/fiber/v2"
-	"go-boilerplate/pkg/logger"
 	"golang.org/x/sync/errgroup"
 )
 

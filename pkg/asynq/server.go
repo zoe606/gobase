@@ -3,8 +3,9 @@ package asynq
 import (
 	"context"
 
-	"github.com/hibiken/asynq"
 	"go-boilerplate/pkg/logger"
+
+	"github.com/hibiken/asynq"
 )
 
 // Server wraps the Asynq server for processing tasks.

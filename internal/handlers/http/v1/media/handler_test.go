@@ -3,6 +3,7 @@ package media_test
 import (
 	"bytes"
 	"errors"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 	"time"
@@ -19,7 +20,7 @@ import (
 	"go-boilerplate/pkg/jwt"
 )
 
-func setupTestApp(t *testing.T, mockMediaUC *MockMedia) (*fiber.App, string) {
+func setupTestApp(t *testing.T, mockMediaUC *MockMedia) (app *fiber.App, token string) {
 	t.Helper()
 
 	jwtService := jwt.New("test-secret", 15*time.Minute, 24*time.Hour)
@@ -27,12 +28,13 @@ func setupTestApp(t *testing.T, mockMediaUC *MockMedia) (*fiber.App, string) {
 
 	handler := media.New(mockMediaUC, jwtService, l, 10*1024*1024) // 10MB max
 
-	app := fiber.New()
+	app = fiber.New()
 
 	handler.RegisterRoutes(app.Group("/v1"))
 
 	// Generate a valid test token
-	token, _, err := jwtService.GenerateAccessToken(1, "test@example.com", "user", nil)
+	var err error
+	token, _, err = jwtService.GenerateAccessToken(1, "test@example.com", "user", nil)
 	require.NoError(t, err)
 
 	return app, token
@@ -95,12 +97,13 @@ func TestHandler_GetByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest("GET", "/v1/media/"+tt.id, nil)
+			req := httptest.NewRequest(http.MethodGet, "/v1/media/"+tt.id, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
+			defer resp.Body.Close() //nolint:errcheck // test
 			assert.Equal(t, tt.wantStatus, resp.StatusCode)
 		})
 	}
@@ -187,12 +190,13 @@ func TestHandler_GetURL(t *testing.T) {
 				url += "?variant=" + tt.variant
 			}
 
-			req := httptest.NewRequest("GET", url, nil)
+			req := httptest.NewRequest(http.MethodGet, url, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
+			defer resp.Body.Close() //nolint:errcheck // test
 			assert.Equal(t, tt.wantStatus, resp.StatusCode)
 		})
 	}
@@ -245,12 +249,13 @@ func TestHandler_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest("DELETE", "/v1/media/"+tt.id, nil)
+			req := httptest.NewRequest(http.MethodDelete, "/v1/media/"+tt.id, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
+			defer resp.Body.Close() //nolint:errcheck // test
 			assert.Equal(t, tt.wantStatus, resp.StatusCode)
 		})
 	}
@@ -313,12 +318,13 @@ func TestHandler_GetPresignedURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest("POST", "/v1/media/presigned-url", bytes.NewBufferString(tt.body))
+			req := httptest.NewRequest(http.MethodPost, "/v1/media/presigned-url", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
+			defer resp.Body.Close() //nolint:errcheck // test
 			assert.Equal(t, tt.wantStatus, resp.StatusCode)
 		})
 	}
@@ -403,12 +409,13 @@ func TestHandler_GetByAttachable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest("GET", "/v1/media"+tt.query, nil)
+			req := httptest.NewRequest(http.MethodGet, "/v1/media"+tt.query, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
+			defer resp.Body.Close() //nolint:errcheck // test
 			assert.Equal(t, tt.wantStatus, resp.StatusCode)
 		})
 	}

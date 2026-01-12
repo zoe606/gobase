@@ -42,7 +42,7 @@ Best regards,
 The {{.AppName}} Team`
 
 // RenderWelcomeEmail renders the welcome email template with the provided data.
-func RenderWelcomeEmail(data WelcomeEmailData) (html string, text string, err error) {
+func RenderWelcomeEmail(data WelcomeEmailData) (html, text string, err error) {
 	// Render HTML
 	htmlTmpl, err := template.New("welcome_html").Parse(welcomeEmailHTML)
 	if err != nil {

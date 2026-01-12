@@ -2,7 +2,6 @@ package tx_test
 
 import (
 	"context"
-	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -65,9 +64,6 @@ func TestContextPropagation(t *testing.T) {
 		require.Nil(t, result)
 	})
 }
-
-// MockError for testing rollback scenarios.
-var errMock = errors.New("mock error")
 
 func TestTxOptions(t *testing.T) {
 	t.Parallel()

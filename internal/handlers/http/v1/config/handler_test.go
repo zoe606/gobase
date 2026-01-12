@@ -25,7 +25,7 @@ func (m *mockLogger) GetZapLogger() *zap.Logger                  { return zap.Ne
 // mockJWTService implements jwt.Service for testing.
 type mockJWTService struct{}
 
-func (m *mockJWTService) GenerateAccessToken(userID uint, email, role string, permissions []string) (string, int64, error) {
+func (m *mockJWTService) GenerateAccessToken(userID uint, email, role string, permissions []string) (token string, expiresAt int64, err error) {
 	return "test-token", time.Now().Add(time.Hour).Unix(), nil
 }
 
@@ -86,9 +86,9 @@ func TestHandler_New(t *testing.T) {
 		},
 	}
 	l := &mockLogger{}
-	jwt := &mockJWTService{}
+	jwtSvc := &mockJWTService{}
 
-	h := New(cfg, jwt, l)
+	h := New(cfg, jwtSvc, l)
 
 	require.NotNil(t, h)
 	assert.Equal(t, cfg, h.cfg)
@@ -133,9 +133,9 @@ func TestHandler_BuildConfigResponse(t *testing.T) {
 		},
 	}
 	l := &mockLogger{}
-	jwt := &mockJWTService{}
+	jwtSvc := &mockJWTService{}
 
-	h := New(cfg, jwt, l)
+	h := New(cfg, jwtSvc, l)
 	resp := h.buildConfigResponse()
 
 	// Verify non-sensitive fields

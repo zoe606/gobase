@@ -70,7 +70,19 @@ func (c *CircuitBreaker) ExecuteWithContext(ctx context.Context, fn func(context
 
 // State returns the current state of the circuit breaker.
 func (c *CircuitBreaker) State() State {
-	return State(c.cb.State())
+	// gobreaker.State is an int, our State is uint32
+	// Both represent the same 3 states (0, 1, 2), so this is safe
+	state := c.cb.State()
+	switch state {
+	case 0:
+		return StateClosed
+	case 1:
+		return StateHalfOpen
+	case 2:
+		return StateOpen
+	default:
+		return StateClosed // Fallback to closed for unknown states
+	}
 }
 
 // Name returns the name of the circuit breaker.

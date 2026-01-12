@@ -69,15 +69,15 @@ func New(
 }
 
 // WithEmailVerification sets the email verification repository and config.
-func (uc *UseCase) WithEmailVerification(repo repo.EmailVerificationRepo, cfg VerificationConfig) *UseCase {
-	uc.emailVerificationRepo = repo
+func (uc *UseCase) WithEmailVerification(evRepo repo.EmailVerificationRepo, cfg VerificationConfig) *UseCase {
+	uc.emailVerificationRepo = evRepo
 	uc.verificationConfig = cfg
 	return uc
 }
 
 // WithPasswordReset sets the password reset repository and config.
-func (uc *UseCase) WithPasswordReset(repo repo.PasswordResetRepo, cfg ResetConfig) *UseCase {
-	uc.passwordResetRepo = repo
+func (uc *UseCase) WithPasswordReset(prRepo repo.PasswordResetRepo, cfg ResetConfig) *UseCase {
+	uc.passwordResetRepo = prRepo
 	uc.resetConfig = cfg
 	return uc
 }
