@@ -14,7 +14,7 @@ require (
 	github.com/Conight/go-googletrans v0.2.4
 	github.com/ansrivas/fiberprometheus/v2 v2.7.0
 	github.com/disintegration/imaging v1.6.2
-	github.com/go-playground/validator/v10 v10.23.0
+	github.com/go-playground/validator/v10 v10.30.1
 	github.com/goccy/go-json v0.10.4
 	github.com/gofiber/fiber/v2 v2.52.9
 	github.com/gofiber/swagger v1.1.0
@@ -92,7 +92,7 @@ require (
 	github.com/firefart/nonamedreturns v1.0.5 // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
-	github.com/gabriel-vasile/mimetype v1.4.3 // indirect
+	github.com/gabriel-vasile/mimetype v1.4.12 // indirect
 	github.com/ghostiam/protogetter v0.3.9 // indirect
 	github.com/go-critic/go-critic v0.12.0 // indirect
 	github.com/go-ini/ini v1.67.0 // indirect
