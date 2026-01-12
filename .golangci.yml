@@ -117,6 +117,10 @@ linters:
           - gocognit
           - cyclop
         path: _test\.go$
+      # pkg/json is intentionally named to match stdlib for drop-in replacement
+      - linters:
+          - revive
+        path: pkg/json/
     paths:
       - bin/
       - third_party$
