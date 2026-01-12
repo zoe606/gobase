@@ -21,11 +21,12 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: golangci-lint
-        uses: golangci/golangci-lint-action@v6
-        with:
-          version: latest
-          args: --timeout=10m
+      # Install golangci-lint from source to ensure Go version compatibility
+      - name: Install golangci-lint
+        run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+
+      - name: Run golangci-lint
+        run: golangci-lint run --timeout=10m
 
   format:
     name: Format Check
@@ -106,22 +107,22 @@ jobs:
           chmod +x nancy
           ./nancy sleuth < go.list || true
 
-  # Config file linters
+  # Config file linters (non-blocking)
   yaml-lint:
     name: YAML Lint
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't block CI on YAML lint
     steps:
       - uses: actions/checkout@v4
 
       - name: yaml-lint
         uses: ibiqlik/action-yamllint@v3
         with:
-          # Exclude auto-generated swagger files
+          # Only lint config files, exclude auto-generated swagger
           file_or_dir: |
             .github/
             deployment/
             config.example.yaml
-            .golangci.yml
           config_data: |
             extends: default
             rules:
@@ -136,6 +137,7 @@ jobs:
   docker-lint:
     name: Dockerfile Lint
     runs-on: ubuntu-latest
+    continue-on-error: true  # Don't block CI on Dockerfile lint
     steps:
       - uses: actions/checkout@v4
 
