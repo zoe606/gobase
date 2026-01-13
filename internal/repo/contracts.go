@@ -78,4 +78,13 @@ type (
 		Update(ctx context.Context, profile *entity.Profile) error
 		Upsert(ctx context.Context, profile *entity.Profile) error
 	}
+
+	// ArticleRepo defines Article repository operations.
+	ArticleRepo interface {
+		Create(ctx context.Context, article *entity.Article) error
+		GetByID(ctx context.Context, id uint) (*entity.Article, error)
+		List(ctx context.Context, limit, offset int) ([]*entity.Article, int64, error)
+		Update(ctx context.Context, article *entity.Article) error
+		Delete(ctx context.Context, id uint) error
+	}
 )

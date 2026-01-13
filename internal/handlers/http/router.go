@@ -17,6 +17,7 @@ import (
 	"go-boilerplate/config"
 	_ "go-boilerplate/docs" // Swagger docs.
 	"go-boilerplate/internal/handlers/http/middleware"
+	articlehandler "go-boilerplate/internal/handlers/http/v1/article"
 	"go-boilerplate/internal/handlers/http/v1/auth"
 	confighandler "go-boilerplate/internal/handlers/http/v1/config"
 	mediahandler "go-boilerplate/internal/handlers/http/v1/media"
@@ -40,11 +41,11 @@ type HealthChecker interface {
 //	@version     1.0
 //	@host        localhost:8080
 //	@BasePath    /v1
-func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker) {
+func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker) {
 	setupMiddleware(app, cfg, l)
 	setupOptionalFeatures(app, cfg)
 	setupHealthEndpoints(app, healthChecker)
-	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, jwtService, l)
+	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, jwtService, l)
 }
 
 // setupMiddleware configures global middleware chain.
@@ -113,7 +114,7 @@ func setupHealthEndpoints(app *fiber.App, checker HealthChecker) {
 }
 
 // setupAPIRoutes configures API v1 routes.
-func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, jwtService jwt.Service, l logger.Interface) {
+func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface) {
 	apiV1Group := app.Group("/v1")
 
 	translationHandler := translation.New(translationUC, l)
@@ -130,4 +131,7 @@ func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Tr
 
 	profHandler := profilehandler.New(profileUC, jwtService, l)
 	profHandler.RegisterRoutes(apiV1Group)
+
+	artHandler := articlehandler.New(articleUC, l)
+	artHandler.RegisterRoutes(apiV1Group)
 }

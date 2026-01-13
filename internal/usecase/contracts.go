@@ -4,6 +4,7 @@ package usecase
 import (
 	"context"
 
+	articledto "go-boilerplate/internal/dto/article"
 	authdto "go-boilerplate/internal/dto/auth"
 	mediadto "go-boilerplate/internal/dto/media"
 	profiledto "go-boilerplate/internal/dto/profile"
@@ -53,5 +54,14 @@ type (
 	Profile interface {
 		GetProfile(ctx context.Context, userID uint) (*profiledto.ProfileResponse, error)
 		UpdateProfile(ctx context.Context, userID uint, req profiledto.UpdateProfileRequest) (*profiledto.ProfileResponse, error)
+	}
+
+	// Article defines Article use case operations.
+	Article interface {
+		Create(ctx context.Context, req articledto.CreateRequest) (*articledto.Response, error)
+		GetByID(ctx context.Context, id uint) (*articledto.Response, error)
+		List(ctx context.Context, req articledto.ListRequest) (*articledto.ListResponse, error)
+		Update(ctx context.Context, id uint, req articledto.UpdateRequest) (*articledto.Response, error)
+		Delete(ctx context.Context, id uint) error
 	}
 )

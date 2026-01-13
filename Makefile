@@ -232,6 +232,42 @@ clean: ## Clean build artifacts
 generate: ## Generate mocks and other code
 	go generate ./...
 
+.PHONY: gen
+gen: ## Generate code from migration (usage: make gen MIGRATION=000010 LAYERS=entity,dto,repo)
+	@if [ -z "$(MIGRATION)" ]; then \
+		echo "Usage: make gen MIGRATION=000010_create_profiles.up.sql [LAYERS=entity,dto,repo]"; \
+		exit 1; \
+	fi
+	go run ./pkg/codegen/cmd/codegen -m $(MIGRATION) -l $(or $(LAYERS),entity,dto,repo)
+
+.PHONY: gen-entity
+gen-entity: ## Generate entity only from migration (usage: make gen-entity MIGRATION=000010)
+	@if [ -z "$(MIGRATION)" ]; then \
+		echo "Usage: make gen-entity MIGRATION=000010"; \
+		exit 1; \
+	fi
+	go run ./pkg/codegen/cmd/codegen -m $(MIGRATION) -l entity
+
+.PHONY: gen-full
+gen-full: ## Generate all layers from migration (usage: make gen-full MIGRATION=000010)
+	@if [ -z "$(MIGRATION)" ]; then \
+		echo "Usage: make gen-full MIGRATION=000010"; \
+		exit 1; \
+	fi
+	go run ./pkg/codegen/cmd/codegen -m $(MIGRATION) -l entity,dto,repo,usecase,handler
+
+##@ Project Setup
+
+.PHONY: rename
+rename: ## Rename project module and app name (usage: make rename MODULE=github.com/org/name APP_NAME=myapp)
+	@if [ -z "$(MODULE)" ] || [ -z "$(APP_NAME)" ]; then \
+		echo "Usage: make rename MODULE=github.com/org/project APP_NAME=myapp"; \
+		exit 1; \
+	fi
+	go run ./pkg/tools/rename -module=$(MODULE) -app-name=$(APP_NAME)
+	go mod tidy
+	@echo "Rename complete. Run 'make build' to verify."
+
 ##@ Git Hooks
 
 .PHONY: install-hooks
