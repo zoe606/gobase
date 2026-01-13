@@ -1,433 +1,644 @@
-![Go Clean Template](docs/img/logo.svg)
+# Go Clean Architecture Boilerplate
 
-# Go Clean template
+Production-ready REST API boilerplate with Clean Architecture, JWT authentication, media uploads, and background workers.
 
-[🇨🇳 中文](README_CN.md)
-[🇷🇺 RU](README_RU.md)
+[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![Fiber](https://img.shields.io/badge/Fiber-v2-00ACD7?logo=go)](https://gofiber.io/)
+[![GORM](https://img.shields.io/badge/GORM-ORM-00ADD8)](https://gorm.io/)
+[![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-85EA2D?logo=swagger)](https://swagger.io/)
 
-Clean Architecture template for Golang services
+## Features
 
-[![Release](https://img.shields.io/github/v/release/evrone/go-clean-template.svg)](https://github.com/evrone/go-clean-template/releases/)
-[![License](https://img.shields.io/badge/License-MIT-success)](https://github.com/evrone/go-clean-template/blob/master/LICENSE)
-[![Go Report Card](https://goreportcard.com/badge/github.com/evrone/go-clean-template)](https://goreportcard.com/report/github.com/evrone/go-clean-template)
-[![codecov](https://codecov.io/gh/evrone/go-clean-template/branch/master/graph/badge.svg?token=XE3E0X3EVQ)](https://codecov.io/gh/evrone/go-clean-template)
+| Feature | Description |
+|---------|-------------|
+| **Authentication** | JWT access/refresh tokens, email verification, password reset, roles & permissions |
+| **Media Management** | S3/Local storage, polymorphic attachments, image processing, presigned URLs |
+| **Articles** | Full CRUD with draft/publish workflow, cover images, SEO slugs |
+| **User Profiles** | Avatar uploads, extended user data |
+| **Translation** | Google Translate API integration with history |
+| **Background Jobs** | Asynq workers for emails, image processing |
+| **Code Generation** | Scaffold entities, DTOs, repos, usecases, handlers from migrations |
 
-[![Web Framework](https://img.shields.io/badge/Fiber-Web%20Framework-blue)](https://github.com/gofiber/fiber)
-[![API Documentation](https://img.shields.io/badge/Swagger-API%20Documentation-blue)](https://github.com/swaggo/swag)
-[![Validation](https://img.shields.io/badge/Validator-Data%20Integrity-blue)](https://github.com/go-playground/validator)
-[![JSON Handling](https://img.shields.io/badge/Go--JSON-Fast%20Serialization-blue)](https://github.com/goccy/go-json)
-[![Query Builder](https://img.shields.io/badge/Squirrel-SQL%20Query%20Builder-blue)](https://github.com/Masterminds/squirrel)
-[![Database Migrations](https://img.shields.io/badge/Migrations-Seamless%20Schema%20Updates-blue)](https://github.com/golang-migrate/migrate)
-[![Logging](https://img.shields.io/badge/ZeroLog-Structured%20Logging-blue)](https://github.com/rs/zerolog)
-[![Metrics](https://img.shields.io/badge/Prometheus-Metrics%20Integration-blue)](https://github.com/ansrivas/fiberprometheus)
-[![Testing](https://img.shields.io/badge/Testify-Testing%20Framework-blue)](https://github.com/stretchr/testify)
-[![Mocking](https://img.shields.io/badge/Mock-Mocking%20Library-blue)](https://go.uber.org/mock)
+## Quick Start
 
-## Overview
+```bash
+# 1. Clone and setup environment
+git clone <repository-url>
+cd go-boilerplate
+cp .env.example .env
 
-The purpose of the template is to show:
+# 2. Start infrastructure (PostgreSQL, Redis, MinIO)
+make docker-services
 
-- how to organize a project and prevent it from turning into spaghetti code
-- where to store business logic so that it remains independent, clean, and extensible
-- how not to lose control when a microservice grows
-
-Using the principles of Robert Martin (aka Uncle Bob).
-
-[Go-clean-template](https://evrone.com/go-clean-template?utm_source=github&utm_campaign=go-clean-template) is created &
-supported by [Evrone](https://evrone.com/?utm_source=github&utm_campaign=go-clean-template).
-
-This template implements three types of servers:
-
-- AMQP RPC (based on RabbitMQ as [transport](https://github.com/rabbitmq/amqp091-go)
-  and [Request-Reply pattern](https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html))
-- MQ RPC (based on NATS as [transport](https://github.com/nats-io/nats.go)
-  and [Request-Reply pattern](https://www.enterpriseintegrationpatterns.com/patterns/messaging/RequestReply.html))
-- gRPC ([gRPC](https://grpc.io/) framework based on protobuf)
-- REST API ([Fiber](https://github.com/gofiber/fiber) framework)
-
-## Content
-
-- [Quick start](#quick-start)
-- [Project structure](#project-structure)
-- [Dependency Injection](#dependency-injection)
-- [Clean Architecture](#clean-architecture)
-
-## Quick start
-
-### Local development
-
-```sh
-# Postgres, RabbitMQ, NATS
-make compose-up
-# Run app with migrations
+# 3. Run the application
 make run
+
+# 4. Open Swagger documentation
+# http://localhost:8080/swagger
 ```
 
-### Integration tests (can be run in CI)
-
-```sh
-# DB, app + migrations, integration tests
-make compose-up-integration-test
+**Verify installation:**
+```bash
+curl http://localhost:8080/healthz
+# {"status":"ok"}
 ```
 
-### Full docker stack with reverse proxy
+## Architecture
 
-```sh
-make compose-up-all 
+### System Overview
+
+```mermaid
+flowchart TB
+    subgraph Client
+        Browser[Browser/Mobile]
+    end
+
+    subgraph "Go Application"
+        subgraph "HTTP Layer"
+            Fiber[Fiber Server]
+            MW[Middleware<br/>JWT, CORS, RateLimit]
+            Handlers[Handlers]
+        end
+
+        subgraph "Business Layer"
+            UseCases[Use Cases]
+        end
+
+        subgraph "Data Layer"
+            Repos[Repositories]
+        end
+    end
+
+    subgraph "Infrastructure"
+        PG[(PostgreSQL)]
+        Redis[(Redis)]
+        S3[(MinIO/S3)]
+    end
+
+    subgraph "Background"
+        Worker[Asynq Worker]
+        Queue[Task Queue]
+    end
+
+    Browser --> Fiber
+    Fiber --> MW --> Handlers
+    Handlers --> UseCases
+    UseCases --> Repos
+    Repos --> PG
+    UseCases --> Redis
+    UseCases --> S3
+    UseCases --> Queue
+    Queue --> Worker
+    Worker --> PG
+    Worker --> S3
 ```
 
-Check services:
+### Clean Architecture Layers
 
-- AMQP RPC:
-  - URL: `amqp://guest:guest@127.0.0.1:5672/`
-  - Client Exchange: `rpc_client`
-  - Server Exchange: `rpc_server`
-- NATS RPC:
-  - URL: `nats://guest:guest@127.0.0.1:4222/`
-  - Server Exchange: `rpc_server`
-- REST API:
-  - http://app.lvh.me/healthz | http://127.0.0.1:8080/healthz
-  - http://app.lvh.me/metrics | http://127.0.0.1:8080/metrics
-  - http://app.lvh.me/swagger | http://127.0.0.1:8080/swagger
-- gRPC:
-  - URL: `tcp://grpc.lvh.me:8081` | `tcp://127.0.0.1:8081`
-  - [v1/translation.history.proto](docs/proto/v1/translation.history.proto)
-- PostgreSQL:
-  - `postgres://user:myAwEsOm3pa55@w0rd@127.0.0.1:5432/db`
-- RabbitMQ:
-  - http://rabbitmq.lvh.me | http://127.0.0.1:15672
-  - Credentials: `guest` / `guest`
-- NATS monitoring:
-  - http://nats.lvh.me | http://127.0.0.1:8222/
-  - Credentials: `guest` / `guest`
-
-## Project structure
-
-### `cmd/app/main.go`
-
-Configuration and logger initialization. Then the main function "continues" in
-`internal/app/app.go`.
-
-### `config`
-
-The twelve-factor app stores config in environment variables (often shortened to `env vars` or `env`). Env vars are easy
-to change between deploys without changing any code; unlike config files, there is little chance of them being checked
-into the code repo accidentally; and unlike custom config files, or other config mechanisms such as Java System
-Properties, they are a language- and OS-agnostic standard.
-
-Config: [config.go](config/config.go)
-
-Example: [.env.example](.env.example)
-
-[docker-compose.yml](docker-compose.yml) uses `env` variables to configure services.
-
-### `docs`
-
-Swagger documentation. Auto-generated by [swag](https://github.com/swaggo/swag) library.
-You don't need to correct anything by yourself.
-
-#### `docs/proto`
-
-Protobuf files. They are used to generate Go code for gRPC services.
-The proto files are also used to generate documentation for gRPC services.
-You don't need to correct anything by yourself.
-
-### `integration-test`
-
-Integration tests.
-They are launched as a separate container, next to the application container.
-
-### `internal/app`
-
-There is always one _Run_ function in the `app.go` file, which "continues" the _main_ function.
-
-This is where all the main objects are created.
-Dependency injection occurs through the "New ..." constructors (see Dependency Injection).
-This technique allows us to layer the application using the [Dependency Injection](#dependency-injection) principle.
-This makes the business logic independent from other layers.
-
-Next, we start the server and wait for signals in _select_ for graceful completion.
-If `app.go` starts to grow, you can split it into multiple files.
-
-For a large number of injections, [wire](https://github.com/google/wire) can be used.
-
-The `migrate.go` file is used for database auto migrations.
-It is included if an argument with the _migrate_ tag is specified.
-For example:
-
-```sh
-go run -tags migrate ./cmd/app
+```
+┌─────────────────────────────────────────────────────────────┐
+│                       HTTP Request                          │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  HANDLERS (internal/handlers/http/)                         │
+│  • Parse request & validate input                           │
+│  • Call usecase methods                                     │
+│  • Return JSON responses                                    │
+│  • Swagger annotations                                      │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  USE CASES (internal/usecase/)                              │
+│  • Business logic & rules                                   │
+│  • Orchestrate repositories                                 │
+│  • Return domain errors                                     │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  REPOSITORIES (internal/repo/)                              │
+│  • persistent/ - Database operations (GORM)                 │
+│  • storage/ - File storage (S3, Local)                      │
+│  • webapi/ - External APIs (Email, Translation)             │
+└─────────────────────────┬───────────────────────────────────┘
+                          ▼
+┌─────────────────────────────────────────────────────────────┐
+│  ENTITIES (internal/entity/)                                │
+│  • GORM domain models                                       │
+│  • Database schema representation                           │
+└─────────────────────────────────────────────────────────────┘
 ```
 
-### `internal/controller`
+### Request Flow Example
 
-Server handler layer (MVC controllers). The template shows 3 servers:
+```
+POST /v1/auth/login
+        │
+        ▼
+┌───────────────┐     ┌──────────────┐     ┌─────────────┐
+│ auth/login.go │ ──▶ │ auth/Login() │ ──▶ │ UserRepo    │
+│   (handler)   │     │  (usecase)   │     │ GetByEmail()│
+└───────────────┘     └──────────────┘     └─────────────┘
+        │                    │                    │
+        │                    ▼                    ▼
+        │             ┌──────────────┐     ┌───────────┐
+        │             │ JWT Service  │     │ PostgreSQL│
+        │             │ GenerateToken│     └───────────┘
+        │             └──────────────┘
+        ▼
+   JSON Response
+   {access_token, refresh_token, user}
+```
 
-- AMQP RPC (based on RabbitMQ as transport)
-- gRPC ([gRPC](https://grpc.io/) framework based on protobuf)
-- REST API ([Fiber](https://github.com/gofiber/fiber) framework)
+## Project Structure
 
-Server routers are written in the same style:
+```
+├── cmd/
+│   ├── app/                    # HTTP server entrypoint
+│   └── worker/                 # Background worker entrypoint
+├── config/                     # Configuration (Viper)
+├── internal/
+│   ├── app/                    # DI container & bootstrap
+│   ├── dto/                    # Request/Response DTOs
+│   │   ├── auth/
+│   │   ├── media/
+│   │   ├── article/
+│   │   └── profile/
+│   ├── entity/                 # GORM domain models
+│   ├── handlers/http/          # Fiber HTTP handlers
+│   │   ├── middleware/
+│   │   └── v1/
+│   │       ├── auth/
+│   │       ├── media/
+│   │       ├── article/
+│   │       └── profile/
+│   ├── repo/                   # Repository implementations
+│   │   ├── persistent/         # PostgreSQL repos
+│   │   ├── storage/            # S3/Local file storage
+│   │   └── webapi/             # External APIs
+│   ├── usecase/                # Business logic
+│   │   ├── auth/
+│   │   ├── media/
+│   │   ├── article/
+│   │   └── profile/
+│   └── worker/                 # Asynq task handlers
+├── pkg/                        # Reusable packages (20+)
+├── migrations/                 # SQL migration files
+├── docs/                       # Swagger documentation
+└── deployment/docker/          # Docker configuration
+```
 
-- Handlers are grouped by area of application (by a common basis)
-- For each group, its own router structure is created, the methods of which process paths
-- The structure of the business logic is injected into the router structure, which will be called by the handlers
+### SOLID File Organization
 
-#### `internal/controller/amqp_rpc`
+Each usecase method gets its own file with a corresponding test file:
 
-Simple RPC versioning.
-For v2, we will need to add the `amqp_rpc/v2` folder with the same content.
-And in the file `internal/controller/amqp_rpc/router.go` add the line:
+```
+internal/usecase/auth/              internal/handlers/http/v1/auth/
+├── auth.go         (struct+New)    ├── handler.go      (struct+routes)
+├── errors.go       (domain errors) ├── login.go        (POST /login)
+├── login.go        (Login method)  ├── register.go     (POST /register)
+├── login_test.go                   ├── logout.go       (POST /logout)
+├── register.go     (Register)      ├── refresh.go      (POST /refresh)
+├── register_test.go                ├── me.go           (GET /me)
+├── logout.go       (Logout)        ├── handler_test.go
+├── refresh.go      (Refresh)       └── mocks_test.go
+└── mocks_test.go
+```
+
+## Configuration
+
+### Environment Variables
+
+| Variable | Description | Default |
+|----------|-------------|---------|
+| **Application** |
+| `APP_NAME` | Application name | `go-boilerplate` |
+| `APP_ENV` | Environment (development/production) | `development` |
+| **HTTP Server** |
+| `HTTP_PORT` | Server port | `8080` |
+| `HTTP_READ_TIMEOUT` | Read timeout | `5s` |
+| `HTTP_WRITE_TIMEOUT` | Write timeout | `5s` |
+| **Database** |
+| `POSTGRES_HOST` | PostgreSQL host | `localhost` |
+| `POSTGRES_PORT` | PostgreSQL port | `5432` |
+| `POSTGRES_USER` | Database user | `user` |
+| `POSTGRES_PASSWORD` | Database password | - |
+| `POSTGRES_DB` | Database name | `db` |
+| **Redis** |
+| `REDIS_HOST` | Redis host | `localhost` |
+| `REDIS_PORT` | Redis port | `6379` |
+| **JWT** |
+| `JWT_SECRET_KEY` | JWT signing key (required in production) | - |
+| `JWT_ACCESS_EXPIRY` | Access token expiry | `15m` |
+| `JWT_REFRESH_EXPIRY` | Refresh token expiry | `7d` |
+| **Storage** |
+| `STORAGE_DRIVER` | Storage driver (local/s3) | `local` |
+| `S3_ENDPOINT` | S3/MinIO endpoint | - |
+| `S3_ACCESS_KEY` | S3 access key | - |
+| `S3_SECRET_KEY` | S3 secret key | - |
+| `S3_BUCKET` | S3 bucket name | - |
+| **Email** |
+| `EMAIL_PROVIDER` | Email provider (resend/noop) | `noop` |
+| `EMAIL_API_KEY` | Email API key | - |
+| `EMAIL_FROM` | From email address | - |
+
+See `.env.example` for the complete list.
+
+### Production Checklist
+
+- [ ] Set `APP_ENV=production`
+- [ ] Set a secure `JWT_SECRET_KEY` (min 32 characters)
+- [ ] Configure proper CORS origins (`CORS_ALLOW_ORIGINS`)
+- [ ] Set up S3 storage (`STORAGE_DRIVER=s3`)
+- [ ] Configure email provider (`EMAIL_PROVIDER=resend`)
+- [ ] Disable Swagger (`SWAGGER_ENABLED=false`)
+- [ ] Set proper rate limits
+
+## API Endpoints
+
+### Authentication
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/v1/auth/register` | No | Register new user |
+| POST | `/v1/auth/login` | No | Login, get JWT tokens |
+| POST | `/v1/auth/logout` | Yes | Logout, invalidate refresh token |
+| POST | `/v1/auth/refresh` | No | Refresh access token |
+| GET | `/v1/auth/me` | Yes | Get current user |
+| POST | `/v1/auth/verify-email` | No | Verify email with token |
+| POST | `/v1/auth/resend-verification` | No | Resend verification email |
+| POST | `/v1/auth/forgot-password` | No | Request password reset |
+| POST | `/v1/auth/reset-password` | No | Reset password with token |
+
+### Media
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/v1/media/upload` | Yes | Upload file |
+| GET | `/v1/media/presigned-url` | Yes | Get presigned upload URL |
+| GET | `/v1/media/:id` | Yes | Get media by ID |
+| GET | `/v1/media/:id/url` | Yes | Get media URL |
+| DELETE | `/v1/media/:id` | Yes | Delete media |
+| GET | `/v1/media/attachable/:type/:id` | Yes | Get media by attachable |
+
+### Articles
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/v1/articles` | Yes | Create article |
+| GET | `/v1/articles` | No | List articles (paginated) |
+| GET | `/v1/articles/:id` | No | Get article by ID |
+| PUT | `/v1/articles/:id` | Yes | Update article |
+| DELETE | `/v1/articles/:id` | Yes | Delete article |
+
+### Profile
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| GET | `/v1/profile` | Yes | Get current user profile |
+| PUT | `/v1/profile` | Yes | Update profile |
+
+### Translation
+
+| Method | Endpoint | Auth | Description |
+|--------|----------|------|-------------|
+| POST | `/v1/translate` | No | Translate text |
+| GET | `/v1/translate/history` | No | Get translation history |
+
+### Health & Monitoring
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| GET | `/healthz` | Liveness probe |
+| GET | `/readyz` | Readiness probe (checks DB/Redis) |
+| GET | `/swagger/*` | Swagger UI (when enabled) |
+| GET | `/metrics` | Prometheus metrics (when enabled) |
+
+## Package Reference
+
+Reusable packages in `pkg/`:
+
+| Package | Purpose | Example |
+|---------|---------|---------|
+| `apperror` | Standardized error codes | `apperror.ErrNotFound.WithMessage("User not found")` |
+| `response` | HTTP response helpers | `response.OK(c, data)` |
+| `pagination` | Query pagination | `params.Apply(db, []string{"created_at"})` |
+| `tx` | Transaction management | `txHelper.RunInTx(ctx, func(txCtx) error {...})` |
+| `cache` | Caching abstraction | `cache.Remember(ctx, key, ttl, &dest, fn)` |
+| `jwt` | JWT token service | `jwtSvc.GenerateAccessToken(userID, email, role, perms)` |
+| `hasher` | Password hashing (bcrypt) | `hasher.Hash(password)` / `hasher.Check(password, hash)` |
+| `logger` | Structured logging (Zap) | `l.Info("message %s", arg)` |
+| `resilience` | Circuit breaker | `cb.Execute(func() (any, error) {...})` |
+| `asynctx` | Async job context | `asynctx.NewJobContext(5 * time.Minute)` |
+| `audit` | Audit logging | `logger.LogCreate(ctx, "user", id, &userID, values)` |
+| `asynq` | Task queue client/server | `client.EnqueueTask(task)` |
+| `postgres` | Database connection | `postgres.New(dsn, opts...)` |
+| `redis` | Redis client | `redis.New(cfg)` |
+| `httpserver` | HTTP server lifecycle | `server.Start()` / `server.Shutdown()` |
+| `json` | Fast JSON (goccy) | `json.Marshal(v)` / `json.Unmarshal(data, v)` |
+| `codegen` | Code scaffolding | `make gen-full MIGRATION=000010` |
+
+## Patterns & Conventions
+
+### Error Handling
 
 ```go
-routes := make(map[string]server.CallHandler)
-
-{
-    v1.NewTranslationRoutes(routes, t, l)
+// Repository layer - return sentinel errors
+if errors.Is(err, gorm.ErrRecordNotFound) {
+    return nil, repo.ErrNotFound
 }
 
-{
-    v2.NewTranslationRoutes(routes, t, l)
+// UseCase layer - return domain errors
+if errors.Is(err, repo.ErrNotFound) {
+    return nil, ErrInvalidCredentials  // Don't expose "user not found"
+}
+
+// Handler layer - map to HTTP responses
+if errors.Is(err, auth.ErrInvalidCredentials) {
+    return response.Unauthorized(c, "Invalid email or password")
 }
 ```
 
-#### `internal/controller/grpc`
-
-Simple gRPC versioning.
-For v2, we will need to add the `grpc/v2` folder with the same content.
-Also add the `v2` folder to the proto files in `docs/proto`.
-And in the file `internal/controller/grpc/router.go` add the line:
+### Validation
 
 ```go
-{
-    v1.NewTranslationRoutes(app, t, l)
+// DTO with validation tags
+type RegisterRequest struct {
+    Email    string `json:"email" validate:"required,email"`
+    Password string `json:"password" validate:"required,min=8"`
+    Name     string `json:"name" validate:"required,min=2,max=100"`
 }
 
-{
-    v2.NewTranslationRoutes(app, t, l)
+// Handler validates input
+if err := h.validator.Struct(req); err != nil {
+    return response.ValidationError(c, parseValidationErrors(err))
 }
-
-reflection.Register(app)
 ```
 
-#### `internal/controller/http`
-
-Simple REST versioning.
-For v2, we will need to add the `http/v2` folder with the same content.
-And in the file `internal/controller/http/router.go` add the line:
+### Transactions
 
 ```go
-apiV1Group := app.Group("/v1")
+err := txHelper.RunInTx(ctx, func(txCtx context.Context) error {
+    // All operations use txCtx - automatic rollback on error
+    if err := userRepo.Create(txCtx, user); err != nil {
+        return err
+    }
+    if err := profileRepo.Create(txCtx, profile); err != nil {
+        return err  // Rolls back user creation too
+    }
+    return nil  // Commits transaction
+})
+```
+
+### Response Format
+
+```json
+// Success
 {
-	v1.NewTranslationRoutes(apiV1Group, t, l)
+  "success": true,
+  "data": { "id": 1, "email": "user@example.com" },
+  "request_id": "abc-123"
 }
-apiV2Group := app.Group("/v2")
+
+// Error
 {
-	v2.NewTranslationRoutes(apiV2Group, t, l)
+  "success": false,
+  "error": {
+    "code": "VALIDATION_ERROR",
+    "message": "Invalid input",
+    "details": { "email": "must be a valid email" }
+  },
+  "request_id": "abc-123"
+}
+
+// Paginated List
+{
+  "success": true,
+  "data": [{ "id": 1 }, { "id": 2 }],
+  "meta": {
+    "page": 1,
+    "limit": 20,
+    "total": 100,
+    "total_pages": 5
+  }
 }
 ```
 
-Instead of [Fiber](https://github.com/gofiber/fiber), you can use any other http framework.
+## Adding New Features
 
-In `router.go` and above the handler methods, there are comments for generating swagger documentation
-using [swag](https://github.com/swaggo/swag).
+### Step-by-Step Guide
 
-### `internal/entity`
+**Example: Adding a "Comments" feature**
 
-Entities of business logic (models) can be used in any layer.
-There can also be methods, for example, for validation.
+**1. Create migration:**
+```bash
+make migrate-create name=create_comments
+```
 
-### `internal/usecase`
+Edit `migrations/000012_create_comments.up.sql`:
+```sql
+CREATE TABLE comments (
+    id BIGSERIAL PRIMARY KEY,
+    article_id BIGINT NOT NULL REFERENCES articles(id) ON DELETE CASCADE,
+    user_id BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    content TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+```
 
-Business logic.
+**2. Generate scaffolding:**
+```bash
+make gen-full MIGRATION=000012
+```
 
-- Methods are grouped by area of application (on a common basis)
-- Each group has its own structure
-- One file - one structure
+This generates:
+- `internal/entity/comment.go`
+- `internal/dto/comment/request.go` & `response.go`
+- `internal/repo/persistent/comment.go`
+- `internal/usecase/comment/` (with SOLID file structure)
+- `internal/handlers/http/v1/comment/`
 
-Repositories, webapi, rpc, and other business logic structures are injected into business logic structures
-(see [Dependency Injection](#dependency-injection)).
+**3. Wire up dependencies** in `internal/app/app.go`:
+```go
+// In repositories struct
+comments repo.CommentRepo
 
-#### `internal/repo/persistent`
+// In initRepositories()
+comments: persistent.NewCommentRepo(db),
 
-A repository is an abstract storage (database) that business logic works with.
+// In usecases struct
+comments usecase.Comment
 
-#### `internal/repo/webapi`
+// In initUseCases()
+comments: comment.New(repos.comments, l),
+```
 
-It is an abstract web API that business logic works with.
-For example, it could be another microservice that business logic accesses via the REST API.
-The package name changes depending on the purpose.
+**4. Register routes** in `internal/handlers/http/router.go`:
+```go
+commentHandler := comment.New(uc.comments, jwtService, l)
+commentHandler.RegisterRoutes(apiV1)
+```
 
-### `pkg/rabbitmq`
+**5. Run quality checks:**
+```bash
+make check-all
+```
 
-RabbitMQ RPC pattern:
+## Background Workers
 
-- There is no routing inside RabbitMQ
-- Exchange fanout is used, to which 1 exclusive queue is bound, this is the most productive config
-- Reconnect on the loss of connection
+### Running the Worker
 
-## Dependency Injection
+```bash
+# Development
+make run-worker
 
-In order to remove the dependence of business logic on external packages, dependency injection is used.
+# With Docker (full stack)
+make docker-dev
+```
 
-For example, through the New constructor, we inject the dependency into the structure of the business logic.
-This makes the business logic independent (and portable).
-We can override the implementation of the interface without making changes to the `usecase` package.
+### Available Tasks
+
+| Task Type | Handler | Description |
+|-----------|---------|-------------|
+| `email:notification` | `email.go` | Send transactional emails |
+| `image:processing` | `image_processing.go` | Generate thumbnails, resize |
+
+### Creating Custom Tasks
+
+1. Define task type in `internal/worker/tasks/types.go`
+2. Create handler in `internal/worker/tasks/`
+3. Register in `internal/worker/worker.go`
 
 ```go
-package usecase
+// 1. Define task type
+const TypeMyTask = "my:task"
 
-import (
-// Nothing!
-)
-
-type Repository interface {
-	Get()
+// 2. Create handler
+func HandleMyTask(ctx context.Context, t *asynq.Task) error {
+    var payload MyTaskPayload
+    if err := json.Unmarshal(t.Payload(), &payload); err != nil {
+        return err
+    }
+    // Process task...
+    return nil
 }
 
-type UseCase struct {
-	repo Repository
-}
-
-func New(r Repository) *UseCase {
-	return &UseCase{
-		repo: r,
-	}
-}
-
-func (uc *UseCase) Do() {
-	uc.repo.Get()
-}
+// 3. Register handler
+mux.HandleFunc(tasks.TypeMyTask, tasks.HandleMyTask)
 ```
 
-It will also allow us to do auto-generation of mocks (for example with [mockery](https://github.com/vektra/mockery)) and
-easily write unit tests.
+## Testing
 
-> We are not tied to specific implementations in order to always be able to change one component to another.
-> If the new component implements the interface, nothing needs to be changed in the business logic.
+### Running Tests
 
-## Clean Architecture
+```bash
+# Unit tests with coverage
+make test
 
-### Key idea
+# Integration tests (requires Docker)
+make test-integration
 
-Programmers realize the optimal architecture for an application after most of the code has been written.
-
-> A good architecture allows decisions to be delayed to as late as possible.
-
-### The main principle
-
-Dependency Inversion (the same one from SOLID) is the principle of dependency injection.
-The direction of dependencies goes from the outer layer to the inner layer.
-Due to this, business logic and entities remain independent from other parts of the system.
-
-So, the application is divided into 2 layers, internal and external:
-
-1. **Business logic** (Go standard library).
-2. **Tools** (databases, servers, message brokers, any other packages and frameworks).
-
-![Clean Architecture](docs/img/layers-1.png)
-
-**The inner layer** with business logic should be clean. It should:
-
-- Not have package imports from the outer layer.
-- Use only the capabilities of the standard library.
-- Make calls to the outer layer through the interface (!).
-
-The business logic doesn't know anything about Postgres or a specific web API.
-Business logic has an interface for working with an _abstract_ database or _abstract_ web API.
-
-**The outer layer** has other limitations:
-
-- All components of this layer are unaware of each other's existence. How to call another from one tool? Not directly,
-  only through the inner layer of business logic.
-- All calls to the inner layer are made through the interface (!).
-- Data is transferred in a format that is convenient for business logic (`internal/entity`).
-
-For example, you need to access the database from HTTP (controller).
-Both HTTP and database are in the outer layer, which means they know nothing about each other.
-The communication between them is carried out through `usecase` (business logic):
-
-```
-    HTTP > usecase
-           usecase > repository (Postgres)
-           usecase < repository (Postgres)
-    HTTP < usecase
+# Generate HTML coverage report
+make coverage
 ```
 
-The symbols > and < show the intersection of layer boundaries through Interfaces.
-The same is shown in the picture:
+### Test Organization
 
-![Example](docs/img/example-http-db.png)
+- Each usecase method has its own test file: `login_test.go`
+- Mocks are generated with `go generate ./...`
+- Handler tests use Fiber's `app.Test()` method
 
-Or more complex business logic:
-
-```
-    HTTP > usecase
-           usecase > repository
-           usecase < repository
-           usecase > webapi
-           usecase < webapi
-           usecase > RPC
-           usecase < RPC
-           usecase > repository
-           usecase < repository
-    HTTP < usecase
+```bash
+# Regenerate mocks after interface changes
+make generate
 ```
 
-### Layers
+## Deployment
 
-![Example](docs/img/layers-2.png)
+### Docker Commands
 
-### Clean Architecture Terminology
+```bash
+# Start infrastructure only (for local dev with Air)
+make docker-services
 
-- **Entities** are structures that business logic operates on.
-  They are located in the `internal/entity` folder.
-  In MVC terms, entities are models.
-- **Use Cases** is business logic located in `internal/usecase`.
+# Start full stack (DB + Redis + App + Worker)
+make docker-dev
 
-The layer with which business logic directly interacts is usually called the _infrastructure_ layer.
-These can be repositories `internal/usecase/repo`, external webapi `internal/usecase/webapi`, any pkg, and other
-microservices.
-In the template, the _infrastructure_ packages are located inside `internal/usecase`.
+# Rebuild and start
+make docker-dev-build
 
-You can choose how to call the entry points as you wish. The options are:
+# View logs
+make docker-logs
 
-- controller (in our case)
-- delivery
-- transport
-- gateways
-- entrypoints
-- primary
-- input
+# Stop all containers
+make docker-stop
+```
 
-### Additional layers
+### Production Deployment
 
-The classic version
-of [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html) was designed for
-building large monolithic applications and has 4 layers.
+```bash
+# Build production binary
+make build
 
-In the original version, the outer layer is divided into two more, which also have an inversion of dependencies
-to each other (directed inward) and communicate through interfaces.
+# Run migrations on production
+export PROD_DATABASE_URL='postgres://...'
+make migrate-prod
+```
 
-The inner layer is also divided into two (with separation of interfaces), in the case of complex logic.
+## Makefile Commands
 
----
+### Development
 
-Complex tools can be divided into additional layers.
-However, you should add layers only if really necessary.
+| Command | Description |
+|---------|-------------|
+| `make dev` | Run with Air hot reload |
+| `make run` | Run application |
+| `make build` | Build binary |
+| `make run-worker` | Run background worker |
 
-### Alternative approaches
+### Code Quality
 
-In addition to Clean architecture, _Onion architecture_ and _Hexagonal_ (_Ports and adapters_) are similar to it.
-Both are based on the principle of Dependency Inversion.
-_Ports and adapters_ are very close to _Clean Architecture_, the differences are mainly in terminology.
+| Command | Description |
+|---------|-------------|
+| `make fmt` | Format code |
+| `make lint` | Run linter |
+| `make vuln` | Check vulnerabilities |
+| `make test` | Run tests |
+| `make check-all` | Run all checks |
 
-## Similar projects
+### Database
 
-- [https://github.com/bxcodec/go-clean-arch](https://github.com/bxcodec/go-clean-arch)
-- [https://github.com/zhashkevych/courses-backend](https://github.com/zhashkevych/courses-backend)
+| Command | Description |
+|---------|-------------|
+| `make migrate-up` | Apply migrations |
+| `make migrate-down` | Rollback 1 migration |
+| `make migrate-create name=X` | Create new migration |
+| `make migrate-status` | Show current version |
 
-## Useful links
+### Code Generation
 
-- [The Clean Architecture article](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
-- [Twelve factors](https://12factor.net/ru/)
+| Command | Description |
+|---------|-------------|
+| `make generate` | Regenerate mocks |
+| `make gen MIGRATION=X` | Generate entity, dto, repo |
+| `make gen-full MIGRATION=X` | Generate all layers |
+| `make swag` | Regenerate Swagger docs |
+
+### Docker
+
+| Command | Description |
+|---------|-------------|
+| `make docker-services` | Start DB, Redis, MinIO |
+| `make docker-dev` | Start full stack |
+| `make docker-stop` | Stop all containers |
+| `make docker-logs` | View container logs |
+
+## Contributing
+
+See [CONTRIBUTING.md](.github/CONTRIBUTING.md) for guidelines.
+
+## License
+
+MIT License - see [LICENSE](LICENSE) for details.

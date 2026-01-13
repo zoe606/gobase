@@ -34,3 +34,6 @@ vendor/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Claude Code temp directories
+tmpclaude-*-cwd
