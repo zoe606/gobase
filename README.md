@@ -401,13 +401,27 @@ err := txHelper.RunInTx(ctx, func(txCtx context.Context) error {
   "request_id": "abc-123"
 }
 
-// Error
+// Error (simple)
+{
+  "success": false,
+  "error": {
+    "code": "NOT_FOUND",
+    "message": "Article not found"
+  },
+  "request_id": "abc-123"
+}
+
+// Error (validation with multiple field errors)
 {
   "success": false,
   "error": {
     "code": "VALIDATION_ERROR",
-    "message": "Invalid input",
-    "details": { "email": "must be a valid email" }
+    "message": "Validation failed",
+    "details": {
+      "email": "must be a valid email",
+      "password": "must be at least 8 characters",
+      "name": "is required"
+    }
   },
   "request_id": "abc-123"
 }
