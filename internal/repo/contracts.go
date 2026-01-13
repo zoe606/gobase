@@ -4,8 +4,9 @@ package repo
 import (
 	"context"
 
+	articledto "go-boilerplate/internal/dto/article"
+	translationdto "go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
-	"go-boilerplate/pkg/pagination"
 )
 
 //go:generate mockgen -source=contracts.go -destination=../usecase/mocks_repo_test.go -package=usecase_test
@@ -14,7 +15,7 @@ type (
 	// TranslationRepo defines the translation repository interface.
 	TranslationRepo interface {
 		Store(context.Context, *entity.Translation) error
-		GetHistory(ctx context.Context, params pagination.Params) ([]entity.Translation, int64, error)
+		GetHistory(ctx context.Context, req translationdto.HistoryRequest) ([]entity.Translation, int64, error)
 	}
 
 	// TranslationWebAPI defines the translation web API interface.
@@ -83,7 +84,7 @@ type (
 	ArticleRepo interface {
 		Create(ctx context.Context, article *entity.Article) error
 		GetByID(ctx context.Context, id uint) (*entity.Article, error)
-		List(ctx context.Context, limit, offset int) ([]*entity.Article, int64, error)
+		List(ctx context.Context, req articledto.ListRequest) ([]*entity.Article, int64, error)
 		Update(ctx context.Context, article *entity.Article) error
 		Delete(ctx context.Context, id uint) error
 	}

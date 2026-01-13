@@ -10,7 +10,8 @@ type TranslateRequest struct {
 	Original    string `json:"original" validate:"required" example:"text to translate"`
 }
 
-// HistoryRequest represents translation history request with pagination.
+// HistoryRequest represents translation history request with pagination and search.
 type HistoryRequest struct {
 	pagination.Params
+	Search string `query:"search"` // Search in original or translated text
 }

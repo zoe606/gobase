@@ -76,25 +76,25 @@ func TestBuildRepoImplContent(t *testing.T) {
 	}
 
 	// Check struct
-	if !strings.Contains(content, "type ArticlePostgres struct") {
-		t.Error("expected ArticlePostgres struct")
+	if !strings.Contains(content, "type ArticleRepo struct") {
+		t.Error("expected ArticleRepo struct")
 	}
 	if !strings.Contains(content, "db *gorm.DB") {
 		t.Error("expected db field")
 	}
 
 	// Check constructor
-	if !strings.Contains(content, "func NewArticlePostgres(db *gorm.DB) *ArticlePostgres") {
-		t.Error("expected NewArticlePostgres constructor")
+	if !strings.Contains(content, "func NewArticleRepo(db *gorm.DB) *ArticleRepo") {
+		t.Error("expected NewArticleRepo constructor")
 	}
 
 	// Check CRUD methods exist
 	methods := []string{
-		"func (r *ArticlePostgres) Create(ctx context.Context",
-		"func (r *ArticlePostgres) GetByID(ctx context.Context",
-		"func (r *ArticlePostgres) List(ctx context.Context",
-		"func (r *ArticlePostgres) Update(ctx context.Context",
-		"func (r *ArticlePostgres) Delete(ctx context.Context",
+		"func (r *ArticleRepo) Create(ctx context.Context",
+		"func (r *ArticleRepo) GetByID(ctx context.Context",
+		"func (r *ArticleRepo) List(ctx context.Context",
+		"func (r *ArticleRepo) Update(ctx context.Context",
+		"func (r *ArticleRepo) Delete(ctx context.Context",
 	}
 
 	for _, method := range methods {
@@ -225,19 +225,19 @@ func TestRepoWithDifferentTableNames(t *testing.T) {
 		{
 			name:           "users table",
 			tableName:      "users",
-			expectedStruct: "UserPostgres",
+			expectedStruct: "UserRepo",
 			expectedVar:    "user",
 		},
 		{
 			name:           "user_roles table",
 			tableName:      "user_roles",
-			expectedStruct: "UserRolePostgres",
+			expectedStruct: "UserRoleRepo",
 			expectedVar:    "userRole",
 		},
 		{
 			name:           "media table",
 			tableName:      "media",
-			expectedStruct: "MediaPostgres",
+			expectedStruct: "MediaRepo",
 			expectedVar:    "media",
 		},
 	}

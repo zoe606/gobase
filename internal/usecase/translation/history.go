@@ -11,7 +11,7 @@ import (
 func (uc *UseCase) History(ctx context.Context, req translationdto.HistoryRequest) (*translationdto.HistoryResponse, error) {
 	req.Normalize()
 
-	translations, total, err := uc.repo.GetHistory(ctx, req.Params)
+	translations, total, err := uc.repo.GetHistory(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("TranslationUseCase - History - s.repo.GetHistory: %w", err)
 	}

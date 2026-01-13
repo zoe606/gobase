@@ -6,9 +6,9 @@ import (
 
 	"gorm.io/gorm"
 
+	translationdto "go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
-	"go-boilerplate/pkg/pagination"
 	"go-boilerplate/pkg/tx"
 )
 
@@ -22,19 +22,26 @@ func New(db *gorm.DB) *TranslationRepo {
 	return &TranslationRepo{db: db}
 }
 
-// GetHistory retrieves translation history with pagination.
-func (r *TranslationRepo) GetHistory(ctx context.Context, params pagination.Params) ([]entity.Translation, int64, error) {
+// GetHistory retrieves translation history with pagination and search.
+func (r *TranslationRepo) GetHistory(ctx context.Context, req translationdto.HistoryRequest) ([]entity.Translation, int64, error) {
 	db := tx.DBFromContext(ctx, r.db)
+	query := db.Model(&entity.Translation{})
 
-	// Count total records
+	// Apply search filter
+	if req.Search != "" {
+		searchPattern := "%" + req.Search + "%"
+		query = query.Where("original ILIKE ? OR translation ILIKE ?", searchPattern, searchPattern)
+	}
+
+	// Count total records (with filters applied)
 	var total int64
-	if err := db.Model(&entity.Translation{}).Count(&total).Error; err != nil {
+	if err := query.Count(&total).Error; err != nil {
 		return nil, 0, fmt.Errorf("TranslationRepo - GetHistory - Count: %w", err)
 	}
 
 	// Get paginated results
 	var translations []entity.Translation
-	query := params.Apply(db.Model(&entity.Translation{}), []string{"created_at", "id"})
+	query = req.Apply(query, []string{"created_at", "id"})
 	if err := query.Find(&translations).Error; err != nil {
 		return nil, 0, fmt.Errorf("TranslationRepo - GetHistory: %w", err)
 	}

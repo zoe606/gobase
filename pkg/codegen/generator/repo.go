@@ -25,7 +25,7 @@ func (g *Generator) GenerateRepository() error {
 
 	// Generate PostgreSQL implementation
 	implContent := g.buildRepoImplContent()
-	implPath := fmt.Sprintf("internal/repo/persistent/%s_postgres.go", g.packageName())
+	implPath := fmt.Sprintf("internal/repo/persistent/%s.go", g.packageName())
 	if err := g.writeFile(implPath, implContent); err != nil {
 		return err
 	}
@@ -73,26 +73,26 @@ func (g *Generator) buildRepoImplContent() string {
 	sb.WriteString(")\n\n")
 
 	// Struct
-	sb.WriteString(fmt.Sprintf("// %sPostgres implements repo.%sRepo using PostgreSQL.\n", entityName, entityName))
-	sb.WriteString(fmt.Sprintf("type %sPostgres struct {\n", entityName))
+	sb.WriteString(fmt.Sprintf("// %sRepo implements repo.%sRepo using PostgreSQL.\n", entityName, entityName))
+	sb.WriteString(fmt.Sprintf("type %sRepo struct {\n", entityName))
 	sb.WriteString("\tdb *gorm.DB\n")
 	sb.WriteString("}\n\n")
 
 	// Constructor
-	sb.WriteString(fmt.Sprintf("// New%sPostgres creates a new %s repository.\n", entityName, entityName))
-	sb.WriteString(fmt.Sprintf("func New%sPostgres(db *gorm.DB) *%sPostgres {\n", entityName, entityName))
-	sb.WriteString(fmt.Sprintf("\treturn &%sPostgres{db: db}\n", entityName))
+	sb.WriteString(fmt.Sprintf("// New%sRepo creates a new %s repository.\n", entityName, entityName))
+	sb.WriteString(fmt.Sprintf("func New%sRepo(db *gorm.DB) *%sRepo {\n", entityName, entityName))
+	sb.WriteString(fmt.Sprintf("\treturn &%sRepo{db: db}\n", entityName))
 	sb.WriteString("}\n\n")
 
 	// Create method
 	sb.WriteString(fmt.Sprintf("// Create creates a new %s.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (r *%sPostgres) Create(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
+	sb.WriteString(fmt.Sprintf("func (r *%sRepo) Create(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
 	sb.WriteString(fmt.Sprintf("\treturn r.db.WithContext(ctx).Create(%s).Error\n", varName))
 	sb.WriteString("}\n\n")
 
 	// GetByID method
 	sb.WriteString(fmt.Sprintf("// GetByID retrieves a %s by ID.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (r *%sPostgres) GetByID(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName, entityName))
+	sb.WriteString(fmt.Sprintf("func (r *%sRepo) GetByID(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName, entityName))
 	sb.WriteString(fmt.Sprintf("\tvar %s entity.%s\n", varName, entityName))
 	sb.WriteString(fmt.Sprintf("\terr := r.db.WithContext(ctx).First(&%s, id).Error\n", varName))
 	sb.WriteString("\tif err != nil {\n")
@@ -106,7 +106,7 @@ func (g *Generator) buildRepoImplContent() string {
 
 	// List method
 	sb.WriteString(fmt.Sprintf("// List retrieves a paginated list of %ss.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (r *%sPostgres) List(ctx context.Context, limit, offset int) ([]*entity.%s, int64, error) {\n", entityName, entityName))
+	sb.WriteString(fmt.Sprintf("func (r *%sRepo) List(ctx context.Context, limit, offset int) ([]*entity.%s, int64, error) {\n", entityName, entityName))
 	sb.WriteString(fmt.Sprintf("\tvar %ss []*entity.%s\n", varName, entityName))
 	sb.WriteString("\tvar total int64\n\n")
 	sb.WriteString("\t// Count total\n")
@@ -127,7 +127,7 @@ func (g *Generator) buildRepoImplContent() string {
 
 	// Update method
 	sb.WriteString(fmt.Sprintf("// Update updates a %s.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (r *%sPostgres) Update(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
+	sb.WriteString(fmt.Sprintf("func (r *%sRepo) Update(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
 	sb.WriteString(fmt.Sprintf("\tresult := r.db.WithContext(ctx).Save(%s)\n", varName))
 	sb.WriteString("\tif result.Error != nil {\n")
 	sb.WriteString("\t\treturn result.Error\n")
@@ -140,7 +140,7 @@ func (g *Generator) buildRepoImplContent() string {
 
 	// Delete method
 	sb.WriteString(fmt.Sprintf("// Delete deletes a %s by ID.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (r *%sPostgres) Delete(ctx context.Context, id uint) error {\n", entityName))
+	sb.WriteString(fmt.Sprintf("func (r *%sRepo) Delete(ctx context.Context, id uint) error {\n", entityName))
 	sb.WriteString(fmt.Sprintf("\tresult := r.db.WithContext(ctx).Delete(&entity.%s{}, id)\n", entityName))
 	sb.WriteString("\tif result.Error != nil {\n")
 	sb.WriteString("\t\treturn result.Error\n")

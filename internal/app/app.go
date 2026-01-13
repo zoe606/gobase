@@ -174,7 +174,7 @@ func initRepositories(db *gorm.DB) *repositories {
 		refreshToken:   persistent.NewRefreshTokenRepo(db),
 		media:          persistent.NewMediaRepo(db),
 		profile:        persistent.NewProfileRepo(db),
-		article:        persistent.NewArticlePostgres(db),
+		article:        persistent.NewArticleRepo(db),
 	}
 }
 

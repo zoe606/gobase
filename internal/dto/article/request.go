@@ -1,6 +1,10 @@
 package article
 
-import "time"
+import (
+	"time"
+
+	"go-boilerplate/pkg/pagination"
+)
 
 // CreateRequest represents the request to create a Article.
 type CreateRequest struct {
@@ -28,24 +32,10 @@ type UpdateRequest struct {
 	ViewCount    *int       `json:"view_count,omitempty"`
 }
 
-// ListRequest represents the request to list articles.
+// ListRequest represents the request to list articles with filters.
 type ListRequest struct {
-	Page     int `query:"page" validate:"omitempty,min=1"`
-	PageSize int `query:"page_size" validate:"omitempty,min=1,max=100"`
-}
-
-// GetPageSize returns the page size with a default value.
-func (r *ListRequest) GetPageSize() int {
-	if r.PageSize <= 0 {
-		return 20
-	}
-	return r.PageSize
-}
-
-// GetOffset returns the offset for pagination.
-func (r *ListRequest) GetOffset() int {
-	if r.Page <= 1 {
-		return 0
-	}
-	return (r.Page - 1) * r.GetPageSize()
+	pagination.Params
+	Status string `query:"status" validate:"omitempty,oneof=draft published"`
+	UserID uint   `query:"user_id"`
+	Search string `query:"search"`
 }

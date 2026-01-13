@@ -177,7 +177,6 @@ func updateGoImports(newModule string) error {
 		count++
 		return nil
 	})
-
 	if err != nil {
 		return err
 	}

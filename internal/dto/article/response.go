@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"go-boilerplate/internal/entity"
+	"go-boilerplate/pkg/pagination"
 )
 
 // Response represents a Article response.
@@ -43,32 +44,21 @@ func NewResponse(article *entity.Article) *Response {
 	}
 }
 
-// ListResponse represents a list of Article responses.
+// ListResponse represents a paginated list of Article responses.
 type ListResponse struct {
-	Data       []*Response `json:"data"`
-	Total      int64       `json:"total"`
-	Page       int         `json:"page"`
-	PageSize   int         `json:"page_size"`
-	TotalPages int         `json:"total_pages"`
+	Data []*Response      `json:"data"`
+	Meta *pagination.Meta `json:"meta"`
 }
 
 // NewListResponse creates a ListResponse from a slice of Articles.
-func NewListResponse(articles []*entity.Article, total int64, page, pageSize int) *ListResponse {
+func NewListResponse(articles []*entity.Article, total int64, params pagination.Params) *ListResponse {
 	data := make([]*Response, len(articles))
 	for i, article := range articles {
 		data[i] = NewResponse(article)
 	}
 
-	totalPages := int(total) / pageSize
-	if int(total)%pageSize > 0 {
-		totalPages++
-	}
-
 	return &ListResponse{
-		Data:       data,
-		Total:      total,
-		Page:       page,
-		PageSize:   pageSize,
-		TotalPages: totalPages,
+		Data: data,
+		Meta: pagination.NewMeta(params.Page, params.Limit, total),
 	}
 }
