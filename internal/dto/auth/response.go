@@ -38,18 +38,31 @@ func NewTokenResponse(accessToken, refreshToken string, expiresAt int64) *TokenR
 
 // UserResponse is the API representation of a user.
 type UserResponse struct {
-	ID    uint   `json:"id"`
-	Email string `json:"email"`
-	Name  string `json:"name"`
-	Role  string `json:"role"`
+	ID     uint         `json:"id"`
+	Email  string       `json:"email"`
+	Name   string       `json:"name"`
+	Active bool         `json:"active"`
+	Role   RoleResponse `json:"role"`
+}
+
+// RoleResponse is the API representation of a role in auth context.
+type RoleResponse struct {
+	ID          uint     `json:"id"`
+	Name        string   `json:"name"`
+	Permissions []string `json:"permissions"`
 }
 
 // NewUserResponse creates a UserResponse from user entity.
 func NewUserResponse(u *entity.User) UserResponse {
 	return UserResponse{
-		ID:    u.ID,
-		Email: u.Email,
-		Name:  u.Name,
-		Role:  u.Role.Name,
+		ID:     u.ID,
+		Email:  u.Email,
+		Name:   u.Name,
+		Active: u.Active,
+		Role: RoleResponse{
+			ID:          u.Role.ID,
+			Name:        u.Role.Name,
+			Permissions: u.Role.GetPermissionNames(),
+		},
 	}
 }

@@ -5,7 +5,10 @@ import (
 	"context"
 
 	articledto "go-boilerplate/internal/dto/article"
+	bankstatementdto "go-boilerplate/internal/dto/bankstatement"
+	installmentdto "go-boilerplate/internal/dto/installment"
 	translationdto "go-boilerplate/internal/dto/translation"
+	userdto "go-boilerplate/internal/dto/user"
 	"go-boilerplate/internal/entity"
 )
 
@@ -30,11 +33,29 @@ type (
 		GetByEmail(ctx context.Context, email string) (*entity.User, error)
 		EmailExists(ctx context.Context, email string) (bool, error)
 		Update(ctx context.Context, user *entity.User) error
+		Delete(ctx context.Context, id uint) error
+		List(ctx context.Context, req userdto.ListRequest) ([]*entity.User, int64, error)
 	}
 
 	// RoleRepo defines the role repository interface.
 	RoleRepo interface {
+		Create(ctx context.Context, role *entity.Role) error
+		GetByID(ctx context.Context, id uint) (*entity.Role, error)
 		GetByName(ctx context.Context, name string) (*entity.Role, error)
+		List(ctx context.Context) ([]*entity.Role, error)
+		Update(ctx context.Context, role *entity.Role) error
+		Delete(ctx context.Context, id uint) error
+		UpdatePermissions(ctx context.Context, roleID uint, permissionIDs []uint) error
+	}
+
+	// PermissionRepo defines the permission repository interface.
+	PermissionRepo interface {
+		List(ctx context.Context) ([]*entity.Permission, error)
+		GetByIDs(ctx context.Context, ids []uint) ([]*entity.Permission, error)
+		Create(ctx context.Context, permission *entity.Permission) error
+		Delete(ctx context.Context, id uint) error
+		GetByName(ctx context.Context, name string) (*entity.Permission, error)
+		IsAssignedToAnyRole(ctx context.Context, permissionID uint) (bool, error)
 	}
 
 	// RefreshTokenRepo defines the refresh token repository interface.
@@ -86,6 +107,41 @@ type (
 		GetByID(ctx context.Context, id uint) (*entity.Article, error)
 		List(ctx context.Context, req articledto.ListRequest) ([]*entity.Article, int64, error)
 		Update(ctx context.Context, article *entity.Article) error
+		Delete(ctx context.Context, id uint) error
+	}
+
+	// BankRepo defines bank repository operations.
+	BankRepo interface {
+		List(ctx context.Context) ([]*entity.Bank, error)
+		GetByID(ctx context.Context, id uint) (*entity.Bank, error)
+		GetByCode(ctx context.Context, code string) (*entity.Bank, error)
+	}
+
+	// BankStatementRepo defines bank statement repository operations.
+	BankStatementRepo interface {
+		Create(ctx context.Context, stmt *entity.BankStatement) error
+		GetByID(ctx context.Context, id uint) (*entity.BankStatement, error)
+		List(ctx context.Context, req bankstatementdto.ListRequest) ([]*entity.BankStatement, int64, error)
+		Update(ctx context.Context, stmt *entity.BankStatement) error
+		Delete(ctx context.Context, id uint) error
+	}
+
+	// LineItemRepo defines line item repository operations.
+	LineItemRepo interface {
+		BulkCreate(ctx context.Context, items []*entity.LineItem) error
+		GetByID(ctx context.Context, id uint) (*entity.LineItem, error)
+		GetBySource(ctx context.Context, sourceType string, sourceID uint) ([]*entity.LineItem, error)
+		Update(ctx context.Context, item *entity.LineItem) error
+		DeleteBySource(ctx context.Context, sourceType string, sourceID uint) error
+		UpdateInstallmentID(ctx context.Context, itemIDs []uint, installmentID *uint) error
+	}
+
+	// InstallmentRepo defines installment repository operations.
+	InstallmentRepo interface {
+		Create(ctx context.Context, inst *entity.Installment) error
+		GetByID(ctx context.Context, id uint) (*entity.Installment, error)
+		List(ctx context.Context, req installmentdto.ListRequest) ([]*entity.Installment, int64, error)
+		Update(ctx context.Context, inst *entity.Installment) error
 		Delete(ctx context.Context, id uint) error
 	}
 )

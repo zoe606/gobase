@@ -4,6 +4,10 @@ package httpserver
 import (
 	"context"
 	"errors"
+	"fmt"
+	"net"
+	"strconv"
+	"strings"
 	"time"
 
 	"go-boilerplate/pkg/logger"
@@ -18,6 +22,7 @@ const (
 	_defaultReadTimeout     = 5 * time.Second
 	_defaultWriteTimeout    = 5 * time.Second
 	_defaultShutdownTimeout = 3 * time.Second
+	_maxPortAttempts        = 10 // Max ports to try when auto-finding
 )
 
 // Server -.
@@ -29,7 +34,9 @@ type Server struct {
 	notify chan error
 
 	address         string
+	actualPort      string // The port actually bound to (may differ if autoPort is enabled)
 	prefork         bool
+	autoPort        bool // Enable automatic port finding if configured port is busy
 	readTimeout     time.Duration
 	writeTimeout    time.Duration
 	shutdownTimeout time.Duration
@@ -75,7 +82,24 @@ func New(l logger.Interface, opts ...Option) *Server {
 // Start -.
 func (s *Server) Start() {
 	s.eg.Go(func() error {
-		err := s.App.Listen(s.address)
+		address := s.address
+		var err error
+
+		if s.autoPort {
+			address, err = s.findAvailablePort()
+			if err != nil {
+				s.notify <- err
+				close(s.notify)
+
+				return err
+			}
+		}
+
+		s.actualPort = extractPort(address)
+
+		s.logger.Info("HTTP server listening on %s", address)
+
+		err = s.App.Listen(address)
 		if err != nil {
 			s.notify <- err
 
@@ -86,8 +110,64 @@ func (s *Server) Start() {
 
 		return nil
 	})
+}
 
-	s.logger.Info("restapi server - Server - Started")
+// findAvailablePort tries the configured port and increments if busy.
+func (s *Server) findAvailablePort() (string, error) {
+	basePort := extractPort(s.address)
+	port, err := strconv.Atoi(basePort)
+	if err != nil {
+		return s.address, nil // If port is not numeric, just use as-is
+	}
+
+	lc := net.ListenConfig{}
+	ctx := context.Background()
+
+	for i := 0; i < _maxPortAttempts; i++ {
+		testPort := port + i
+		testAddr := net.JoinHostPort("", strconv.Itoa(testPort))
+
+		// Try to listen briefly to check if port is available
+		// Use tcp4 to match Fiber's default behavior on Windows
+		listener, listenErr := lc.Listen(ctx, "tcp4", testAddr)
+		if listenErr != nil {
+			if i == 0 {
+				s.logger.Info("Port %d is busy, trying next port...", testPort)
+			}
+
+			continue
+		}
+
+		listener.Close()
+
+		if i > 0 {
+			s.logger.Info("Found available port: %d (configured: %d)", testPort, port)
+		}
+
+		return testAddr, nil
+	}
+
+	return "", fmt.Errorf("could not find available port after %d attempts (tried %d-%d)", _maxPortAttempts, port, port+_maxPortAttempts-1)
+}
+
+// extractPort extracts the port from an address string.
+func extractPort(address string) string {
+	// Handle formats: ":8080", "localhost:8080", "0.0.0.0:8080"
+	if idx := strings.LastIndex(address, ":"); idx != -1 {
+		return address[idx+1:]
+	}
+
+	return address
+}
+
+// Port returns the actual port the server is listening on.
+// This may differ from the configured port if autoPort is enabled.
+func (s *Server) Port() string {
+	if s.actualPort != "" {
+		return s.actualPort
+	}
+
+	return extractPort(s.address)
 }
 
 // Notify -.

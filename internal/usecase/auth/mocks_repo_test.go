@@ -11,6 +11,8 @@ package auth_test
 
 import (
 	context "context"
+	translationdto "go-boilerplate/internal/dto/translation"
+	userdto "go-boilerplate/internal/dto/user"
 	entity "go-boilerplate/internal/entity"
 	reflect "reflect"
 
@@ -42,18 +44,19 @@ func (m *MockTranslationRepo) EXPECT() *MockTranslationRepoMockRecorder {
 }
 
 // GetHistory mocks base method.
-func (m *MockTranslationRepo) GetHistory(arg0 context.Context) ([]entity.Translation, error) {
+func (m *MockTranslationRepo) GetHistory(ctx context.Context, req translationdto.HistoryRequest) ([]entity.Translation, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHistory", arg0)
+	ret := m.ctrl.Call(m, "GetHistory", ctx, req)
 	ret0, _ := ret[0].([]entity.Translation)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
 }
 
 // GetHistory indicates an expected call of GetHistory.
-func (mr *MockTranslationRepoMockRecorder) GetHistory(arg0 any) *gomock.Call {
+func (mr *MockTranslationRepoMockRecorder) GetHistory(ctx, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockTranslationRepo)(nil).GetHistory), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockTranslationRepo)(nil).GetHistory), ctx, req)
 }
 
 // Store mocks base method.
@@ -206,6 +209,36 @@ func (mr *MockUserRepoMockRecorder) Update(ctx, user any) *gomock.Call {
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockUserRepo)(nil).Update), ctx, user)
 }
 
+// Delete mocks base method.
+func (m *MockUserRepo) Delete(ctx context.Context, id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockUserRepoMockRecorder) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockUserRepo)(nil).Delete), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockUserRepo) List(ctx context.Context, req userdto.ListRequest) ([]*entity.User, int64, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, req)
+	ret0, _ := ret[0].([]*entity.User)
+	ret1, _ := ret[1].(int64)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// List indicates an expected call of List.
+func (mr *MockUserRepoMockRecorder) List(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockUserRepo)(nil).List), ctx, req)
+}
+
 // MockRoleRepo is a mock of RoleRepo interface.
 type MockRoleRepo struct {
 	ctrl     *gomock.Controller
@@ -243,6 +276,92 @@ func (m *MockRoleRepo) GetByName(ctx context.Context, name string) (*entity.Role
 func (mr *MockRoleRepoMockRecorder) GetByName(ctx, name any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByName", reflect.TypeOf((*MockRoleRepo)(nil).GetByName), ctx, name)
+}
+
+// Create mocks base method.
+func (m *MockRoleRepo) Create(ctx context.Context, role *entity.Role) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, role)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockRoleRepoMockRecorder) Create(ctx, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockRoleRepo)(nil).Create), ctx, role)
+}
+
+// GetByID mocks base method.
+func (m *MockRoleRepo) GetByID(ctx context.Context, id uint) (*entity.Role, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(*entity.Role)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockRoleRepoMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockRoleRepo)(nil).GetByID), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockRoleRepo) List(ctx context.Context) ([]*entity.Role, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx)
+	ret0, _ := ret[0].([]*entity.Role)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockRoleRepoMockRecorder) List(ctx any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockRoleRepo)(nil).List), ctx)
+}
+
+// Update mocks base method.
+func (m *MockRoleRepo) Update(ctx context.Context, role *entity.Role) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, role)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockRoleRepoMockRecorder) Update(ctx, role any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockRoleRepo)(nil).Update), ctx, role)
+}
+
+// Delete mocks base method.
+func (m *MockRoleRepo) Delete(ctx context.Context, id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockRoleRepoMockRecorder) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockRoleRepo)(nil).Delete), ctx, id)
+}
+
+// UpdatePermissions mocks base method.
+func (m *MockRoleRepo) UpdatePermissions(ctx context.Context, roleID uint, permissionIDs []uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdatePermissions", ctx, roleID, permissionIDs)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// UpdatePermissions indicates an expected call of UpdatePermissions.
+func (mr *MockRoleRepoMockRecorder) UpdatePermissions(ctx, roleID, permissionIDs any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdatePermissions", reflect.TypeOf((*MockRoleRepo)(nil).UpdatePermissions), ctx, roleID, permissionIDs)
 }
 
 // MockRefreshTokenRepo is a mock of RefreshTokenRepo interface.

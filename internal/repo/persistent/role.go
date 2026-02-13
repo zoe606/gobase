@@ -48,12 +48,68 @@ func (r *RoleRepo) GetByName(ctx context.Context, name string) (*entity.Role, er
 	return &role, nil
 }
 
-// GetAll retrieves all roles with permissions.
-func (r *RoleRepo) GetAll(ctx context.Context) ([]entity.Role, error) {
+// List retrieves all roles with permissions.
+func (r *RoleRepo) List(ctx context.Context) ([]*entity.Role, error) {
 	db := tx.DBFromContext(ctx, r.db)
-	var roles []entity.Role
+	var roles []*entity.Role
 	if err := db.Preload("Permissions").Find(&roles).Error; err != nil {
-		return nil, fmt.Errorf("RoleRepo - GetAll: %w", err)
+		return nil, fmt.Errorf("RoleRepo - List: %w", err)
 	}
 	return roles, nil
+}
+
+// Create creates a new role.
+func (r *RoleRepo) Create(ctx context.Context, role *entity.Role) error {
+	db := tx.DBFromContext(ctx, r.db)
+	if err := db.Create(role).Error; err != nil {
+		return fmt.Errorf("RoleRepo - Create: %w", err)
+	}
+	return nil
+}
+
+// Update updates a role.
+func (r *RoleRepo) Update(ctx context.Context, role *entity.Role) error {
+	db := tx.DBFromContext(ctx, r.db)
+	if err := db.Save(role).Error; err != nil {
+		return fmt.Errorf("RoleRepo - Update: %w", err)
+	}
+	return nil
+}
+
+// Delete deletes a role by ID.
+func (r *RoleRepo) Delete(ctx context.Context, id uint) error {
+	db := tx.DBFromContext(ctx, r.db)
+
+	// First clear the permissions association
+	role := &entity.Role{ID: id}
+	if err := db.Model(role).Association("Permissions").Clear(); err != nil {
+		return fmt.Errorf("RoleRepo - Delete - clear permissions: %w", err)
+	}
+
+	result := db.Delete(&entity.Role{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("RoleRepo - Delete: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return repo.ErrNotFound
+	}
+	return nil
+}
+
+// UpdatePermissions updates the permissions assigned to a role.
+func (r *RoleRepo) UpdatePermissions(ctx context.Context, roleID uint, permissionIDs []uint) error {
+	db := tx.DBFromContext(ctx, r.db)
+
+	var permissions []entity.Permission
+	if len(permissionIDs) > 0 {
+		if err := db.Where("id IN ?", permissionIDs).Find(&permissions).Error; err != nil {
+			return fmt.Errorf("RoleRepo - UpdatePermissions - find permissions: %w", err)
+		}
+	}
+
+	role := &entity.Role{ID: roleID}
+	if err := db.Model(role).Association("Permissions").Replace(permissions); err != nil {
+		return fmt.Errorf("RoleRepo - UpdatePermissions: %w", err)
+	}
+	return nil
 }

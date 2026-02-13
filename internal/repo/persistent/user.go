@@ -7,6 +7,7 @@ import (
 
 	"gorm.io/gorm"
 
+	userdto "go-boilerplate/internal/dto/user"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/tx"
@@ -74,4 +75,53 @@ func (r *UserRepo) Update(ctx context.Context, user *entity.User) error {
 		return fmt.Errorf("UserRepo - Update: %w", err)
 	}
 	return nil
+}
+
+// Delete soft-deletes a user by ID.
+func (r *UserRepo) Delete(ctx context.Context, id uint) error {
+	db := tx.DBFromContext(ctx, r.db)
+	result := db.Delete(&entity.User{}, id)
+	if result.Error != nil {
+		return fmt.Errorf("UserRepo - Delete: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return repo.ErrNotFound
+	}
+	return nil
+}
+
+// List retrieves a paginated list of users with filters.
+func (r *UserRepo) List(ctx context.Context, req userdto.ListRequest) ([]*entity.User, int64, error) {
+	db := tx.DBFromContext(ctx, r.db)
+	var users []*entity.User
+	var total int64
+
+	query := db.Model(&entity.User{}).Preload("Role")
+
+	// Apply filters
+	if req.Search != "" {
+		search := "%" + req.Search + "%"
+		query = query.Where("name LIKE ? OR email LIKE ?", search, search)
+	}
+	if req.RoleID != 0 {
+		query = query.Where("role_id = ?", req.RoleID)
+	}
+	if req.Active != nil {
+		query = query.Where("active = ?", *req.Active)
+	}
+
+	// Count total
+	if err := query.Count(&total).Error; err != nil {
+		return nil, 0, fmt.Errorf("UserRepo - List - Count: %w", err)
+	}
+
+	// Apply pagination
+	req.Normalize()
+	query = req.Apply(query, []string{"id", "email", "name", "created_at", "updated_at"})
+
+	if err := query.Find(&users).Error; err != nil {
+		return nil, 0, fmt.Errorf("UserRepo - List - Find: %w", err)
+	}
+
+	return users, total, nil
 }

@@ -6,9 +6,14 @@ import (
 
 	articledto "go-boilerplate/internal/dto/article"
 	authdto "go-boilerplate/internal/dto/auth"
+	bankstatementdto "go-boilerplate/internal/dto/bankstatement"
+	installmentdto "go-boilerplate/internal/dto/installment"
 	mediadto "go-boilerplate/internal/dto/media"
+	permissiondto "go-boilerplate/internal/dto/permission"
 	profiledto "go-boilerplate/internal/dto/profile"
+	roledto "go-boilerplate/internal/dto/role"
 	translationdto "go-boilerplate/internal/dto/translation"
+	userdto "go-boilerplate/internal/dto/user"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/usecase/auth"
 )
@@ -63,5 +68,51 @@ type (
 		List(ctx context.Context, req articledto.ListRequest) (*articledto.ListResponse, error)
 		Update(ctx context.Context, id uint, req articledto.UpdateRequest) (*articledto.Response, error)
 		Delete(ctx context.Context, id uint) error
+	}
+
+	// User defines user management use case operations.
+	User interface {
+		Create(ctx context.Context, req userdto.CreateRequest) (*userdto.Response, error)
+		GetByID(ctx context.Context, id uint) (*userdto.Response, error)
+		List(ctx context.Context, req userdto.ListRequest) (*userdto.ListResponse, error)
+		Update(ctx context.Context, id uint, req userdto.UpdateRequest) (*userdto.Response, error)
+		Delete(ctx context.Context, id uint, currentUserID uint) error
+	}
+
+	// Role defines role management use case operations.
+	Role interface {
+		Create(ctx context.Context, req roledto.CreateRequest) (*roledto.Response, error)
+		GetByID(ctx context.Context, id uint) (*roledto.Response, error)
+		List(ctx context.Context) (*roledto.ListResponse, error)
+		Update(ctx context.Context, id uint, req roledto.UpdateRequest) (*roledto.Response, error)
+		Delete(ctx context.Context, id uint) error
+		AssignPermissions(ctx context.Context, roleID uint, permissionIDs []uint) (*roledto.Response, error)
+	}
+
+	// Permission defines permission use case operations.
+	Permission interface {
+		List(ctx context.Context) ([]*entity.Permission, error)
+		Create(ctx context.Context, req permissiondto.CreateRequest) (*permissiondto.Response, error)
+		Delete(ctx context.Context, id uint) error
+	}
+
+	// BankStatement defines bank statement use case operations.
+	BankStatement interface {
+		Upload(ctx context.Context, req bankstatementdto.UploadRequest) (*bankstatementdto.ResponseWithItems, error)
+		GetByID(ctx context.Context, id uint) (*bankstatementdto.ResponseWithItems, error)
+		List(ctx context.Context, req bankstatementdto.ListRequest) (*bankstatementdto.ListResponse, error)
+		UpdateLineItem(ctx context.Context, itemID uint, req bankstatementdto.UpdateLineItemRequest) (*bankstatementdto.LineItemResponse, error)
+		Delete(ctx context.Context, id uint) error
+		ListBanks(ctx context.Context) (*bankstatementdto.BankListResponse, error)
+	}
+
+	// Installment defines installment use case operations.
+	Installment interface {
+		Create(ctx context.Context, req installmentdto.CreateRequest) (*installmentdto.Response, error)
+		GetByID(ctx context.Context, id uint) (*installmentdto.Response, error)
+		List(ctx context.Context, req installmentdto.ListRequest) (*installmentdto.ListResponse, error)
+		Update(ctx context.Context, id uint, req installmentdto.UpdateRequest) (*installmentdto.Response, error)
+		Delete(ctx context.Context, id uint) error
+		LinkItems(ctx context.Context, installmentID uint, req installmentdto.LinkItemsRequest) error
 	}
 )

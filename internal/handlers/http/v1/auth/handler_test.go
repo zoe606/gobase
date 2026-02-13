@@ -55,10 +55,15 @@ func TestHandler_Login(t *testing.T) {
 						RefreshToken: "refresh",
 						ExpiresAt:    time.Now().Add(15 * time.Minute).Unix(),
 						User: authdto.UserResponse{
-							ID:    1,
-							Email: "test@example.com",
-							Name:  "Test User",
-							Role:  "user",
+							ID:     1,
+							Email:  "test@example.com",
+							Name:   "Test User",
+							Active: true,
+							Role: authdto.RoleResponse{
+								ID:          1,
+								Name:        "user",
+								Permissions: []string{"users:read"},
+							},
 						},
 					}, nil)
 			},

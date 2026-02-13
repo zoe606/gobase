@@ -19,10 +19,15 @@ import (
 	"go-boilerplate/internal/handlers/http/middleware"
 	articlehandler "go-boilerplate/internal/handlers/http/v1/article"
 	"go-boilerplate/internal/handlers/http/v1/auth"
+	bankstatementhandler "go-boilerplate/internal/handlers/http/v1/bankstatement"
 	confighandler "go-boilerplate/internal/handlers/http/v1/config"
+	installmenthandler "go-boilerplate/internal/handlers/http/v1/installment"
 	mediahandler "go-boilerplate/internal/handlers/http/v1/media"
+	permissionhandler "go-boilerplate/internal/handlers/http/v1/permission"
 	profilehandler "go-boilerplate/internal/handlers/http/v1/profile"
+	rolehandler "go-boilerplate/internal/handlers/http/v1/role"
 	"go-boilerplate/internal/handlers/http/v1/translation"
+	userhandler "go-boilerplate/internal/handlers/http/v1/user"
 	"go-boilerplate/internal/usecase"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
@@ -41,11 +46,11 @@ type HealthChecker interface {
 //	@version     1.0
 //	@host        localhost:8080
 //	@BasePath    /v1
-func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker) {
+func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, userUC usecase.User, roleUC usecase.Role, permissionUC usecase.Permission, bankStatementUC usecase.BankStatement, installmentUC usecase.Installment, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker) {
 	setupMiddleware(app, cfg, l)
 	setupOptionalFeatures(app, cfg)
 	setupHealthEndpoints(app, healthChecker)
-	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, jwtService, l)
+	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, userUC, roleUC, permissionUC, bankStatementUC, installmentUC, jwtService, l)
 }
 
 // setupMiddleware configures global middleware chain.
@@ -114,7 +119,7 @@ func setupHealthEndpoints(app *fiber.App, checker HealthChecker) {
 }
 
 // setupAPIRoutes configures API v1 routes.
-func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface) {
+func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, userUC usecase.User, roleUC usecase.Role, permissionUC usecase.Permission, bankStatementUC usecase.BankStatement, installmentUC usecase.Installment, jwtService jwt.Service, l logger.Interface) {
 	apiV1Group := app.Group("/v1")
 
 	translationHandler := translation.New(translationUC, l)
@@ -134,4 +139,19 @@ func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Tr
 
 	artHandler := articlehandler.New(articleUC, l)
 	artHandler.RegisterRoutes(apiV1Group)
+
+	usrHandler := userhandler.New(userUC, jwtService, l)
+	usrHandler.RegisterRoutes(apiV1Group)
+
+	rlHandler := rolehandler.New(roleUC, jwtService, l)
+	rlHandler.RegisterRoutes(apiV1Group)
+
+	permHandler := permissionhandler.New(permissionUC, jwtService, l)
+	permHandler.RegisterRoutes(apiV1Group)
+
+	bsHandler := bankstatementhandler.New(bankStatementUC, jwtService, l)
+	bsHandler.RegisterRoutes(apiV1Group)
+
+	instHandler := installmenthandler.New(installmentUC, jwtService, l)
+	instHandler.RegisterRoutes(apiV1Group)
 }

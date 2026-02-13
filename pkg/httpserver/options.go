@@ -42,3 +42,11 @@ func ShutdownTimeout(timeout time.Duration) Option {
 		s.shutdownTimeout = timeout
 	}
 }
+
+// AutoPort enables automatic port finding if the configured port is busy.
+// When enabled, the server will try the next port up to _maxPortAttempts times.
+func AutoPort(enabled bool) Option {
+	return func(s *Server) {
+		s.autoPort = enabled
+	}
+}

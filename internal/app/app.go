@@ -3,6 +3,7 @@ package app
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"os/signal"
 	"syscall"
@@ -19,15 +20,28 @@ import (
 	"go-boilerplate/internal/usecase"
 	"go-boilerplate/internal/usecase/article"
 	"go-boilerplate/internal/usecase/auth"
+	bankstatementuc "go-boilerplate/internal/usecase/bankstatement"
+	installmentuc "go-boilerplate/internal/usecase/installment"
 	"go-boilerplate/internal/usecase/media"
+	"go-boilerplate/internal/usecase/permission"
 	"go-boilerplate/internal/usecase/profile"
+	"go-boilerplate/internal/usecase/role"
 	"go-boilerplate/internal/usecase/translation"
+	"go-boilerplate/internal/usecase/user"
 	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/httpserver"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
 	"go-boilerplate/pkg/postgres"
+	"go-boilerplate/pkg/sqlite"
 )
+
+// dbConnection wraps database connection with common interface.
+type dbConnection struct {
+	db     *gorm.DB
+	closer io.Closer
+	pinger interface{ Ping() error }
+}
 
 // repositories holds all repository instances.
 type repositories struct {
@@ -35,19 +49,29 @@ type repositories struct {
 	translationAPI repo.TranslationWebAPI
 	user           repo.UserRepo
 	role           repo.RoleRepo
+	permission     repo.PermissionRepo
 	refreshToken   repo.RefreshTokenRepo
 	media          repo.MediaRepo
 	profile        repo.ProfileRepo
 	article        repo.ArticleRepo
+	bank           repo.BankRepo
+	bankStatement  repo.BankStatementRepo
+	lineItem       repo.LineItemRepo
+	installment    repo.InstallmentRepo
 }
 
 // usecases holds all usecase instances.
 type usecases struct {
-	translation usecase.Translation
-	auth        usecase.Auth
-	media       usecase.Media
-	profile     usecase.Profile
-	article     usecase.Article
+	translation   usecase.Translation
+	auth          usecase.Auth
+	media         usecase.Media
+	profile       usecase.Profile
+	article       usecase.Article
+	user          usecase.User
+	role          usecase.Role
+	permission    usecase.Permission
+	bankStatement usecase.BankStatement
+	installment   usecase.Installment
 }
 
 // Run creates objects via constructors.
@@ -58,8 +82,8 @@ func Run(cfg *config.Config) {
 
 	l.Info("Starting %s v%s (env: %s)", cfg.App.Name, cfg.App.Version, cfg.App.Env)
 
-	pg := initDatabase(cfg, l)
-	defer pg.Close()
+	dbConn := initDatabase(cfg, l)
+	defer dbConn.closer.Close() //nolint:errcheck // best effort close
 
 	asynqClient := initAsynqClient(cfg)
 	defer asynqClient.Close()
@@ -67,11 +91,9 @@ func Run(cfg *config.Config) {
 	storageProvider := initStorage(cfg, l)
 
 	jwtService := initJWT(cfg)
-	repos := initRepositories(pg.DB)
+	repos := initRepositories(dbConn.db)
 	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l)
-	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg)
-
-	l.Info("Server started on port %s", cfg.HTTP.Port)
+	httpServer := initHTTPServer(cfg, l, uc, jwtService, dbConn.pinger)
 
 	waitForShutdown(httpServer, l)
 }
@@ -86,21 +108,42 @@ func initLogger(cfg *config.Config) *logger.Logger {
 }
 
 // initDatabase creates database connection and runs migrations if needed.
-func initDatabase(cfg *config.Config, l *logger.Logger) *postgres.Postgres {
-	pg, err := postgres.New(
-		cfg.Postgres.DSN(),
-		postgres.MaxPoolSize(cfg.Postgres.MaxPoolSize),
-		postgres.MaxIdleConns(cfg.Postgres.MaxIdleConns),
-		postgres.ConnMaxLifetime(cfg.Postgres.ConnMaxLifetime),
-		postgres.ConnMaxIdleTime(cfg.Postgres.ConnMaxIdleTime),
-	)
-	if err != nil {
-		l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
+func initDatabase(cfg *config.Config, l *logger.Logger) *dbConnection {
+	var db *gorm.DB
+	var closer io.Closer
+	var pinger interface{ Ping() error }
+
+	switch cfg.Database.Driver {
+	case "sqlite":
+		l.Info("Using SQLite database: %s", cfg.Database.URL)
+		s, err := sqlite.New(cfg.Database.URL)
+		if err != nil {
+			l.Fatal(fmt.Errorf("app - Run - sqlite.New: %w", err))
+		}
+		db = s.DB
+		closer = s
+		pinger = s
+	default:
+		// PostgreSQL is the default
+		l.Info("Using PostgreSQL database: %s", cfg.Postgres.Host)
+		pg, err := postgres.New(
+			cfg.Postgres.DSN(),
+			postgres.MaxPoolSize(cfg.Postgres.MaxPoolSize),
+			postgres.MaxIdleConns(cfg.Postgres.MaxIdleConns),
+			postgres.ConnMaxLifetime(cfg.Postgres.ConnMaxLifetime),
+			postgres.ConnMaxIdleTime(cfg.Postgres.ConnMaxIdleTime),
+		)
+		if err != nil {
+			l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
+		}
+		db = pg.DB
+		closer = pg
+		pinger = pg
 	}
 
-	runAutoMigrate(cfg, pg.DB, l)
+	runAutoMigrate(cfg, db, l)
 
-	return pg
+	return &dbConnection{db: db, closer: closer, pinger: pinger}
 }
 
 // runAutoMigrate runs database migrations in development mode.
@@ -122,6 +165,10 @@ func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 		&entity.Media{},
 		&entity.Profile{},
 		&entity.Article{},
+		&entity.Bank{},
+		&entity.Installment{},
+		&entity.BankStatement{},
+		&entity.LineItem{},
 	); err != nil {
 		l.Fatal(fmt.Errorf("app - Run - AutoMigrate: %w", err))
 	}
@@ -171,10 +218,15 @@ func initRepositories(db *gorm.DB) *repositories {
 		translationAPI: webapi.New(),
 		user:           persistent.NewUserRepo(db),
 		role:           persistent.NewRoleRepo(db),
+		permission:     persistent.NewPermissionRepo(db),
 		refreshToken:   persistent.NewRefreshTokenRepo(db),
 		media:          persistent.NewMediaRepo(db),
 		profile:        persistent.NewProfileRepo(db),
 		article:        persistent.NewArticleRepo(db),
+		bank:           persistent.NewBankRepo(db),
+		bankStatement:  persistent.NewBankStatementRepo(db),
+		lineItem:       persistent.NewLineItemRepo(db),
+		installment:    persistent.NewInstallmentRepo(db),
 	}
 }
 
@@ -210,25 +262,47 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 
 	articleUC := article.New(repos.article)
 
+	userUC := user.New(repos.user, repos.role)
+	roleUC := role.New(repos.role, repos.permission)
+	permissionUC := permission.New(repos.permission)
+
+	bankStatementUC := bankstatementuc.New(
+		repos.bank,
+		repos.bankStatement,
+		repos.lineItem,
+	)
+	installmentUC := installmentuc.New(repos.installment, repos.lineItem)
+
 	return &usecases{
-		translation: translation.New(repos.translation, repos.translationAPI),
-		auth:        authUC,
-		media:       mediaUC,
-		profile:     profileUC,
-		article:     articleUC,
+		translation:   translation.New(repos.translation, repos.translationAPI),
+		auth:          authUC,
+		media:         mediaUC,
+		profile:       profileUC,
+		article:       articleUC,
+		user:          userUC,
+		role:          roleUC,
+		permission:    permissionUC,
+		bankStatement: bankStatementUC,
+		installment:   installmentUC,
 	}
 }
 
 // initHTTPServer creates and starts HTTP server with routes.
-func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, pg *postgres.Postgres) *httpserver.Server {
-	httpServer := httpserver.New(
-		l,
+func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, healthChecker interface{ Ping() error }) *httpserver.Server {
+	opts := []httpserver.Option{
 		httpserver.Port(cfg.HTTP.Port),
 		httpserver.ReadTimeout(cfg.HTTP.Timeout),
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
-	)
+	}
 
-	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg)
+	// Enable auto-port in development mode to handle port conflicts
+	if !cfg.App.IsProduction() {
+		opts = append(opts, httpserver.AutoPort(true))
+	}
+
+	httpServer := httpserver.New(l, opts...)
+
+	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, uc.user, uc.role, uc.permission, uc.bankStatement, uc.installment, jwtService, l, healthChecker)
 	httpServer.Start()
 
 	return httpServer

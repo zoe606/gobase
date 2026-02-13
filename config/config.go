@@ -26,6 +26,7 @@ type (
 		App               App               `mapstructure:"app"`
 		HTTP              HTTP              `mapstructure:"http"`
 		Log               Log               `mapstructure:"log"`
+		Database          Database          `mapstructure:"database"`
 		Postgres          Postgres          `mapstructure:"postgres"`
 		Redis             Redis             `mapstructure:"redis"`
 		JWT               JWT               `mapstructure:"jwt"`
@@ -41,6 +42,12 @@ type (
 		EmailVerification EmailVerification `mapstructure:"email_verification"`
 		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
 		CircuitBreaker    CircuitBreaker    `mapstructure:"circuit_breaker"`
+	}
+
+	// Database holds database driver configuration.
+	Database struct {
+		Driver string `mapstructure:"driver"` // "postgres" or "sqlite"
+		URL    string `mapstructure:"url"`    // SQLite file path when using sqlite driver
 	}
 
 	// App holds application-specific configuration.
@@ -263,12 +270,22 @@ func (c *Config) Validate() error {
 		}
 	}
 
-	// Database config validation
-	if c.Postgres.Host == "" {
-		errs = append(errs, "POSTGRES_HOST is required")
-	}
-	if c.Postgres.DBName == "" {
-		errs = append(errs, "POSTGRES_DBNAME is required")
+	// Database config validation based on driver
+	switch c.Database.Driver {
+	case "sqlite":
+		if c.Database.URL == "" {
+			errs = append(errs, "DATABASE_URL is required for SQLite driver")
+		}
+	case "postgres", "":
+		// PostgreSQL is the default
+		if c.Postgres.Host == "" {
+			errs = append(errs, "POSTGRES_HOST is required")
+		}
+		if c.Postgres.DBName == "" {
+			errs = append(errs, "POSTGRES_DBNAME is required")
+		}
+	default:
+		errs = append(errs, "DATABASE_DRIVER must be 'postgres' or 'sqlite'")
 	}
 
 	if len(errs) > 0 {
@@ -292,6 +309,10 @@ func setDefaults() {
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
 	viper.SetDefault("log.file", "") // Empty = stdout only
+
+	// Database defaults
+	viper.SetDefault("database.driver", "postgres") // postgres or sqlite
+	viper.SetDefault("database.url", "./data.db")   // SQLite file path
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")
@@ -398,6 +419,10 @@ func bindEnvVars() {
 	// Log
 	viper.BindEnv("log.level", "LOG_LEVEL")
 	viper.BindEnv("log.file", "LOG_FILE")
+
+	// Database
+	viper.BindEnv("database.driver", "DB_DRIVER", "DATABASE_DRIVER")
+	viper.BindEnv("database.url", "DATABASE_URL")
 
 	// Postgres
 	viper.BindEnv("postgres.host", "POSTGRES_HOST", "DB_HOST")
