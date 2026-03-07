@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	authdto "go-boilerplate/internal/dto/auth"
+	"go-boilerplate/internal/dto/auth"
 	"go-boilerplate/internal/handlers/http/v1/auth"
 	autherrors "go-boilerplate/internal/usecase/auth"
 	"go-boilerplate/pkg/jwt"

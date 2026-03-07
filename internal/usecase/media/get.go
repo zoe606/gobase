@@ -3,7 +3,7 @@ package media
 import (
 	"context"
 
-	mediadto "go-boilerplate/internal/dto/media"
+	"go-boilerplate/internal/dto/media"
 	"go-boilerplate/internal/entity"
 )
 

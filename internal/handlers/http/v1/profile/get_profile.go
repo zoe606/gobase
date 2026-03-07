@@ -3,7 +3,7 @@ package profile
 import (
 	"github.com/gofiber/fiber/v2"
 
-	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/dto/profile"
 	"go-boilerplate/internal/handlers/http/middleware"
 	"go-boilerplate/pkg/response"
 )

@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/tx"

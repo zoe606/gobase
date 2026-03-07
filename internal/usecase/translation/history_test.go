@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/usecase/translation"
 	"go-boilerplate/pkg/pagination"

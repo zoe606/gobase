@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/entity"
 )
 

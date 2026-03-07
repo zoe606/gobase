@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	mediadto "go-boilerplate/internal/dto/media"
+	"go-boilerplate/internal/dto/media"
 	"go-boilerplate/pkg/response"
 )
 

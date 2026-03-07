@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 
-	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/dto/profile"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 )

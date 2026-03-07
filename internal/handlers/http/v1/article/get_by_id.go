@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	_ "go-boilerplate/internal/dto/article" // swagger type resolution
 	articleuc "go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/response"
 )

@@ -3,7 +3,7 @@ package auth
 import (
 	"github.com/gofiber/fiber/v2"
 
-	authdto "go-boilerplate/internal/dto/auth"
+	"go-boilerplate/internal/dto/auth"
 	v1 "go-boilerplate/internal/handlers/http/v1"
 	"go-boilerplate/pkg/response"
 )

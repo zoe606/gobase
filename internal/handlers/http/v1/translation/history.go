@@ -3,7 +3,7 @@ package translation
 import (
 	"github.com/gofiber/fiber/v2"
 
-	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/dto/translation"
 	"go-boilerplate/pkg/response"
 )
 

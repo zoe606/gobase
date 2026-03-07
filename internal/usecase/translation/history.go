@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/dto/translation"
 )
 
 // History retrieves translation history from store with pagination.

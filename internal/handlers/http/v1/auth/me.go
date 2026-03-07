@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	authdto "go-boilerplate/internal/dto/auth" // swagger
+	"go-boilerplate/internal/dto/auth" // swagger
 	"go-boilerplate/internal/handlers/http/middleware"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/response"

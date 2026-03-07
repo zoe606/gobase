@@ -5,7 +5,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/dto/profile"
 	"go-boilerplate/internal/handlers/http/middleware"
 	v1 "go-boilerplate/internal/handlers/http/v1"
 	profileuc "go-boilerplate/internal/usecase/profile"

@@ -4,11 +4,11 @@ package usecase
 import (
 	"context"
 
-	articledto "go-boilerplate/internal/dto/article"
-	authdto "go-boilerplate/internal/dto/auth"
-	mediadto "go-boilerplate/internal/dto/media"
-	profiledto "go-boilerplate/internal/dto/profile"
-	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/dto/auth"
+	"go-boilerplate/internal/dto/media"
+	"go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/usecase/auth"
 )

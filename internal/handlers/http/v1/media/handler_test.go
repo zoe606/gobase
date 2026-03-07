@@ -13,7 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	mediadto "go-boilerplate/internal/dto/media"
+	"go-boilerplate/internal/dto/media"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/handlers/http/v1/media"
 	"go-boilerplate/internal/repo"

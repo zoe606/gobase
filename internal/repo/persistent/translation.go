@@ -6,7 +6,7 @@ import (
 
 	"gorm.io/gorm"
 
-	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/tx"

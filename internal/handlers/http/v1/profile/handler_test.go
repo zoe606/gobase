@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/dto/profile"
 	"go-boilerplate/internal/handlers/http/v1/profile"
 	profileuc "go-boilerplate/internal/usecase/profile"
 	"go-boilerplate/pkg/jwt"

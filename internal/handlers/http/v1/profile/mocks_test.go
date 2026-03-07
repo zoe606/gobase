@@ -5,7 +5,7 @@ import (
 	"context"
 	"reflect"
 
-	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/dto/profile"
 
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"

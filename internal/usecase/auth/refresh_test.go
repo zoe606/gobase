@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	authdto "go-boilerplate/internal/dto/auth"
+	"go-boilerplate/internal/dto/auth"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/auth"

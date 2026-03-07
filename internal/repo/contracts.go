@@ -4,8 +4,8 @@ package repo
 import (
 	"context"
 
-	articledto "go-boilerplate/internal/dto/article"
-	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 )
 
