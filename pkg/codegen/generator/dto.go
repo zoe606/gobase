@@ -32,7 +32,10 @@ func (g *Generator) buildRequestDTOContent() string {
 	entityName := g.entityName()
 
 	// Package declaration
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	sb.WriteString(fmt.Sprintf("package %sdto\n\n", pkgName))
+
+	// Imports
+	sb.WriteString(fmt.Sprintf("import (\n\t%q\n)\n\n", g.config.ModuleName+"/pkg/pagination"))
 
 	// CreateRequest
 	sb.WriteString(fmt.Sprintf("// CreateRequest represents the request to create a %s.\n", entityName))
@@ -62,28 +65,9 @@ func (g *Generator) buildRequestDTOContent() string {
 	sb.WriteString("}\n\n")
 
 	// ListRequest (pagination)
-	sb.WriteString(fmt.Sprintf("// ListRequest represents the request to list %ss.\n", strings.ToLower(entityName)))
+	sb.WriteString(fmt.Sprintf("// ListRequest represents the request to list %ss with filters.\n", strings.ToLower(entityName)))
 	sb.WriteString("type ListRequest struct {\n")
-	sb.WriteString("\tPage     int `query:\"page\" validate:\"omitempty,min=1\"`\n")
-	sb.WriteString("\tPageSize int `query:\"page_size\" validate:\"omitempty,min=1,max=100\"`\n")
-	sb.WriteString("}\n\n")
-
-	// GetPageSize helper
-	sb.WriteString("// GetPageSize returns the page size with a default value.\n")
-	sb.WriteString("func (r *ListRequest) GetPageSize() int {\n")
-	sb.WriteString("\tif r.PageSize <= 0 {\n")
-	sb.WriteString("\t\treturn 20\n")
-	sb.WriteString("\t}\n")
-	sb.WriteString("\treturn r.PageSize\n")
-	sb.WriteString("}\n\n")
-
-	// GetOffset helper
-	sb.WriteString("// GetOffset returns the offset for pagination.\n")
-	sb.WriteString("func (r *ListRequest) GetOffset() int {\n")
-	sb.WriteString("\tif r.Page <= 1 {\n")
-	sb.WriteString("\t\treturn 0\n")
-	sb.WriteString("\t}\n")
-	sb.WriteString("\treturn (r.Page - 1) * r.GetPageSize()\n")
+	sb.WriteString("\tpagination.Params\n")
 	sb.WriteString("}\n")
 
 	return sb.String()
@@ -98,7 +82,7 @@ func (g *Generator) buildResponseDTOContent() string {
 	varName := g.varName()
 
 	// Package declaration
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	sb.WriteString(fmt.Sprintf("package %sdto\n\n", pkgName))
 
 	// Imports - check if we need time package
 	needsTime := false
