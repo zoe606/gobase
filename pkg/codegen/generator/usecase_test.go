@@ -116,6 +116,14 @@ func TestBuildUseCaseCreateContent(t *testing.T) {
 		Table: parser.Table{
 			Name: "articles",
 		},
+		Fields: []parser.GoField{
+			{Name: "ID", ColumnName: "id", Type: "uint"},
+			{Name: "Title", ColumnName: "title", Type: "string"},
+			{Name: "Slug", ColumnName: "slug", Type: "string"},
+			{Name: "Content", ColumnName: "content", Type: "string"},
+			{Name: "CreatedAt", ColumnName: "created_at", Type: "time.Time"},
+			{Name: "UpdatedAt", ColumnName: "updated_at", Type: "time.Time"},
+		},
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
@@ -126,12 +134,12 @@ func TestBuildUseCaseCreateContent(t *testing.T) {
 		t.Error("expected package article")
 	}
 
-	// Check imports
+	// Check imports (no alias needed since package is articledto)
 	if !strings.Contains(content, `"context"`) {
 		t.Error("expected context import")
 	}
-	if !strings.Contains(content, `articledto "go-boilerplate/internal/dto/article"`) {
-		t.Error("expected DTO import with alias")
+	if !strings.Contains(content, `"go-boilerplate/internal/dto/article"`) {
+		t.Error("expected DTO import")
 	}
 	if !strings.Contains(content, `"go-boilerplate/internal/entity"`) {
 		t.Error("expected entity import")
@@ -140,6 +148,25 @@ func TestBuildUseCaseCreateContent(t *testing.T) {
 	// Check method signature
 	if !strings.Contains(content, "func (uc *UseCase) Create(ctx context.Context, req articledto.CreateRequest) (*articledto.Response, error)") {
 		t.Error("expected Create method signature")
+	}
+
+	// Check entity field mapping from request
+	if !strings.Contains(content, "Title: req.Title,") {
+		t.Error("expected Title field mapping from request")
+	}
+	if !strings.Contains(content, "Slug: req.Slug,") {
+		t.Error("expected Slug field mapping from request")
+	}
+	if !strings.Contains(content, "Content: req.Content,") {
+		t.Error("expected Content field mapping from request")
+	}
+
+	// Should NOT include auto-generated fields
+	if strings.Contains(content, "ID: req.ID,") {
+		t.Error("should not map ID field from request")
+	}
+	if strings.Contains(content, "CreatedAt: req.CreatedAt,") {
+		t.Error("should not map CreatedAt field from request")
 	}
 
 	// Check repo call
@@ -175,6 +202,11 @@ func TestBuildUseCaseGetByIDContent(t *testing.T) {
 	if !strings.Contains(content, "return nil, ErrNotFound") {
 		t.Error("expected ErrNotFound return")
 	}
+
+	// Check response
+	if !strings.Contains(content, "articledto.NewResponse(article)") {
+		t.Error("expected NewResponse call")
+	}
 }
 
 func TestBuildUseCaseListContent(t *testing.T) {
@@ -192,22 +224,19 @@ func TestBuildUseCaseListContent(t *testing.T) {
 		t.Error("expected List method signature")
 	}
 
-	// Check pagination helpers
-	if !strings.Contains(content, "req.GetPageSize()") {
-		t.Error("expected GetPageSize call")
-	}
-	if !strings.Contains(content, "req.GetOffset()") {
-		t.Error("expected GetOffset call")
+	// Check Normalize call
+	if !strings.Contains(content, "req.Params.Normalize()") {
+		t.Error("expected Normalize() call")
 	}
 
-	// Check repo call
-	if !strings.Contains(content, "uc.articleRepo.List(ctx, pageSize, offset)") {
-		t.Error("expected articleRepo.List call")
+	// Check repo call with req.Params
+	if !strings.Contains(content, "uc.articleRepo.List(ctx, req.Params)") {
+		t.Error("expected articleRepo.List call with req.Params")
 	}
 
-	// Check response
-	if !strings.Contains(content, "articledto.NewListResponse") {
-		t.Error("expected NewListResponse call")
+	// Check response with req.Params
+	if !strings.Contains(content, "articledto.NewListResponse(articles, total, req.Params)") {
+		t.Error("expected NewListResponse call with req.Params")
 	}
 }
 
@@ -215,6 +244,14 @@ func TestBuildUseCaseUpdateContent(t *testing.T) {
 	parseResult := &parser.ParseResult{
 		Table: parser.Table{
 			Name: "articles",
+		},
+		Fields: []parser.GoField{
+			{Name: "ID", ColumnName: "id", Type: "uint"},
+			{Name: "Title", ColumnName: "title", Type: "string"},
+			{Name: "Slug", ColumnName: "slug", Type: "string"},
+			{Name: "Content", ColumnName: "content", Type: "string"},
+			{Name: "CreatedAt", ColumnName: "created_at", Type: "time.Time"},
+			{Name: "UpdatedAt", ColumnName: "updated_at", Type: "time.Time"},
 		},
 	}
 
@@ -231,9 +268,44 @@ func TestBuildUseCaseUpdateContent(t *testing.T) {
 		t.Error("expected GetByID call to fetch existing record")
 	}
 
+	// Check ErrNotFound handling
+	if !strings.Contains(content, "errors.Is(err, repo.ErrNotFound)") {
+		t.Error("expected repo.ErrNotFound check")
+	}
+	if !strings.Contains(content, "return nil, ErrNotFound") {
+		t.Error("expected ErrNotFound return")
+	}
+
+	// Check pointer field update checks
+	if !strings.Contains(content, "if req.Title != nil {") {
+		t.Error("expected pointer check for Title")
+	}
+	if !strings.Contains(content, "article.Title = *req.Title") {
+		t.Error("expected Title assignment from pointer")
+	}
+	if !strings.Contains(content, "if req.Slug != nil {") {
+		t.Error("expected pointer check for Slug")
+	}
+	if !strings.Contains(content, "if req.Content != nil {") {
+		t.Error("expected pointer check for Content")
+	}
+
+	// Should NOT include auto-generated fields
+	if strings.Contains(content, "if req.ID != nil {") {
+		t.Error("should not have pointer check for ID")
+	}
+	if strings.Contains(content, "if req.CreatedAt != nil {") {
+		t.Error("should not have pointer check for CreatedAt")
+	}
+
 	// Check Update call
 	if !strings.Contains(content, "uc.articleRepo.Update(ctx, article)") {
 		t.Error("expected Update call")
+	}
+
+	// Check response
+	if !strings.Contains(content, "articledto.NewResponse(article)") {
+		t.Error("expected NewResponse call")
 	}
 }
 
@@ -260,6 +332,9 @@ func TestBuildUseCaseDeleteContent(t *testing.T) {
 	// Check ErrNotFound handling
 	if !strings.Contains(content, "errors.Is(err, repo.ErrNotFound)") {
 		t.Error("expected repo.ErrNotFound check")
+	}
+	if !strings.Contains(content, "return ErrNotFound") {
+		t.Error("expected ErrNotFound return")
 	}
 }
 
@@ -349,5 +424,94 @@ func TestUseCaseWithDifferentTableNames(t *testing.T) {
 				t.Errorf("expected %s repo.%sRepo field", tt.expectedVar, tt.expectedEntity)
 			}
 		})
+	}
+}
+
+func TestBuildUseCaseCreateContentWithFields(t *testing.T) {
+	parseResult := &parser.ParseResult{
+		Table: parser.Table{
+			Name: "products",
+		},
+		Fields: []parser.GoField{
+			{Name: "ID", ColumnName: "id", Type: "uint"},
+			{Name: "Name", ColumnName: "name", Type: "string"},
+			{Name: "Price", ColumnName: "price", Type: "float64"},
+			{Name: "CategoryID", ColumnName: "category_id", Type: "uint"},
+			{Name: "CreatedAt", ColumnName: "created_at", Type: "time.Time"},
+			{Name: "UpdatedAt", ColumnName: "updated_at", Type: "time.Time"},
+			{Name: "DeletedAt", ColumnName: "deleted_at", Type: "gorm.DeletedAt"},
+		},
+	}
+
+	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
+	content := gen.buildUseCaseCreateContent()
+
+	// Should include user-defined fields
+	if !strings.Contains(content, "Name: req.Name,") {
+		t.Error("expected Name field mapping")
+	}
+	if !strings.Contains(content, "Price: req.Price,") {
+		t.Error("expected Price field mapping")
+	}
+	if !strings.Contains(content, "CategoryID: req.CategoryID,") {
+		t.Error("expected CategoryID field mapping")
+	}
+
+	// Should NOT include auto-generated fields
+	if strings.Contains(content, "ID: req.ID") {
+		t.Error("should not map ID")
+	}
+	if strings.Contains(content, "CreatedAt: req.CreatedAt") {
+		t.Error("should not map CreatedAt")
+	}
+	if strings.Contains(content, "UpdatedAt: req.UpdatedAt") {
+		t.Error("should not map UpdatedAt")
+	}
+	if strings.Contains(content, "DeletedAt: req.DeletedAt") {
+		t.Error("should not map DeletedAt")
+	}
+}
+
+func TestBuildUseCaseUpdateContentWithFields(t *testing.T) {
+	parseResult := &parser.ParseResult{
+		Table: parser.Table{
+			Name: "products",
+		},
+		Fields: []parser.GoField{
+			{Name: "ID", ColumnName: "id", Type: "uint"},
+			{Name: "Name", ColumnName: "name", Type: "string"},
+			{Name: "Price", ColumnName: "price", Type: "float64"},
+			{Name: "CreatedAt", ColumnName: "created_at", Type: "time.Time"},
+			{Name: "UpdatedAt", ColumnName: "updated_at", Type: "time.Time"},
+			{Name: "DeletedAt", ColumnName: "deleted_at", Type: "gorm.DeletedAt"},
+		},
+	}
+
+	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
+	content := gen.buildUseCaseUpdateContent()
+
+	// Check pointer field checks for user-defined fields
+	if !strings.Contains(content, "if req.Name != nil {") {
+		t.Error("expected pointer check for Name")
+	}
+	if !strings.Contains(content, "product.Name = *req.Name") {
+		t.Error("expected Name assignment from pointer")
+	}
+	if !strings.Contains(content, "if req.Price != nil {") {
+		t.Error("expected pointer check for Price")
+	}
+	if !strings.Contains(content, "product.Price = *req.Price") {
+		t.Error("expected Price assignment from pointer")
+	}
+
+	// Should NOT include auto-generated fields
+	if strings.Contains(content, "if req.ID != nil {") {
+		t.Error("should not have pointer check for ID")
+	}
+	if strings.Contains(content, "if req.CreatedAt != nil {") {
+		t.Error("should not have pointer check for CreatedAt")
+	}
+	if strings.Contains(content, "if req.DeletedAt != nil {") {
+		t.Error("should not have pointer check for DeletedAt")
 	}
 }

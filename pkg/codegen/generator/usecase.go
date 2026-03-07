@@ -159,19 +159,25 @@ func (g *Generator) buildUseCaseCreateContent() string {
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
 	sb.WriteString(")\n\n")
 
 	// Method
 	sb.WriteString(fmt.Sprintf("// Create creates a new %s.\n", pkgName))
 	sb.WriteString(fmt.Sprintf("func (uc *UseCase) Create(ctx context.Context, req %s.CreateRequest) (*%s.Response, error) {\n", dtoAlias, dtoAlias))
-	sb.WriteString("\t// TODO: Add validation logic\n\n")
+
+	// Build entity from request fields
 	sb.WriteString(fmt.Sprintf("\t%s := &entity.%s{\n", varName, entityName))
-	sb.WriteString("\t\t// TODO: Map request fields to entity\n")
+	for _, field := range g.result.Fields {
+		if g.isCreateRequestField(field.ColumnName) {
+			sb.WriteString(fmt.Sprintf("\t\t%s: req.%s,\n", field.Name, field.Name))
+		}
+	}
 	sb.WriteString("\t}\n\n")
+
 	sb.WriteString(fmt.Sprintf("\tif err := uc.%sRepo.Create(ctx, %s); err != nil {\n", varName, varName))
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Create - %sRepo.Create: %%w\", err)\n", pkgName, varName))
+	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Create: %%w\", err)\n", pkgName))
 	sb.WriteString("\t}\n\n")
 	sb.WriteString(fmt.Sprintf("\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName))
 	sb.WriteString("}\n")
@@ -194,7 +200,7 @@ func (g *Generator) buildUseCaseGetByIDContent() string {
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
 	sb.WriteString(")\n\n")
 
@@ -206,7 +212,7 @@ func (g *Generator) buildUseCaseGetByIDContent() string {
 	sb.WriteString("\t\tif errors.Is(err, repo.ErrNotFound) {\n")
 	sb.WriteString("\t\t\treturn nil, ErrNotFound\n")
 	sb.WriteString("\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - GetByID - %sRepo.GetByID: %%w\", err)\n", pkgName, varName))
+	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - GetByID: %%w\", err)\n", pkgName))
 	sb.WriteString("\t}\n\n")
 	sb.WriteString(fmt.Sprintf("\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName))
 	sb.WriteString("}\n")
@@ -228,23 +234,18 @@ func (g *Generator) buildUseCaseListContent() string {
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(")\n\n")
 
 	// Method
-	sb.WriteString(fmt.Sprintf("// List retrieves a paginated list of %ss.\n", pkgName))
+	sb.WriteString(fmt.Sprintf("// List retrieves a paginated list of %ss with filters.\n", pkgName))
 	sb.WriteString(fmt.Sprintf("func (uc *UseCase) List(ctx context.Context, req %s.ListRequest) (*%s.ListResponse, error) {\n", dtoAlias, dtoAlias))
-	sb.WriteString("\tpageSize := req.GetPageSize()\n")
-	sb.WriteString("\toffset := req.GetOffset()\n")
-	sb.WriteString("\tpage := req.Page\n")
-	sb.WriteString("\tif page <= 0 {\n")
-	sb.WriteString("\t\tpage = 1\n")
-	sb.WriteString("\t}\n\n")
-	sb.WriteString(fmt.Sprintf("\t%ss, total, err := uc.%sRepo.List(ctx, pageSize, offset)\n", varName, varName))
+	sb.WriteString("\treq.Params.Normalize()\n\n")
+	sb.WriteString(fmt.Sprintf("\t%ss, total, err := uc.%sRepo.List(ctx, req.Params)\n", varName, varName))
 	sb.WriteString("\tif err != nil {\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - List - %sRepo.List: %%w\", err)\n", pkgName, varName))
+	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - List: %%w\", err)\n", pkgName))
 	sb.WriteString("\t}\n\n")
-	sb.WriteString(fmt.Sprintf("\treturn %s.NewListResponse(%ss, total, page, pageSize), nil\n", dtoAlias, varName))
+	sb.WriteString(fmt.Sprintf("\treturn %s.NewListResponse(%ss, total, req.Params), nil\n", dtoAlias, varName))
 	sb.WriteString("}\n")
 
 	return sb.String()
@@ -265,25 +266,34 @@ func (g *Generator) buildUseCaseUpdateContent() string {
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
 	sb.WriteString(")\n\n")
 
 	// Method
 	sb.WriteString(fmt.Sprintf("// Update updates a %s.\n", pkgName))
 	sb.WriteString(fmt.Sprintf("func (uc *UseCase) Update(ctx context.Context, id uint, req %s.UpdateRequest) (*%s.Response, error) {\n", dtoAlias, dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t// Get existing %s\n", pkgName))
 	sb.WriteString(fmt.Sprintf("\t%s, err := uc.%sRepo.GetByID(ctx, id)\n", varName, varName))
 	sb.WriteString("\tif err != nil {\n")
 	sb.WriteString("\t\tif errors.Is(err, repo.ErrNotFound) {\n")
 	sb.WriteString("\t\t\treturn nil, ErrNotFound\n")
 	sb.WriteString("\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Update - %sRepo.GetByID: %%w\", err)\n", pkgName, varName))
+	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Update: %%w\", err)\n", pkgName))
 	sb.WriteString("\t}\n\n")
-	sb.WriteString("\t// TODO: Update fields from request (check for non-nil pointers)\n")
-	sb.WriteString(fmt.Sprintf("\t_ = %s // Remove this line after implementing\n\n", varName))
+
+	// Generate partial update field checks
+	sb.WriteString("\t// Apply partial updates\n")
+	for _, field := range g.result.Fields {
+		if g.isUpdateRequestField(field.ColumnName) {
+			sb.WriteString(fmt.Sprintf("\tif req.%s != nil {\n", field.Name))
+			sb.WriteString(fmt.Sprintf("\t\t%s.%s = *req.%s\n", varName, field.Name, field.Name))
+			sb.WriteString("\t}\n")
+		}
+	}
+	sb.WriteString("\n")
+
 	sb.WriteString(fmt.Sprintf("\tif err := uc.%sRepo.Update(ctx, %s); err != nil {\n", varName, varName))
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Update - %sRepo.Update: %%w\", err)\n", pkgName, varName))
+	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Update: %%w\", err)\n", pkgName))
 	sb.WriteString("\t}\n\n")
 	sb.WriteString(fmt.Sprintf("\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName))
 	sb.WriteString("}\n")
@@ -315,7 +325,7 @@ func (g *Generator) buildUseCaseDeleteContent() string {
 	sb.WriteString("\t\tif errors.Is(err, repo.ErrNotFound) {\n")
 	sb.WriteString("\t\t\treturn ErrNotFound\n")
 	sb.WriteString("\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn fmt.Errorf(\"%s - Delete - %sRepo.Delete: %%w\", err)\n", pkgName, varName))
+	sb.WriteString(fmt.Sprintf("\t\treturn fmt.Errorf(\"%s - Delete: %%w\", err)\n", pkgName))
 	sb.WriteString("\t}\n\n")
 	sb.WriteString("\treturn nil\n")
 	sb.WriteString("}\n")
