@@ -1,4 +1,4 @@
-package profile
+package profiledto
 
 // UpdateProfileRequest contains the fields for updating a user profile.
 type UpdateProfileRequest struct {

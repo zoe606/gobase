@@ -1,5 +1,5 @@
 // Package auth provides DTOs for authentication operations.
-package auth
+package authdto
 
 // RegisterRequest represents registration request.
 type RegisterRequest struct {

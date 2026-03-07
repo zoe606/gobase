@@ -1,4 +1,4 @@
-package profile
+package profiledto
 
 import (
 	"go-boilerplate/internal/entity"
