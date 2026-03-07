@@ -1,4 +1,93 @@
+basePath: /v1
 definitions:
+  go-boilerplate_internal_dto_article.CreateRequest:
+    properties:
+      content:
+        type: string
+      cover_media_id:
+        type: integer
+      excerpt:
+        type: string
+      published_at:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+      view_count:
+        type: integer
+    required:
+    - content
+    - cover_media_id
+    - excerpt
+    - published_at
+    - slug
+    - status
+    - title
+    - user_id
+    - view_count
+    type: object
+  go-boilerplate_internal_dto_article.ListResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/go-boilerplate_internal_dto_article.Response'
+        type: array
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_pagination.Meta'
+    type: object
+  go-boilerplate_internal_dto_article.Response:
+    properties:
+      content:
+        type: string
+      cover_media_id:
+        type: integer
+      created_at:
+        type: string
+      excerpt:
+        type: string
+      id:
+        type: integer
+      published_at:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      updated_at:
+        type: string
+      user_id:
+        type: integer
+      view_count:
+        type: integer
+    type: object
+  go-boilerplate_internal_dto_article.UpdateRequest:
+    properties:
+      content:
+        type: string
+      cover_media_id:
+        type: integer
+      excerpt:
+        type: string
+      published_at:
+        type: string
+      slug:
+        type: string
+      status:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+      view_count:
+        type: integer
+    type: object
   go-boilerplate_internal_dto_auth.LoginRequest:
     properties:
       email:
@@ -125,6 +214,35 @@ definitions:
       upload_url:
         type: string
     type: object
+  go-boilerplate_internal_dto_profile.AvatarResponse:
+    properties:
+      id:
+        type: integer
+      url:
+        type: string
+    type: object
+  go-boilerplate_internal_dto_profile.ProfileResponse:
+    properties:
+      avatar:
+        $ref: '#/definitions/go-boilerplate_internal_dto_profile.AvatarResponse'
+      bio:
+        type: string
+      phone:
+        type: string
+      user_id:
+        type: integer
+    type: object
+  go-boilerplate_internal_dto_profile.UpdateProfileRequest:
+    properties:
+      avatar_media_id:
+        type: integer
+      bio:
+        maxLength: 500
+        type: string
+      phone:
+        maxLength: 20
+        type: string
+    type: object
   go-boilerplate_internal_dto_translation.TranslateRequest:
     properties:
       destination:
@@ -168,6 +286,17 @@ definitions:
     - MediaTypeVideo
     - MediaTypeAudio
     - MediaTypeOther
+  go-boilerplate_pkg_pagination.Meta:
+    properties:
+      limit:
+        type: integer
+      page:
+        type: integer
+      total:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
   go-boilerplate_pkg_response.ErrorDetail:
     properties:
       code:
@@ -205,6 +334,28 @@ definitions:
         items:
           $ref: '#/definitions/go-boilerplate_internal_dto_translation.TranslationResponse'
         type: array
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_ListResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_article.ListResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_Response:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_article.Response'
       meta:
         $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
       request_id:
@@ -271,6 +422,17 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/go-boilerplate_internal_dto_media.PresignedURLResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_profile_ProfileResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_profile.ProfileResponse'
       meta:
         $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
       request_id:
@@ -466,9 +628,170 @@ definitions:
     additionalProperties:
       type: string
     type: object
+host: localhost:8080
 info:
   contact: {}
+  description: Using a translation service as an example
+  title: Go Clean Template API
+  version: "1.0"
 paths:
+  /articles:
+    get:
+      consumes:
+      - application/json
+      description: Get a paginated list of articles
+      operationId: article-list
+      parameters:
+      - default: 1
+        description: Page number
+        in: query
+        name: page
+        type: integer
+      - default: 20
+        description: Page size
+        in: query
+        name: page_size
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_ListResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: List articles
+      tags:
+      - articles
+    post:
+      consumes:
+      - application/json
+      description: Create a new article
+      operationId: article-create
+      parameters:
+      - description: Create Article request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_article.CreateRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Create article
+      tags:
+      - articles
+  /articles/{id}:
+    delete:
+      consumes:
+      - application/json
+      description: Delete a article by ID
+      operationId: article-delete
+      parameters:
+      - description: Article ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No Content
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Delete article
+      tags:
+      - articles
+    get:
+      consumes:
+      - application/json
+      description: Get a article by its ID
+      operationId: article-get-by-id
+      parameters:
+      - description: Article ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_Response'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Get article by ID
+      tags:
+      - articles
+    put:
+      consumes:
+      - application/json
+      description: Update an existing article
+      operationId: article-update
+      parameters:
+      - description: Article ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Update Article request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_article.UpdateRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_Response'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Update article
+      tags:
+      - articles
   /auth/login:
     post:
       consumes:
@@ -876,6 +1199,66 @@ paths:
       summary: Upload a file
       tags:
       - media
+  /profile:
+    get:
+      description: Returns the profile of the currently authenticated user
+      operationId: profile-get
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_profile_ProfileResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Get current user's profile
+      tags:
+      - profile
+    patch:
+      consumes:
+      - application/json
+      description: Updates the profile of the currently authenticated user
+      operationId: profile-update
+      parameters:
+      - description: Profile update data
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_profile.UpdateProfileRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_profile_ProfileResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Update current user's profile
+      tags:
+      - profile
   /translation/do-translate:
     post:
       consumes:
