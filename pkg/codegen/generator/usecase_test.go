@@ -17,12 +17,17 @@ func TestBuildUseCaseInterfaceContent(t *testing.T) {
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
 	content := gen.buildUseCaseInterfaceContent()
 
+	// Check import hint references the DTO package path
+	if !strings.Contains(content, `"go-boilerplate/internal/dto/article"`) {
+		t.Error("expected import hint for internal/dto/article")
+	}
+
 	// Check interface name
 	if !strings.Contains(content, "Article interface") {
 		t.Error("expected Article interface")
 	}
 
-	// Check method signatures with DTO aliases
+	// Check method signatures with DTO package prefix (articledto)
 	if !strings.Contains(content, "Create(ctx context.Context, req articledto.CreateRequest) (*articledto.Response, error)") {
 		t.Error("expected Create method with DTO types")
 	}

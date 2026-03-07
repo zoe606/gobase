@@ -63,6 +63,12 @@ func (g *Generator) GenerateUseCase() error {
 		}
 	}
 
+	// Generate mocks_test.go
+	mocksContent := g.buildUseCaseMocksTestContent()
+	if err := g.writeFile(basePath+"/mocks_test.go", mocksContent); err != nil {
+		return err
+	}
+
 	return nil
 }
 
@@ -73,6 +79,10 @@ func (g *Generator) buildUseCaseInterfaceContent() string {
 	entityName := g.entityName()
 	pkgName := g.packageName()
 	dtoAlias := pkgName + "dto"
+	dtoImport := g.config.ModuleName + "/internal/dto/" + pkgName
+
+	// Include import hint so the caller knows which import to add
+	sb.WriteString(fmt.Sprintf("\n\t// import %q\n", dtoImport))
 
 	sb.WriteString(fmt.Sprintf("\n\t// %s defines %s use case operations.\n", entityName, entityName))
 	sb.WriteString(fmt.Sprintf("\t%s interface {\n", entityName))
@@ -353,6 +363,17 @@ func (g *Generator) buildUseCaseTestContent(methodName string) string {
 	sb.WriteString(fmt.Sprintf("\t_ = %s.New(nil)\n", pkgName))
 	sb.WriteString("\tt.Skip(\"Test not implemented\")\n")
 	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// buildUseCaseMocksTestContent builds the mocks_test.go file content.
+func (g *Generator) buildUseCaseMocksTestContent() string {
+	pkgName := g.packageName()
+
+	var sb strings.Builder
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n", pkgName))
 
 	return sb.String()
 }
