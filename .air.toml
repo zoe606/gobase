@@ -10,10 +10,10 @@ tmp_dir = "tmp"
   args_bin = ["-config", "./config/config.yaml"]
   
   # Binary output (Windows needs .exe)
-  bin = "tmp\main.exe"
-  
-  # Build command (Windows compatible)
-  cmd = "go build -o ./tmp/main.exe ./cmd/app"
+  bin = "./tmp/main"
+
+  # Build command
+  cmd = "go build -o ./tmp/main ./cmd/app"
   
   # Build delay after file change (ms)
   delay = 1000
