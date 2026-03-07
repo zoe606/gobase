@@ -1,6 +1,8 @@
 module go-boilerplate
 
-go 1.25.0
+go 1.25.8
+
+toolchain go1.26.1
 
 tool (
 	github.com/air-verse/air
@@ -16,7 +18,7 @@ require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/validator/v10 v10.23.0
 	github.com/goccy/go-json v0.10.5
-	github.com/gofiber/fiber/v2 v2.52.9
+	github.com/gofiber/fiber/v2 v2.52.12
 	github.com/gofiber/swagger v1.1.0
 	github.com/golang-jwt/jwt/v5 v5.3.0
 	github.com/google/uuid v1.6.0
