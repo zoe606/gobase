@@ -79,6 +79,7 @@ func (g *Generator) buildHandlerMainContent() string {
 	sb.WriteString("// RegisterRoutes sets up routes.\n")
 	sb.WriteString("func (h *Handler) RegisterRoutes(router fiber.Router) {\n")
 	sb.WriteString(fmt.Sprintf("\t%ss := router.Group(\"/%ss\")\n", g.varName(), g.varName()))
+	sb.WriteString(fmt.Sprintf("\t// TODO: Add auth middleware: %ss.Use(middleware.JWT(jwtService))\n", g.varName()))
 	sb.WriteString("\t{\n")
 	sb.WriteString(fmt.Sprintf("\t\t%ss.Post(\"/\", h.Create)\n", g.varName()))
 	sb.WriteString(fmt.Sprintf("\t\t%ss.Get(\"/\", h.List)\n", g.varName()))
@@ -105,7 +106,7 @@ func (g *Generator) buildHandlerCreateContent() string {
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"github.com/gofiber/fiber/v2\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\tv1 %q\n", g.config.ModuleName+"/internal/handlers/http/v1"))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/response"))
 	sb.WriteString(")\n\n")
@@ -163,7 +164,7 @@ func (g *Generator) buildHandlerGetByIDContent() string {
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"strconv\"\n\n")
 	sb.WriteString("\t\"github.com/gofiber/fiber/v2\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t_ %q // swagger type resolution\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%s %q\n", ucAlias, g.config.ModuleName+"/internal/usecase/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/response"))
 	sb.WriteString(")\n\n")
@@ -214,7 +215,7 @@ func (g *Generator) buildHandlerListContent() string {
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"github.com/gofiber/fiber/v2\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/response"))
 	sb.WriteString(")\n\n")
 
@@ -265,7 +266,7 @@ func (g *Generator) buildHandlerUpdateContent() string {
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"strconv\"\n\n")
 	sb.WriteString("\t\"github.com/gofiber/fiber/v2\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%s %q\n", dtoAlias, g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\tv1 %q\n", g.config.ModuleName+"/internal/handlers/http/v1"))
 	sb.WriteString(fmt.Sprintf("\t%s %q\n", ucAlias, g.config.ModuleName+"/internal/usecase/"+pkgName))
 	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/response"))
