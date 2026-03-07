@@ -32,6 +32,7 @@ Handler → UseCase → Repository → Entity/External API
 - `dto/*/request.go` - Request DTOs with JSON + validation tags
 - `dto/*/response.go` - Response DTOs with JSON tags and `New*` helpers
 - No output.go layer - usecases return response DTOs directly
+- Package naming: `package articledto` (not `package article`) — avoids import alias issues with swag
 
 ### Error Handling
 - `repo.ErrNotFound` - Standard sentinel error for "not found"
@@ -57,6 +58,8 @@ make lint             # Run golangci-lint
 # Code Generation
 go generate ./...     # Regenerate mocks (requires mockgen)
 make swag             # Regenerate Swagger docs
+make gen-full MIGRATION=000012  # Generate all layers from migration
+make wire             # Auto-wire DI, routes, and contracts
 
 # Docker
 make compose-up       # Start all services
@@ -183,6 +186,22 @@ internal/handlers/http/v1/media/
 5. **Follow existing patterns** - look at `auth` package as reference
 
 ## Adding New Features
+
+### Quick Path (Recommended)
+
+```bash
+make migrate-create name=create_orders       # 1. Create migration
+# Edit the .up.sql and .down.sql files        # 2. Write SQL
+POSTGRES_URL="..." make migrate-up            # 3. Run migration
+make gen-full MIGRATION=000012               # 4. Generate all layers
+make wire                                     # 5. Auto-wire DI, routes, contracts
+make check-all                                # 6. Verify everything compiles/passes
+make swag                                     # 7. Regenerate Swagger docs
+```
+
+This generates entity, DTOs, repo, usecase (with tests), and handler — then auto-wires contracts, DI, and routes.
+
+### Manual Path
 
 1. **Entity**: Add GORM model in `internal/entity/`
 2. **Repository**: Add interface in `internal/repo/contracts.go`, implement in `internal/repo/persistent/`
