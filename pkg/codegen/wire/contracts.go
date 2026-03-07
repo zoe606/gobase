@@ -61,7 +61,7 @@ func wireRepoContract(cfg Config, f Feature) error {
 		return nil
 	}
 
-	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil {
+	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil { //nolint:gosec // dev tool operating on trusted local paths
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 
@@ -123,7 +123,7 @@ func wireUsecaseContract(cfg Config, f Feature) error {
 		return nil
 	}
 
-	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil {
+	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil { //nolint:gosec // dev tool operating on trusted local paths
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 

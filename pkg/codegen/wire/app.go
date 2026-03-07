@@ -8,13 +8,13 @@ import (
 )
 
 // wireApp adds feature wiring to internal/app/app.go:
-// - Import for the usecase package
-// - Field in repositories struct
-// - Field in usecases struct
-// - Initialization in initRepositories()
-// - Initialization in initUseCases()
-// - Parameter in SetupRoutes call
-// - Entity in AutoMigrate call
+// - Import for the usecase package.
+// - Field in repositories struct.
+// - Field in usecases struct.
+// - Initialization in initRepositories().
+// - Initialization in initUseCases().
+// - Parameter in SetupRoutes call.
+// - Entity in AutoMigrate call.
 func wireApp(cfg Config, f Feature) error {
 	relPath := "internal/app/app.go"
 	fullPath := filepath.Join(cfg.OutputDir, relPath)
@@ -62,7 +62,7 @@ func wireApp(cfg Config, f Feature) error {
 		return nil
 	}
 
-	if err := os.WriteFile(fullPath, []byte(contentStr), 0o600); err != nil {
+	if err := os.WriteFile(fullPath, []byte(contentStr), 0o600); err != nil { //nolint:gosec // dev tool operating on trusted local paths
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 
@@ -248,7 +248,7 @@ func addSetupRoutesArg(content, newArg string) string {
 	insertMarkers := []string{", jwtService"}
 
 	for _, marker := range insertMarkers {
-		markerIdx := strings.Index(string(callContent), marker)
+		markerIdx := strings.Index(callContent, marker)
 		if markerIdx != -1 {
 			insertPoint = callIdx + markerIdx
 			break

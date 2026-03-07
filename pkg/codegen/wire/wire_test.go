@@ -9,7 +9,7 @@ import (
 
 // setupTestProject creates a minimal project structure in a temp directory
 // with the given features. Returns the temp directory path.
-func setupTestProject(t *testing.T, features []string, wiredFeatures []string) string {
+func setupTestProject(t *testing.T, features, wiredFeatures []string) string {
 	t.Helper()
 
 	dir := t.TempDir()

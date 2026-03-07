@@ -5,7 +5,7 @@ import (
 	"errors"
 	"fmt"
 
-	"go-boilerplate/internal/dto/auth"
+	authdto "go-boilerplate/internal/dto/auth"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/hasher"
 )

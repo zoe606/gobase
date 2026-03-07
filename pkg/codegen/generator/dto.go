@@ -32,10 +32,10 @@ func (g *Generator) buildRequestDTOContent() string {
 	entityName := g.entityName()
 
 	// Package declaration
-	sb.WriteString(fmt.Sprintf("package %sdto\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %sdto\n\n", pkgName)
 
 	// Imports
-	sb.WriteString(fmt.Sprintf("import (\n\t%q\n)\n\n", g.config.ModuleName+"/pkg/pagination"))
+	fmt.Fprintf(&sb, "import (\n\t%q\n)\n\n", g.config.ModuleName+"/pkg/pagination")
 
 	// CreateRequest
 	sb.WriteString(fmt.Sprintf("// CreateRequest represents the request to create a %s.\n", entityName))

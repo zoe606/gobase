@@ -20,7 +20,7 @@ func buildPanicMessage(ctx *fiber.Ctx, err interface{}) string {
 	result.WriteString(" ")
 	result.WriteString(ctx.OriginalURL())
 	result.WriteString(" PANIC DETECTED: ")
-	result.WriteString(fmt.Sprintf("%v\n%s\n", err, debug.Stack()))
+	fmt.Fprintf(&result, "%v\n%s\n", err, debug.Stack())
 
 	return result.String()
 }
