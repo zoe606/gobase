@@ -343,8 +343,450 @@ func (g *Generator) buildUseCaseDeleteContent() string {
 	return sb.String()
 }
 
-// buildUseCaseTestContent builds a test file scaffold.
+// buildUseCaseTestContent builds a table-driven test file for a usecase method.
 func (g *Generator) buildUseCaseTestContent(methodName string) string {
+	switch methodName {
+	case "Create":
+		return g.buildUseCaseCreateTestContent()
+	case "GetByID":
+		return g.buildUseCaseGetByIDTestContent()
+	case "List":
+		return g.buildUseCaseListTestContent()
+	case "Update":
+		return g.buildUseCaseUpdateTestContent()
+	case "Delete":
+		return g.buildUseCaseDeleteTestContent()
+	default:
+		return g.buildUseCaseGenericTestContent(methodName)
+	}
+}
+
+// buildUseCaseCreateTestContent builds the create_test.go file content.
+func (g *Generator) buildUseCaseCreateTestContent() string {
+	var sb strings.Builder
+
+	pkgName := g.packageName()
+	entityName := g.entityName()
+	dtoAlias := pkgName + "dto"
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"context\"\n")
+	sb.WriteString("\t\"errors\"\n")
+	sb.WriteString("\t\"testing\"\n\n")
+	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	sb.WriteString(")\n\n")
+
+	sb.WriteString("func TestCreate(t *testing.T) {\n")
+	sb.WriteString("\tt.Parallel()\n\n")
+
+	sb.WriteString("\ttests := []struct {\n")
+	sb.WriteString("\t\tname    string\n")
+	sb.WriteString(fmt.Sprintf("\t\treq     %s.CreateRequest\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	sb.WriteString("\t\twantErr bool\n")
+	sb.WriteString("\t}{\n")
+
+	// Success case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"success\",\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.CreateRequest{},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.createFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn nil\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t},\n")
+
+	// Error case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"repo error\",\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.CreateRequest{},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.createFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn errors.New(\"db error\")\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	sb.WriteString("\t}\n\n")
+
+	// Test runner
+	sb.WriteString("\tfor _, tt := range tests {\n")
+	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
+	sb.WriteString("\t\t\tt.Parallel()\n\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	sb.WriteString("\t\t\tresult, err := uc.Create(context.Background(), tt.req)\n")
+	sb.WriteString("\t\t\tif tt.wantErr {\n")
+	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
+	sb.WriteString("\t\t\t\treturn\n")
+	sb.WriteString("\t\t\t}\n")
+	sb.WriteString("\t\t\trequire.NoError(t, err)\n")
+	sb.WriteString("\t\t\trequire.NotNil(t, result)\n")
+	sb.WriteString("\t\t})\n")
+	sb.WriteString("\t}\n")
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// buildUseCaseGetByIDTestContent builds the get_by_id_test.go file content.
+func (g *Generator) buildUseCaseGetByIDTestContent() string {
+	var sb strings.Builder
+
+	pkgName := g.packageName()
+	entityName := g.entityName()
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"context\"\n")
+	sb.WriteString("\t\"errors\"\n")
+	sb.WriteString("\t\"testing\"\n\n")
+	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	sb.WriteString(")\n\n")
+
+	sb.WriteString("func TestGetByID(t *testing.T) {\n")
+	sb.WriteString("\tt.Parallel()\n\n")
+
+	sb.WriteString("\ttests := []struct {\n")
+	sb.WriteString("\t\tname    string\n")
+	sb.WriteString("\t\tid      uint\n")
+	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	sb.WriteString("\t\twantErr bool\n")
+	sb.WriteString("\t}{\n")
+
+	// Success case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"success\",\n")
+	sb.WriteString("\t\t\tid:   1,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn &entity.%s{}, nil\n", entityName))
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t},\n")
+
+	// Not found case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"not found\",\n")
+	sb.WriteString("\t\t\tid:   999,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn nil, repo.ErrNotFound\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	// Repo error case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"repo error\",\n")
+	sb.WriteString("\t\t\tid:   1,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn nil, errors.New(\"db error\")\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	sb.WriteString("\t}\n\n")
+
+	// Test runner
+	sb.WriteString("\tfor _, tt := range tests {\n")
+	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
+	sb.WriteString("\t\t\tt.Parallel()\n\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	sb.WriteString("\t\t\tresult, err := uc.GetByID(context.Background(), tt.id)\n")
+	sb.WriteString("\t\t\tif tt.wantErr {\n")
+	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
+	sb.WriteString("\t\t\t\treturn\n")
+	sb.WriteString("\t\t\t}\n")
+	sb.WriteString("\t\t\trequire.NoError(t, err)\n")
+	sb.WriteString("\t\t\trequire.NotNil(t, result)\n")
+	sb.WriteString("\t\t})\n")
+	sb.WriteString("\t}\n")
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// buildUseCaseListTestContent builds the list_test.go file content.
+func (g *Generator) buildUseCaseListTestContent() string {
+	var sb strings.Builder
+
+	pkgName := g.packageName()
+	entityName := g.entityName()
+	dtoAlias := pkgName + "dto"
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"context\"\n")
+	sb.WriteString("\t\"errors\"\n")
+	sb.WriteString("\t\"testing\"\n\n")
+	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/pagination"))
+	sb.WriteString(")\n\n")
+
+	sb.WriteString("func TestList(t *testing.T) {\n")
+	sb.WriteString("\tt.Parallel()\n\n")
+
+	sb.WriteString("\ttests := []struct {\n")
+	sb.WriteString("\t\tname    string\n")
+	sb.WriteString(fmt.Sprintf("\t\treq     %s.ListRequest\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	sb.WriteString("\t\twantErr bool\n")
+	sb.WriteString("\t}{\n")
+
+	// Success case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"success\",\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.ListRequest{Params: pagination.NewParams()},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.listFn = func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn []*entity.%s{{}}, 1, nil\n", entityName))
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t},\n")
+
+	// Repo error case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"repo error\",\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.ListRequest{Params: pagination.NewParams()},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.listFn = func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn nil, 0, errors.New(\"db error\")\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	sb.WriteString("\t}\n\n")
+
+	// Test runner
+	sb.WriteString("\tfor _, tt := range tests {\n")
+	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
+	sb.WriteString("\t\t\tt.Parallel()\n\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	sb.WriteString("\t\t\tresult, err := uc.List(context.Background(), tt.req)\n")
+	sb.WriteString("\t\t\tif tt.wantErr {\n")
+	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
+	sb.WriteString("\t\t\t\treturn\n")
+	sb.WriteString("\t\t\t}\n")
+	sb.WriteString("\t\t\trequire.NoError(t, err)\n")
+	sb.WriteString("\t\t\trequire.NotNil(t, result)\n")
+	sb.WriteString("\t\t})\n")
+	sb.WriteString("\t}\n")
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// buildUseCaseUpdateTestContent builds the update_test.go file content.
+func (g *Generator) buildUseCaseUpdateTestContent() string {
+	var sb strings.Builder
+
+	pkgName := g.packageName()
+	entityName := g.entityName()
+	dtoAlias := pkgName + "dto"
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"context\"\n")
+	sb.WriteString("\t\"errors\"\n")
+	sb.WriteString("\t\"testing\"\n\n")
+	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	sb.WriteString(")\n\n")
+
+	sb.WriteString("func TestUpdate(t *testing.T) {\n")
+	sb.WriteString("\tt.Parallel()\n\n")
+
+	sb.WriteString("\ttests := []struct {\n")
+	sb.WriteString("\t\tname    string\n")
+	sb.WriteString("\t\tid      uint\n")
+	sb.WriteString(fmt.Sprintf("\t\treq     %s.UpdateRequest\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	sb.WriteString("\t\twantErr bool\n")
+	sb.WriteString("\t}{\n")
+
+	// Success case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"success\",\n")
+	sb.WriteString("\t\t\tid:   1,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn &entity.%s{}, nil\n", entityName))
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.updateFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn nil\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t},\n")
+
+	// Not found case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"not found\",\n")
+	sb.WriteString("\t\t\tid:   999,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn nil, repo.ErrNotFound\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	// Repo error case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"repo error\",\n")
+	sb.WriteString("\t\t\tid:   1,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias))
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn &entity.%s{}, nil\n", entityName))
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString(fmt.Sprintf("\t\t\t\tm.updateFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	sb.WriteString("\t\t\t\t\treturn errors.New(\"db error\")\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	sb.WriteString("\t}\n\n")
+
+	// Test runner
+	sb.WriteString("\tfor _, tt := range tests {\n")
+	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
+	sb.WriteString("\t\t\tt.Parallel()\n\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	sb.WriteString("\t\t\tresult, err := uc.Update(context.Background(), tt.id, tt.req)\n")
+	sb.WriteString("\t\t\tif tt.wantErr {\n")
+	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
+	sb.WriteString("\t\t\t\treturn\n")
+	sb.WriteString("\t\t\t}\n")
+	sb.WriteString("\t\t\trequire.NoError(t, err)\n")
+	sb.WriteString("\t\t\trequire.NotNil(t, result)\n")
+	sb.WriteString("\t\t})\n")
+	sb.WriteString("\t}\n")
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// buildUseCaseDeleteTestContent builds the delete_test.go file content.
+func (g *Generator) buildUseCaseDeleteTestContent() string {
+	var sb strings.Builder
+
+	pkgName := g.packageName()
+	entityName := g.entityName()
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"context\"\n")
+	sb.WriteString("\t\"errors\"\n")
+	sb.WriteString("\t\"testing\"\n\n")
+	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	sb.WriteString(")\n\n")
+
+	sb.WriteString("func TestDelete(t *testing.T) {\n")
+	sb.WriteString("\tt.Parallel()\n\n")
+
+	sb.WriteString("\ttests := []struct {\n")
+	sb.WriteString("\t\tname    string\n")
+	sb.WriteString("\t\tid      uint\n")
+	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	sb.WriteString("\t\twantErr bool\n")
+	sb.WriteString("\t}{\n")
+
+	// Success case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"success\",\n")
+	sb.WriteString("\t\t\tid:   1,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString("\t\t\t\tm.deleteFn = func(ctx context.Context, id uint) error {\n")
+	sb.WriteString("\t\t\t\t\treturn nil\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t},\n")
+
+	// Not found case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"not found\",\n")
+	sb.WriteString("\t\t\tid:   999,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString("\t\t\t\tm.deleteFn = func(ctx context.Context, id uint) error {\n")
+	sb.WriteString("\t\t\t\t\treturn repo.ErrNotFound\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	// Repo error case
+	sb.WriteString("\t\t{\n")
+	sb.WriteString("\t\t\tname: \"repo error\",\n")
+	sb.WriteString("\t\t\tid:   1,\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	sb.WriteString("\t\t\t\tm.deleteFn = func(ctx context.Context, id uint) error {\n")
+	sb.WriteString("\t\t\t\t\treturn errors.New(\"db error\")\n")
+	sb.WriteString("\t\t\t\t}\n")
+	sb.WriteString("\t\t\t},\n")
+	sb.WriteString("\t\t\twantErr: true,\n")
+	sb.WriteString("\t\t},\n")
+
+	sb.WriteString("\t}\n\n")
+
+	// Test runner
+	sb.WriteString("\tfor _, tt := range tests {\n")
+	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
+	sb.WriteString("\t\t\tt.Parallel()\n\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
+	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	sb.WriteString("\t\t\terr := uc.Delete(context.Background(), tt.id)\n")
+	sb.WriteString("\t\t\tif tt.wantErr {\n")
+	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
+	sb.WriteString("\t\t\t\treturn\n")
+	sb.WriteString("\t\t\t}\n")
+	sb.WriteString("\t\t\trequire.NoError(t, err)\n")
+	sb.WriteString("\t\t})\n")
+	sb.WriteString("\t}\n")
+	sb.WriteString("}\n")
+
+	return sb.String()
+}
+
+// buildUseCaseGenericTestContent builds a generic test stub for unknown methods.
+func (g *Generator) buildUseCaseGenericTestContent(methodName string) string {
 	var sb strings.Builder
 
 	pkgName := g.packageName()
@@ -352,28 +794,66 @@ func (g *Generator) buildUseCaseTestContent(methodName string) string {
 	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
 
 	sb.WriteString("import (\n")
-	sb.WriteString("\t\"context\"\n")
-	sb.WriteString("\t\"testing\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	sb.WriteString("\t\"testing\"\n")
 	sb.WriteString(")\n\n")
 
 	sb.WriteString(fmt.Sprintf("func Test%s(t *testing.T) {\n", methodName))
+	sb.WriteString("\tt.Parallel()\n")
 	sb.WriteString("\t// TODO: Implement test\n")
-	sb.WriteString("\t_ = context.Background()\n")
-	sb.WriteString(fmt.Sprintf("\t_ = %s.New(nil)\n", pkgName))
-	sb.WriteString("\tt.Skip(\"Test not implemented\")\n")
 	sb.WriteString("}\n")
 
 	return sb.String()
 }
 
-// buildUseCaseMocksTestContent builds the mocks_test.go file content.
+// buildUseCaseMocksTestContent builds the mocks_test.go file with function-based mocks.
 func (g *Generator) buildUseCaseMocksTestContent() string {
-	pkgName := g.packageName()
-
 	var sb strings.Builder
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n", pkgName))
+	pkgName := g.packageName()
+	entityName := g.entityName()
+	varName := g.varName()
+
+	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+
+	sb.WriteString("import (\n")
+	sb.WriteString("\t\"context\"\n\n")
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/pagination"))
+	sb.WriteString(")\n\n")
+
+	// Mock struct
+	sb.WriteString(fmt.Sprintf("type mock%sRepo struct {\n", entityName))
+	sb.WriteString(fmt.Sprintf("\tcreateFn  func(ctx context.Context, %s *entity.%s) error\n", varName, entityName))
+	sb.WriteString(fmt.Sprintf("\tgetByIDFn func(ctx context.Context, id uint) (*entity.%s, error)\n", entityName))
+	sb.WriteString(fmt.Sprintf("\tlistFn    func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error)\n", entityName))
+	sb.WriteString(fmt.Sprintf("\tupdateFn  func(ctx context.Context, %s *entity.%s) error\n", varName, entityName))
+	sb.WriteString("\tdeleteFn  func(ctx context.Context, id uint) error\n")
+	sb.WriteString("}\n\n")
+
+	// Create method
+	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) Create(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
+	sb.WriteString(fmt.Sprintf("\treturn m.createFn(ctx, %s)\n", varName))
+	sb.WriteString("}\n\n")
+
+	// GetByID method
+	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) GetByID(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName, entityName))
+	sb.WriteString("\treturn m.getByIDFn(ctx, id)\n")
+	sb.WriteString("}\n\n")
+
+	// List method
+	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) List(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName, entityName))
+	sb.WriteString("\treturn m.listFn(ctx, params)\n")
+	sb.WriteString("}\n\n")
+
+	// Update method
+	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) Update(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
+	sb.WriteString(fmt.Sprintf("\treturn m.updateFn(ctx, %s)\n", varName))
+	sb.WriteString("}\n\n")
+
+	// Delete method
+	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) Delete(ctx context.Context, id uint) error {\n", entityName))
+	sb.WriteString("\treturn m.deleteFn(ctx, id)\n")
+	sb.WriteString("}\n")
 
 	return sb.String()
 }

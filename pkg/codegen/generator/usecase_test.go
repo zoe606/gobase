@@ -351,32 +351,196 @@ func TestBuildUseCaseTestContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildUseCaseTestContent("Create")
 
-	// Check package (should be _test)
+	// Test Create test content
+	t.Run("Create", func(t *testing.T) {
+		content := gen.buildUseCaseTestContent("Create")
+
+		// Check package (should be _test)
+		if !strings.Contains(content, "package article_test") {
+			t.Error("expected package article_test")
+		}
+
+		// Check imports
+		if !strings.Contains(content, `"context"`) {
+			t.Error("expected context import")
+		}
+		if !strings.Contains(content, `"testing"`) {
+			t.Error("expected testing import")
+		}
+		if !strings.Contains(content, `"go-boilerplate/internal/usecase/article"`) {
+			t.Error("expected usecase import")
+		}
+
+		// Check test function
+		if !strings.Contains(content, "func TestCreate(t *testing.T)") {
+			t.Error("expected TestCreate function")
+		}
+
+		// Check table-driven test structure
+		if !strings.Contains(content, "t.Parallel()") {
+			t.Error("expected t.Parallel()")
+		}
+		if !strings.Contains(content, "for _, tt := range tests") {
+			t.Error("expected table-driven test loop")
+		}
+		if !strings.Contains(content, "require.NoError") {
+			t.Error("expected require.NoError")
+		}
+		if !strings.Contains(content, "require.Error") {
+			t.Error("expected require.Error")
+		}
+		if !strings.Contains(content, "mockFn") {
+			t.Error("expected mockFn in test struct")
+		}
+		if !strings.Contains(content, "mockArticleRepo") {
+			t.Error("expected mockArticleRepo usage")
+		}
+
+		// Should NOT contain t.Skip
+		if strings.Contains(content, "t.Skip") {
+			t.Error("should not contain t.Skip")
+		}
+
+		// Check New constructor usage with mock
+		if !strings.Contains(content, "article.New(mockRepo)") {
+			t.Error("expected article.New(mockRepo) usage")
+		}
+	})
+
+	// Test GetByID test content
+	t.Run("GetByID", func(t *testing.T) {
+		content := gen.buildUseCaseTestContent("GetByID")
+
+		if !strings.Contains(content, "func TestGetByID(t *testing.T)") {
+			t.Error("expected TestGetByID function")
+		}
+		if !strings.Contains(content, "repo.ErrNotFound") {
+			t.Error("expected repo.ErrNotFound in not found test case")
+		}
+		if !strings.Contains(content, "for _, tt := range tests") {
+			t.Error("expected table-driven test loop")
+		}
+		if strings.Contains(content, "t.Skip") {
+			t.Error("should not contain t.Skip")
+		}
+	})
+
+	// Test List test content
+	t.Run("List", func(t *testing.T) {
+		content := gen.buildUseCaseTestContent("List")
+
+		if !strings.Contains(content, "func TestList(t *testing.T)") {
+			t.Error("expected TestList function")
+		}
+		if !strings.Contains(content, "pagination.NewParams()") {
+			t.Error("expected pagination.NewParams() in test")
+		}
+		if !strings.Contains(content, "for _, tt := range tests") {
+			t.Error("expected table-driven test loop")
+		}
+		if strings.Contains(content, "t.Skip") {
+			t.Error("should not contain t.Skip")
+		}
+	})
+
+	// Test Update test content
+	t.Run("Update", func(t *testing.T) {
+		content := gen.buildUseCaseTestContent("Update")
+
+		if !strings.Contains(content, "func TestUpdate(t *testing.T)") {
+			t.Error("expected TestUpdate function")
+		}
+		if !strings.Contains(content, "repo.ErrNotFound") {
+			t.Error("expected repo.ErrNotFound in not found test case")
+		}
+		if !strings.Contains(content, "for _, tt := range tests") {
+			t.Error("expected table-driven test loop")
+		}
+		if strings.Contains(content, "t.Skip") {
+			t.Error("should not contain t.Skip")
+		}
+	})
+
+	// Test Delete test content
+	t.Run("Delete", func(t *testing.T) {
+		content := gen.buildUseCaseTestContent("Delete")
+
+		if !strings.Contains(content, "func TestDelete(t *testing.T)") {
+			t.Error("expected TestDelete function")
+		}
+		if !strings.Contains(content, "repo.ErrNotFound") {
+			t.Error("expected repo.ErrNotFound in not found test case")
+		}
+		if !strings.Contains(content, "for _, tt := range tests") {
+			t.Error("expected table-driven test loop")
+		}
+		if strings.Contains(content, "t.Skip") {
+			t.Error("should not contain t.Skip")
+		}
+	})
+}
+
+func TestBuildUseCaseMocksTestContent(t *testing.T) {
+	parseResult := &parser.ParseResult{
+		Table: parser.Table{
+			Name: "articles",
+		},
+	}
+
+	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
+	content := gen.buildUseCaseMocksTestContent()
+
+	// Check package
 	if !strings.Contains(content, "package article_test") {
 		t.Error("expected package article_test")
 	}
 
-	// Check imports
-	if !strings.Contains(content, `"context"`) {
-		t.Error("expected context import")
-	}
-	if !strings.Contains(content, `"testing"`) {
-		t.Error("expected testing import")
-	}
-	if !strings.Contains(content, `"go-boilerplate/internal/usecase/article"`) {
-		t.Error("expected usecase import")
+	// Check mock struct
+	if !strings.Contains(content, "mockArticleRepo") {
+		t.Error("expected mockArticleRepo struct")
 	}
 
-	// Check test function
-	if !strings.Contains(content, "func TestCreate(t *testing.T)") {
-		t.Error("expected TestCreate function")
+	// Check function fields
+	if !strings.Contains(content, "createFn") {
+		t.Error("expected createFn field")
+	}
+	if !strings.Contains(content, "getByIDFn") {
+		t.Error("expected getByIDFn field")
+	}
+	if !strings.Contains(content, "listFn") {
+		t.Error("expected listFn field")
+	}
+	if !strings.Contains(content, "updateFn") {
+		t.Error("expected updateFn field")
+	}
+	if !strings.Contains(content, "deleteFn") {
+		t.Error("expected deleteFn field")
 	}
 
-	// Check New constructor usage
-	if !strings.Contains(content, "article.New(nil)") {
-		t.Error("expected article.New usage")
+	// Check method implementations delegate to function fields
+	if !strings.Contains(content, "m.createFn(ctx,") {
+		t.Error("expected Create method to delegate to createFn")
+	}
+	if !strings.Contains(content, "m.getByIDFn(ctx,") {
+		t.Error("expected GetByID method to delegate to getByIDFn")
+	}
+	if !strings.Contains(content, "m.listFn(ctx,") {
+		t.Error("expected List method to delegate to listFn")
+	}
+	if !strings.Contains(content, "m.updateFn(ctx,") {
+		t.Error("expected Update method to delegate to updateFn")
+	}
+	if !strings.Contains(content, "m.deleteFn(ctx,") {
+		t.Error("expected Delete method to delegate to deleteFn")
+	}
+
+	// Check entity and pagination imports
+	if !strings.Contains(content, `"go-boilerplate/internal/entity"`) {
+		t.Error("expected entity import")
+	}
+	if !strings.Contains(content, `"go-boilerplate/pkg/pagination"`) {
+		t.Error("expected pagination import")
 	}
 }
 
