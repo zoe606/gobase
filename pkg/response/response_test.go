@@ -21,7 +21,7 @@ func TestOK(t *testing.T) {
 		return response.OK(c, map[string]string{"message": "success"})
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodGet, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -43,7 +43,7 @@ func TestCreated(t *testing.T) {
 		return response.Created(c, map[string]int{"id": 1})
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodPost, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -56,7 +56,7 @@ func TestNoContent(t *testing.T) {
 	app := fiber.New()
 	app.Delete("/test", response.NoContent)
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodDelete, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -71,7 +71,7 @@ func TestBadRequest(t *testing.T) {
 		return response.BadRequest(c, "INVALID_INPUT", "Invalid input provided")
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodGet, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -94,7 +94,7 @@ func TestUnauthorized(t *testing.T) {
 		return response.Unauthorized(c, "Invalid credentials")
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodGet, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -109,7 +109,7 @@ func TestForbidden(t *testing.T) {
 		return response.Forbidden(c, "Access denied")
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodGet, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -124,7 +124,7 @@ func TestNotFound(t *testing.T) {
 		return response.NotFound(c, "Resource not found")
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodGet, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -139,7 +139,7 @@ func TestConflict(t *testing.T) {
 		return response.Conflict(c, "Resource already exists")
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodPost, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
@@ -158,7 +158,7 @@ func TestValidationError(t *testing.T) {
 		return response.ValidationError(c, errors)
 	})
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodPost, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close()                                   //nolint:errcheck // test
@@ -179,7 +179,7 @@ func TestInternalError(t *testing.T) {
 	app := fiber.New()
 	app.Get("/test", response.InternalError)
 
-	req := httptest.NewRequestWithContext(t.Context(),http.MethodGet, "/test", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
 	resp, err := app.Test(req)
 	require.NoError(t, err)
 	defer resp.Body.Close() //nolint:errcheck // test
