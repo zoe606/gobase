@@ -1,5 +1,8 @@
 # Go Boilerplate Makefile
 
+# Auto-activate git hooks on any make invocation (idempotent, <1ms)
+$(shell git config core.hooksPath .githooks 2>/dev/null)
+
 .PHONY: help
 help: ## Display this help screen
 	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage:\n  make \033[36m<target>\033[0m\n"} /^[a-zA-Z_-]+:.*?##/ { printf "  \033[36m%-20s\033[0m %s\n", $$1, $$2 } /^##@/ { printf "\n\033[1m%s\033[0m\n", substr($$0, 5) } ' $(MAKEFILE_LIST)
@@ -274,17 +277,10 @@ rename: ## Rename project module and app name (usage: make rename MODULE=github.
 
 ##@ Git Hooks
 
-.PHONY: install-hooks
-install-hooks: ## Install git hooks for pre-commit and pre-push checks
-	@echo "Installing git hooks..."
-	@cp .githooks/pre-commit .git/hooks/pre-commit 2>/dev/null || \
-		(mkdir -p .git/hooks && cp .githooks/pre-commit .git/hooks/pre-commit)
-	@cp .githooks/pre-push .git/hooks/pre-push 2>/dev/null || \
-		(mkdir -p .git/hooks && cp .githooks/pre-push .git/hooks/pre-push)
-	@chmod +x .git/hooks/pre-commit .git/hooks/pre-push 2>/dev/null || true
-	@echo "Git hooks installed successfully!"
-	@echo "  - pre-commit: Fast checks (format, vet, basic lint)"
-	@echo "  - pre-push: Full checks (build, test, lint, vuln)"
+.PHONY: setup
+setup: ## One-time project setup (activates git hooks)
+	@git config core.hooksPath .githooks
+	@echo "Git hooks activated (using .githooks/ directory)"
 
 .PHONY: uninstall-hooks
 uninstall-hooks: ## Remove git hooks

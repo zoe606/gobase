@@ -4,6 +4,35 @@
 
 Clean Architecture Go boilerplate with Fiber, GORM, PostgreSQL, Redis, and Asynq workers.
 
+## MANDATORY QUALITY ENFORCEMENT
+
+**You MUST run `make check-all` before every commit.** No exceptions.
+
+- `make check-all` runs: format, lint, vulnerability scan, and tests
+- A commit will be blocked if checks have not passed within the last 10 minutes
+- After cloning, run `make setup` to activate git hooks
+
+## ABSOLUTE PROHIBITIONS
+
+**Never do any of the following:**
+
+- `--no-verify` on any git command — quality checks must never be bypassed
+- `git push --force` / `git push -f` — never rewrite remote history
+- `git reset --hard` — use safer alternatives
+- `git checkout -- .` / `git clean -f` — do not discard all changes
+- Commit without running `make check-all` first
+- Skip or ignore lint, test, or vulnerability check failures
+
+## Required Workflow
+
+```
+1. Make changes
+2. Run: make check-all
+3. Fix any issues
+4. Run: make check-all (again, until clean)
+5. Commit (only after checks pass)
+```
+
 ## Architecture
 
 ```

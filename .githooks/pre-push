@@ -3,8 +3,7 @@
 # Pre-push hook for Go projects
 # Runs comprehensive checks before pushing to remote
 #
-# Install: make install-hooks
-# Skip: git push --no-verify
+# Install: make setup
 
 set -e
 
@@ -52,7 +51,6 @@ if command -v golangci-lint > /dev/null 2>&1; then
     echo "Running full lint..."
     if ! golangci-lint run 2>&1; then
         echo "${RED}Linter found issues!${NC}"
-        echo "Fix issues or push with --no-verify to skip"
         exit 1
     fi
     echo "${GREEN}Lint OK${NC}"
@@ -62,8 +60,8 @@ fi
 if command -v govulncheck > /dev/null 2>&1; then
     echo "Running vulnerability check..."
     if ! govulncheck ./... 2>&1; then
-        echo "${YELLOW}Vulnerabilities found (check output above)${NC}"
-        # Don't fail on vuln check, just warn
+        echo "${RED}Vulnerabilities found (check output above)${NC}"
+        exit 1
     else
         echo "${GREEN}No vulnerabilities found${NC}"
     fi

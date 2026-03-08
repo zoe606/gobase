@@ -38,3 +38,4 @@ Thumbs.db
 # Claude Code
 tmpclaude-*-cwd
 .claude/settings.local.json
+.claude/.checks-passed

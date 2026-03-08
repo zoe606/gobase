@@ -3,8 +3,7 @@
 # Pre-commit hook for Go projects
 # Runs fast checks before allowing commit
 #
-# Install: make install-hooks
-# Skip: git commit --no-verify
+# Install: make setup
 
 set -e
 
@@ -61,8 +60,8 @@ echo "${GREEN}go vet OK${NC}"
 if command -v golangci-lint > /dev/null 2>&1; then
     echo "Running golangci-lint..."
     if ! golangci-lint run --new-from-rev=HEAD~1 --timeout=2m 2>&1; then
-        echo "${YELLOW}Linter found issues (run 'make lint' for details)${NC}"
-        # Don't fail on lint in pre-commit, just warn
+        echo "${RED}Linter found issues (run 'make lint' for details)${NC}"
+        exit 1
     else
         echo "${GREEN}Lint OK${NC}"
     fi
