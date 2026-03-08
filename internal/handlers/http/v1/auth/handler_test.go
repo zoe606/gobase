@@ -108,7 +108,7 @@ func TestHandler_Login(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest("POST", "/v1/auth/login", bytes.NewBufferString(tt.body))
+			req := httptest.NewRequestWithContext(t.Context(), "POST", "/v1/auth/login", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 
 			resp, err := app.Test(req)

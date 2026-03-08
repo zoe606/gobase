@@ -1,5 +1,5 @@
 // Package translation provides DTOs for translation operations.
-package translation
+package translationdto
 
 import "go-boilerplate/pkg/pagination"
 

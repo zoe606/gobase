@@ -11,8 +11,8 @@ package usecase_test
 
 import (
 	context "context"
-	article "go-boilerplate/internal/dto/article"
-	translation "go-boilerplate/internal/dto/translation"
+	articledto "go-boilerplate/internal/dto/article"
+	translationdto "go-boilerplate/internal/dto/translation"
 	entity "go-boilerplate/internal/entity"
 	reflect "reflect"
 
@@ -44,7 +44,7 @@ func (m *MockTranslationRepo) EXPECT() *MockTranslationRepoMockRecorder {
 }
 
 // GetHistory mocks base method.
-func (m *MockTranslationRepo) GetHistory(ctx context.Context, req translation.HistoryRequest) ([]entity.Translation, int64, error) {
+func (m *MockTranslationRepo) GetHistory(ctx context.Context, req translationdto.HistoryRequest) ([]entity.Translation, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetHistory", ctx, req)
 	ret0, _ := ret[0].([]entity.Translation)
@@ -765,7 +765,7 @@ func (mr *MockArticleRepoMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockArticleRepo) List(ctx context.Context, req article.ListRequest) ([]*entity.Article, int64, error) {
+func (m *MockArticleRepo) List(ctx context.Context, req articledto.ListRequest) ([]*entity.Article, int64, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "List", ctx, req)
 	ret0, _ := ret[0].([]*entity.Article)

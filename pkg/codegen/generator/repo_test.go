@@ -26,7 +26,7 @@ func TestBuildRepoInterfaceContent(t *testing.T) {
 	methods := []string{
 		"Create(ctx context.Context, article *entity.Article) error",
 		"GetByID(ctx context.Context, id uint) (*entity.Article, error)",
-		"List(ctx context.Context, limit, offset int) ([]*entity.Article, int64, error)",
+		"List(ctx context.Context, params pagination.Params) ([]*entity.Article, int64, error)",
 		"Update(ctx context.Context, article *entity.Article) error",
 		"Delete(ctx context.Context, id uint) error",
 	}
@@ -74,6 +74,17 @@ func TestBuildRepoImplContent(t *testing.T) {
 	if !strings.Contains(content, `"gorm.io/gorm"`) {
 		t.Error("expected gorm import")
 	}
+	if !strings.Contains(content, `"go-boilerplate/pkg/tx"`) {
+		t.Error("expected tx import")
+	}
+	if !strings.Contains(content, `"go-boilerplate/pkg/pagination"`) {
+		t.Error("expected pagination import")
+	}
+
+	// Check tx.DBFromContext usage
+	if !strings.Contains(content, "tx.DBFromContext(ctx, r.db)") {
+		t.Error("expected tx.DBFromContext usage")
+	}
 
 	// Check struct
 	if !strings.Contains(content, "type ArticleRepo struct") {
@@ -114,9 +125,12 @@ func TestRepoCreateMethod(t *testing.T) {
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
 	content := gen.buildRepoImplContent()
 
-	// Check Create implementation
-	if !strings.Contains(content, "r.db.WithContext(ctx).Create(article)") {
-		t.Error("expected Create implementation with WithContext")
+	// Check Create implementation uses tx.DBFromContext
+	if !strings.Contains(content, "db := tx.DBFromContext(ctx, r.db)") {
+		t.Error("expected tx.DBFromContext in Create")
+	}
+	if !strings.Contains(content, "db.Create(article)") {
+		t.Error("expected Create implementation using db variable")
 	}
 }
 
@@ -130,9 +144,12 @@ func TestRepoGetByIDMethod(t *testing.T) {
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
 	content := gen.buildRepoImplContent()
 
-	// Check GetByID implementation
-	if !strings.Contains(content, "r.db.WithContext(ctx).First(&article, id)") {
-		t.Error("expected First query in GetByID")
+	// Check GetByID implementation uses tx.DBFromContext
+	if !strings.Contains(content, "db := tx.DBFromContext(ctx, r.db)") {
+		t.Error("expected tx.DBFromContext in GetByID")
+	}
+	if !strings.Contains(content, "db.First(&article, id)") {
+		t.Error("expected First query in GetByID using db variable")
 	}
 
 	// Check ErrNotFound handling
@@ -159,12 +176,12 @@ func TestRepoListMethod(t *testing.T) {
 		t.Error("expected Count query")
 	}
 
-	// Check pagination
-	if !strings.Contains(content, "Limit(limit)") {
-		t.Error("expected Limit clause")
+	// Check pagination uses params
+	if !strings.Contains(content, "Limit(params.Limit)") {
+		t.Error("expected Limit with params.Limit")
 	}
-	if !strings.Contains(content, "Offset(offset)") {
-		t.Error("expected Offset clause")
+	if !strings.Contains(content, "Offset(params.Offset())") {
+		t.Error("expected Offset with params.Offset()")
 	}
 
 	// Check ordering
@@ -183,9 +200,12 @@ func TestRepoUpdateMethod(t *testing.T) {
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
 	content := gen.buildRepoImplContent()
 
-	// Check Update implementation
-	if !strings.Contains(content, "r.db.WithContext(ctx).Save(article)") {
-		t.Error("expected Save in Update")
+	// Check Update implementation uses tx.DBFromContext
+	if !strings.Contains(content, "db := tx.DBFromContext(ctx, r.db)") {
+		t.Error("expected tx.DBFromContext in Update")
+	}
+	if !strings.Contains(content, "db.Save(article)") {
+		t.Error("expected Save in Update using db variable")
 	}
 
 	// Check RowsAffected check
@@ -204,9 +224,12 @@ func TestRepoDeleteMethod(t *testing.T) {
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
 	content := gen.buildRepoImplContent()
 
-	// Check Delete implementation
-	if !strings.Contains(content, "r.db.WithContext(ctx).Delete(&entity.Article{}, id)") {
-		t.Error("expected Delete implementation")
+	// Check Delete implementation uses tx.DBFromContext
+	if !strings.Contains(content, "db := tx.DBFromContext(ctx, r.db)") {
+		t.Error("expected tx.DBFromContext in Delete")
+	}
+	if !strings.Contains(content, "db.Delete(&entity.Article{}, id)") {
+		t.Error("expected Delete using db variable")
 	}
 
 	// Check RowsAffected check

@@ -97,7 +97,7 @@ func TestHandler_GetByID(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest(http.MethodGet, "/v1/media/"+tt.id, http.NoBody)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/media/"+tt.id, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
@@ -190,7 +190,7 @@ func TestHandler_GetURL(t *testing.T) {
 				url += "?variant=" + tt.variant
 			}
 
-			req := httptest.NewRequest(http.MethodGet, url, http.NoBody)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, url, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
@@ -249,7 +249,7 @@ func TestHandler_Delete(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest(http.MethodDelete, "/v1/media/"+tt.id, http.NoBody)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "/v1/media/"+tt.id, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
@@ -318,7 +318,7 @@ func TestHandler_GetPresignedURL(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest(http.MethodPost, "/v1/media/presigned-url", bytes.NewBufferString(tt.body))
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/media/presigned-url", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 
@@ -409,7 +409,7 @@ func TestHandler_GetByAttachable(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.setupMock()
 
-			req := httptest.NewRequest(http.MethodGet, "/v1/media"+tt.query, http.NoBody)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/media"+tt.query, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
 			req.Header.Set("Authorization", "Bearer "+token)
 

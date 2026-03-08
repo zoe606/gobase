@@ -18,7 +18,7 @@ func NewJobContext(timeout time.Duration) (context.Context, context.CancelFunc) 
 		timeout = DefaultJobTimeout
 	}
 
-	return context.WithTimeout(context.Background(), timeout)
+	return context.WithTimeout(context.Background(), timeout) //nolint:gosec // cancel function returned to caller
 }
 
 // FromAsynqContext wraps the asynq-provided context with an additional timeout.
@@ -29,11 +29,11 @@ func FromAsynqContext(ctx context.Context, timeout time.Duration) (context.Conte
 		timeout = DefaultJobTimeout
 	}
 
-	return context.WithTimeout(ctx, timeout)
+	return context.WithTimeout(ctx, timeout) //nolint:gosec // cancel function returned to caller
 }
 
 // NewBackgroundContext creates a cancelable context without timeout.
 // Use this for long-running jobs that should only be canceled manually.
 func NewBackgroundContext() (context.Context, context.CancelFunc) {
-	return context.WithCancel(context.Background())
+	return context.WithCancel(context.Background()) //nolint:gosec // cancel function returned to caller
 }

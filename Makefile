@@ -193,7 +193,7 @@ build-worker: ## Build worker binary
 .PHONY: swag
 swag: ## Generate Swagger documentation
 	@if command -v swag > /dev/null; then \
-		swag init -g internal/handlers/http/router.go; \
+		swag init -g internal/handlers/http/router.go --parseDependency --parseInternal; \
 	else \
 		echo "swag not installed. Install with: go install github.com/swaggo/swag/cmd/swag@latest"; \
 	fi
@@ -255,6 +255,10 @@ gen-full: ## Generate all layers from migration (usage: make gen-full MIGRATION=
 		exit 1; \
 	fi
 	go run ./pkg/codegen/cmd/codegen -m $(MIGRATION) -l entity,dto,repo,usecase,handler
+
+.PHONY: wire
+wire: ## Auto-wire DI, routes, and contracts for generated features
+	go run ./pkg/codegen/cmd/wire
 
 ##@ Project Setup
 

@@ -1,4 +1,4 @@
-package translation
+package translationdto
 
 import (
 	"go-boilerplate/internal/entity"

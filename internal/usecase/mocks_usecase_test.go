@@ -11,8 +11,13 @@ package usecase_test
 
 import (
 	context "context"
-	auth "go-boilerplate/internal/dto/auth"
-	translation "go-boilerplate/internal/dto/translation"
+	articledto "go-boilerplate/internal/dto/article"
+	authdto "go-boilerplate/internal/dto/auth"
+	mediadto "go-boilerplate/internal/dto/media"
+	profiledto "go-boilerplate/internal/dto/profile"
+	translationdto "go-boilerplate/internal/dto/translation"
+	entity "go-boilerplate/internal/entity"
+	auth0 "go-boilerplate/internal/usecase/auth"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -43,25 +48,25 @@ func (m *MockTranslation) EXPECT() *MockTranslationMockRecorder {
 }
 
 // History mocks base method.
-func (m *MockTranslation) History(arg0 context.Context) (*translation.HistoryResponse, error) {
+func (m *MockTranslation) History(arg0 context.Context, arg1 translationdto.HistoryRequest) (*translationdto.HistoryResponse, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "History", arg0)
-	ret0, _ := ret[0].(*translation.HistoryResponse)
+	ret := m.ctrl.Call(m, "History", arg0, arg1)
+	ret0, _ := ret[0].(*translationdto.HistoryResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // History indicates an expected call of History.
-func (mr *MockTranslationMockRecorder) History(arg0 any) *gomock.Call {
+func (mr *MockTranslationMockRecorder) History(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "History", reflect.TypeOf((*MockTranslation)(nil).History), arg0)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "History", reflect.TypeOf((*MockTranslation)(nil).History), arg0, arg1)
 }
 
 // Translate mocks base method.
-func (m *MockTranslation) Translate(arg0 context.Context, arg1 translation.TranslateRequest) (*translation.TranslationResponse, error) {
+func (m *MockTranslation) Translate(arg0 context.Context, arg1 translationdto.TranslateRequest) (*translationdto.TranslationResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Translate", arg0, arg1)
-	ret0, _ := ret[0].(*translation.TranslationResponse)
+	ret0, _ := ret[0].(*translationdto.TranslationResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -97,10 +102,10 @@ func (m *MockAuth) EXPECT() *MockAuthMockRecorder {
 }
 
 // GetCurrentUser mocks base method.
-func (m *MockAuth) GetCurrentUser(ctx context.Context, userID uint) (*auth.UserResponse, error) {
+func (m *MockAuth) GetCurrentUser(ctx context.Context, userID uint) (*authdto.UserResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "GetCurrentUser", ctx, userID)
-	ret0, _ := ret[0].(*auth.UserResponse)
+	ret0, _ := ret[0].(*authdto.UserResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -112,10 +117,10 @@ func (mr *MockAuthMockRecorder) GetCurrentUser(ctx, userID any) *gomock.Call {
 }
 
 // Login mocks base method.
-func (m *MockAuth) Login(ctx context.Context, input auth.LoginRequest) (*auth.LoginResponse, error) {
+func (m *MockAuth) Login(ctx context.Context, input authdto.LoginRequest) (*authdto.LoginResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Login", ctx, input)
-	ret0, _ := ret[0].(*auth.LoginResponse)
+	ret0, _ := ret[0].(*authdto.LoginResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -141,10 +146,10 @@ func (mr *MockAuthMockRecorder) Logout(ctx, refreshToken any) *gomock.Call {
 }
 
 // Refresh mocks base method.
-func (m *MockAuth) Refresh(ctx context.Context, input auth.RefreshRequest) (*auth.TokenResponse, error) {
+func (m *MockAuth) Refresh(ctx context.Context, input authdto.RefreshRequest) (*authdto.TokenResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Refresh", ctx, input)
-	ret0, _ := ret[0].(*auth.TokenResponse)
+	ret0, _ := ret[0].(*authdto.TokenResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -156,10 +161,10 @@ func (mr *MockAuthMockRecorder) Refresh(ctx, input any) *gomock.Call {
 }
 
 // Register mocks base method.
-func (m *MockAuth) Register(ctx context.Context, input auth.RegisterRequest) (*auth.LoginResponse, error) {
+func (m *MockAuth) Register(ctx context.Context, input authdto.RegisterRequest) (*authdto.LoginResponse, error) {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Register", ctx, input)
-	ret0, _ := ret[0].(*auth.LoginResponse)
+	ret0, _ := ret[0].(*authdto.LoginResponse)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
@@ -168,4 +173,339 @@ func (m *MockAuth) Register(ctx context.Context, input auth.RegisterRequest) (*a
 func (mr *MockAuthMockRecorder) Register(ctx, input any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Register", reflect.TypeOf((*MockAuth)(nil).Register), ctx, input)
+}
+
+// RequestPasswordReset mocks base method.
+func (m *MockAuth) RequestPasswordReset(ctx context.Context, email string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RequestPasswordReset", ctx, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RequestPasswordReset indicates an expected call of RequestPasswordReset.
+func (mr *MockAuthMockRecorder) RequestPasswordReset(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RequestPasswordReset", reflect.TypeOf((*MockAuth)(nil).RequestPasswordReset), ctx, email)
+}
+
+// ResendVerification mocks base method.
+func (m *MockAuth) ResendVerification(ctx context.Context, email string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResendVerification", ctx, email)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResendVerification indicates an expected call of ResendVerification.
+func (mr *MockAuthMockRecorder) ResendVerification(ctx, email any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResendVerification", reflect.TypeOf((*MockAuth)(nil).ResendVerification), ctx, email)
+}
+
+// ResetPassword mocks base method.
+func (m *MockAuth) ResetPassword(ctx context.Context, input auth0.ResetPasswordInput) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ResetPassword", ctx, input)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ResetPassword indicates an expected call of ResetPassword.
+func (mr *MockAuthMockRecorder) ResetPassword(ctx, input any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetPassword", reflect.TypeOf((*MockAuth)(nil).ResetPassword), ctx, input)
+}
+
+// SendVerificationEmail mocks base method.
+func (m *MockAuth) SendVerificationEmail(ctx context.Context, userID uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SendVerificationEmail", ctx, userID)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SendVerificationEmail indicates an expected call of SendVerificationEmail.
+func (mr *MockAuthMockRecorder) SendVerificationEmail(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SendVerificationEmail", reflect.TypeOf((*MockAuth)(nil).SendVerificationEmail), ctx, userID)
+}
+
+// VerifyEmail mocks base method.
+func (m *MockAuth) VerifyEmail(ctx context.Context, token string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "VerifyEmail", ctx, token)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// VerifyEmail indicates an expected call of VerifyEmail.
+func (mr *MockAuthMockRecorder) VerifyEmail(ctx, token any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "VerifyEmail", reflect.TypeOf((*MockAuth)(nil).VerifyEmail), ctx, token)
+}
+
+// MockMedia is a mock of Media interface.
+type MockMedia struct {
+	ctrl     *gomock.Controller
+	recorder *MockMediaMockRecorder
+	isgomock struct{}
+}
+
+// MockMediaMockRecorder is the mock recorder for MockMedia.
+type MockMediaMockRecorder struct {
+	mock *MockMedia
+}
+
+// NewMockMedia creates a new mock instance.
+func NewMockMedia(ctrl *gomock.Controller) *MockMedia {
+	mock := &MockMedia{ctrl: ctrl}
+	mock.recorder = &MockMediaMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockMedia) EXPECT() *MockMediaMockRecorder {
+	return m.recorder
+}
+
+// Delete mocks base method.
+func (m *MockMedia) Delete(ctx context.Context, id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockMediaMockRecorder) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockMedia)(nil).Delete), ctx, id)
+}
+
+// GetByAttachable mocks base method.
+func (m *MockMedia) GetByAttachable(ctx context.Context, req mediadto.GetMediaRequest) (*mediadto.MediaListResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByAttachable", ctx, req)
+	ret0, _ := ret[0].(*mediadto.MediaListResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByAttachable indicates an expected call of GetByAttachable.
+func (mr *MockMediaMockRecorder) GetByAttachable(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByAttachable", reflect.TypeOf((*MockMedia)(nil).GetByAttachable), ctx, req)
+}
+
+// GetByID mocks base method.
+func (m *MockMedia) GetByID(ctx context.Context, id uint) (*entity.Media, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(*entity.Media)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockMediaMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockMedia)(nil).GetByID), ctx, id)
+}
+
+// GetPresignedUploadURL mocks base method.
+func (m *MockMedia) GetPresignedUploadURL(ctx context.Context, filename string) (*mediadto.PresignedURLResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetPresignedUploadURL", ctx, filename)
+	ret0, _ := ret[0].(*mediadto.PresignedURLResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetPresignedUploadURL indicates an expected call of GetPresignedUploadURL.
+func (mr *MockMediaMockRecorder) GetPresignedUploadURL(ctx, filename any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetPresignedUploadURL", reflect.TypeOf((*MockMedia)(nil).GetPresignedUploadURL), ctx, filename)
+}
+
+// GetURL mocks base method.
+func (m *MockMedia) GetURL(ctx context.Context, arg1 *entity.Media, variant string) (string, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetURL", ctx, arg1, variant)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetURL indicates an expected call of GetURL.
+func (mr *MockMediaMockRecorder) GetURL(ctx, arg1, variant any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockMedia)(nil).GetURL), ctx, arg1, variant)
+}
+
+// Upload mocks base method.
+func (m *MockMedia) Upload(ctx context.Context, req mediadto.UploadRequest) (*mediadto.MediaResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Upload", ctx, req)
+	ret0, _ := ret[0].(*mediadto.MediaResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Upload indicates an expected call of Upload.
+func (mr *MockMediaMockRecorder) Upload(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Upload", reflect.TypeOf((*MockMedia)(nil).Upload), ctx, req)
+}
+
+// MockProfile is a mock of Profile interface.
+type MockProfile struct {
+	ctrl     *gomock.Controller
+	recorder *MockProfileMockRecorder
+	isgomock struct{}
+}
+
+// MockProfileMockRecorder is the mock recorder for MockProfile.
+type MockProfileMockRecorder struct {
+	mock *MockProfile
+}
+
+// NewMockProfile creates a new mock instance.
+func NewMockProfile(ctrl *gomock.Controller) *MockProfile {
+	mock := &MockProfile{ctrl: ctrl}
+	mock.recorder = &MockProfileMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockProfile) EXPECT() *MockProfileMockRecorder {
+	return m.recorder
+}
+
+// GetProfile mocks base method.
+func (m *MockProfile) GetProfile(ctx context.Context, userID uint) (*profiledto.ProfileResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetProfile", ctx, userID)
+	ret0, _ := ret[0].(*profiledto.ProfileResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetProfile indicates an expected call of GetProfile.
+func (mr *MockProfileMockRecorder) GetProfile(ctx, userID any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetProfile", reflect.TypeOf((*MockProfile)(nil).GetProfile), ctx, userID)
+}
+
+// UpdateProfile mocks base method.
+func (m *MockProfile) UpdateProfile(ctx context.Context, userID uint, req profiledto.UpdateProfileRequest) (*profiledto.ProfileResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "UpdateProfile", ctx, userID, req)
+	ret0, _ := ret[0].(*profiledto.ProfileResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// UpdateProfile indicates an expected call of UpdateProfile.
+func (mr *MockProfileMockRecorder) UpdateProfile(ctx, userID, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateProfile", reflect.TypeOf((*MockProfile)(nil).UpdateProfile), ctx, userID, req)
+}
+
+// MockArticle is a mock of Article interface.
+type MockArticle struct {
+	ctrl     *gomock.Controller
+	recorder *MockArticleMockRecorder
+	isgomock struct{}
+}
+
+// MockArticleMockRecorder is the mock recorder for MockArticle.
+type MockArticleMockRecorder struct {
+	mock *MockArticle
+}
+
+// NewMockArticle creates a new mock instance.
+func NewMockArticle(ctrl *gomock.Controller) *MockArticle {
+	mock := &MockArticle{ctrl: ctrl}
+	mock.recorder = &MockArticleMockRecorder{mock}
+	return mock
+}
+
+// EXPECT returns an object that allows the caller to indicate expected use.
+func (m *MockArticle) EXPECT() *MockArticleMockRecorder {
+	return m.recorder
+}
+
+// Create mocks base method.
+func (m *MockArticle) Create(ctx context.Context, req articledto.CreateRequest) (*articledto.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Create", ctx, req)
+	ret0, _ := ret[0].(*articledto.Response)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Create indicates an expected call of Create.
+func (mr *MockArticleMockRecorder) Create(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticle)(nil).Create), ctx, req)
+}
+
+// Delete mocks base method.
+func (m *MockArticle) Delete(ctx context.Context, id uint) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// Delete indicates an expected call of Delete.
+func (mr *MockArticleMockRecorder) Delete(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockArticle)(nil).Delete), ctx, id)
+}
+
+// GetByID mocks base method.
+func (m *MockArticle) GetByID(ctx context.Context, id uint) (*articledto.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetByID", ctx, id)
+	ret0, _ := ret[0].(*articledto.Response)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetByID indicates an expected call of GetByID.
+func (mr *MockArticleMockRecorder) GetByID(ctx, id any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockArticle)(nil).GetByID), ctx, id)
+}
+
+// List mocks base method.
+func (m *MockArticle) List(ctx context.Context, req articledto.ListRequest) (*articledto.ListResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "List", ctx, req)
+	ret0, _ := ret[0].(*articledto.ListResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// List indicates an expected call of List.
+func (mr *MockArticleMockRecorder) List(ctx, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockArticle)(nil).List), ctx, req)
+}
+
+// Update mocks base method.
+func (m *MockArticle) Update(ctx context.Context, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Update", ctx, id, req)
+	ret0, _ := ret[0].(*articledto.Response)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Update indicates an expected call of Update.
+func (mr *MockArticleMockRecorder) Update(ctx, id, req any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockArticle)(nil).Update), ctx, id, req)
 }

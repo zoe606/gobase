@@ -83,7 +83,7 @@ func (g *Generator) writeFile(relPath, content string) error {
 	}
 
 	// Write file
-	if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil {
+	if err := os.WriteFile(fullPath, []byte(content), 0o600); err != nil { //nolint:gosec // trusted local path from codegen
 		return fmt.Errorf("writing file %s: %w", fullPath, err)
 	}
 
@@ -133,7 +133,7 @@ func (g *Generator) appendToFile(relPath, content, marker string) error {
 	// Insert content
 	newContent := existingStr[:insertPos] + "\n" + content + existingStr[insertPos:]
 
-	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil {
+	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil { //nolint:gosec // trusted local path from codegen
 		return fmt.Errorf("writing file %s: %w", fullPath, err)
 	}
 

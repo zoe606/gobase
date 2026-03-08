@@ -32,16 +32,16 @@ func (g *Generator) buildEntityContent() string {
 	if len(imports) > 0 {
 		sb.WriteString("import (\n")
 		for _, imp := range imports {
-			sb.WriteString(fmt.Sprintf("\t%q\n", imp))
+			fmt.Fprintf(&sb, "\t%q\n", imp)
 		}
 		sb.WriteString(")\n\n")
 	}
 
 	// Struct comment
-	sb.WriteString(fmt.Sprintf("// %s %s\n", entityName, comment))
+	fmt.Fprintf(&sb, "// %s %s\n", entityName, comment)
 
 	// Struct definition
-	sb.WriteString(fmt.Sprintf("type %s struct {\n", entityName))
+	fmt.Fprintf(&sb, "type %s struct {\n", entityName)
 
 	// Fields
 	for _, field := range g.result.Fields {
@@ -61,8 +61,8 @@ func (g *Generator) buildEntityContent() string {
 
 	// TableName method
 	sb.WriteString("// TableName returns the table name.\n")
-	sb.WriteString(fmt.Sprintf("func (%s) TableName() string {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\treturn %q\n", tableName))
+	fmt.Fprintf(&sb, "func (%s) TableName() string {\n", entityName)
+	fmt.Fprintf(&sb, "\treturn %q\n", tableName)
 	sb.WriteString("}\n")
 
 	return sb.String()

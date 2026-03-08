@@ -156,7 +156,7 @@ func updateGoImports(newModule string) error {
 		}
 
 		// Read file
-		content, err := os.ReadFile(path)
+		content, err := os.ReadFile(path) //nolint:gosec // dev tool operating on trusted local paths
 		if err != nil {
 			return fmt.Errorf("reading %s: %w", path, err)
 		}
@@ -170,7 +170,7 @@ func updateGoImports(newModule string) error {
 		newContent := strings.ReplaceAll(string(content), oldImport, newImport)
 
 		// Write file
-		if err := os.WriteFile(path, []byte(newContent), info.Mode()); err != nil {
+		if err := os.WriteFile(path, []byte(newContent), info.Mode()); err != nil { //nolint:gosec // dev tool operating on trusted local paths
 			return fmt.Errorf("writing %s: %w", path, err)
 		}
 
@@ -234,7 +234,7 @@ func updateConfigFile(path, newAppName string) error {
 		return nil // No changes needed
 	}
 
-	return os.WriteFile(path, []byte(newContent), 0o600)
+	return os.WriteFile(path, []byte(newContent), 0o600) //nolint:gosec // dev tool operating on trusted local paths
 }
 
 // updateEnvFiles updates the app name in .env files.
@@ -291,5 +291,5 @@ func updateEnvFile(path, newAppName string) error {
 		return nil
 	}
 
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600) //nolint:gosec // dev tool operating on trusted local paths
 }

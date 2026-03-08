@@ -76,6 +76,14 @@ func TestHandlerRegisterRoutes(t *testing.T) {
 		t.Error("expected articles route group")
 	}
 
+	// Check auth middleware TODO comment
+	if !strings.Contains(content, "// TODO: Add auth middleware:") {
+		t.Error("expected auth middleware TODO comment")
+	}
+	if !strings.Contains(content, "articles.Use(middleware.JWT(jwtService))") {
+		t.Error("expected auth middleware placeholder with correct variable name")
+	}
+
 	// Check CRUD routes
 	routes := []string{
 		`articles.Post("/", h.Create)`,
@@ -107,9 +115,9 @@ func TestBuildHandlerCreateContent(t *testing.T) {
 		t.Error("expected package article")
 	}
 
-	// Check imports
-	if !strings.Contains(content, `articledto "go-boilerplate/internal/dto/article"`) {
-		t.Error("expected DTO import with alias")
+	// Check imports - DTO package is named articledto, no alias needed
+	if !strings.Contains(content, `"go-boilerplate/internal/dto/article"`) {
+		t.Error("expected DTO import")
 	}
 	if !strings.Contains(content, `"go-boilerplate/pkg/response"`) {
 		t.Error("expected response import")
@@ -124,6 +132,13 @@ func TestBuildHandlerCreateContent(t *testing.T) {
 	}
 	if !strings.Contains(content, "// @Router      /articles [post]") {
 		t.Error("expected Swagger router")
+	}
+	// Check swagger DTO references
+	if !strings.Contains(content, "articledto.CreateRequest") {
+		t.Error("expected swagger annotation with articledto.CreateRequest")
+	}
+	if !strings.Contains(content, "response.Response[articledto.Response]") {
+		t.Error("expected swagger annotation with articledto.Response")
 	}
 
 	// Check method
@@ -161,6 +176,16 @@ func TestBuildHandlerGetByIDContent(t *testing.T) {
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
 	content := gen.buildHandlerGetByIDContent()
+
+	// Check blank DTO import for swagger type resolution
+	if !strings.Contains(content, `_ "go-boilerplate/internal/dto/article" // swagger type resolution`) {
+		t.Error("expected blank DTO import with swagger type resolution comment")
+	}
+
+	// Check Swagger annotations reference articledto
+	if !strings.Contains(content, "response.Response[articledto.Response]") {
+		t.Error("expected swagger annotation with articledto.Response")
+	}
 
 	// Check Swagger
 	if !strings.Contains(content, "// @Summary     Get article by ID") {
@@ -208,6 +233,11 @@ func TestBuildHandlerListContent(t *testing.T) {
 		t.Error("expected Swagger page_size param")
 	}
 
+	// Check swagger DTO references
+	if !strings.Contains(content, "response.Response[articledto.ListResponse]") {
+		t.Error("expected swagger annotation with articledto.ListResponse")
+	}
+
 	// Check query parser
 	if !strings.Contains(content, "ctx.QueryParser(&req)") {
 		t.Error("expected QueryParser call")
@@ -250,6 +280,14 @@ func TestBuildHandlerUpdateContent(t *testing.T) {
 	// Check validation
 	if !strings.Contains(content, "h.v.Struct(req)") {
 		t.Error("expected validation call")
+	}
+
+	// Check swagger DTO references
+	if !strings.Contains(content, "articledto.UpdateRequest") {
+		t.Error("expected swagger annotation with articledto.UpdateRequest")
+	}
+	if !strings.Contains(content, "response.Response[articledto.Response]") {
+		t.Error("expected swagger annotation with articledto.Response")
 	}
 
 	// Check UC call

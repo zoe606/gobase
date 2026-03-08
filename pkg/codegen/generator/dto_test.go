@@ -26,8 +26,8 @@ func TestBuildRequestDTOContent(t *testing.T) {
 	content := gen.buildRequestDTOContent()
 
 	// Check package declaration
-	if !strings.Contains(content, "package article") {
-		t.Error("expected package article declaration")
+	if !strings.Contains(content, "package articledto") {
+		t.Error("expected package articledto declaration")
 	}
 
 	// Check CreateRequest struct
@@ -54,23 +54,12 @@ func TestBuildRequestDTOContent(t *testing.T) {
 	// UpdateRequest should have pointer types for partial updates
 	// Note: Fields in UpdateRequest should be pointers
 
-	// Check ListRequest struct
+	// Check ListRequest struct embeds pagination.Params
 	if !strings.Contains(content, "type ListRequest struct") {
 		t.Error("expected ListRequest struct")
 	}
-	if !strings.Contains(content, `query:"page"`) {
-		t.Error("expected page query param")
-	}
-	if !strings.Contains(content, `query:"page_size"`) {
-		t.Error("expected page_size query param")
-	}
-
-	// Check helper methods
-	if !strings.Contains(content, "func (r *ListRequest) GetPageSize()") {
-		t.Error("expected GetPageSize method")
-	}
-	if !strings.Contains(content, "func (r *ListRequest) GetOffset()") {
-		t.Error("expected GetOffset method")
+	if !strings.Contains(content, "pagination.Params") {
+		t.Error("expected ListRequest to embed pagination.Params")
 	}
 }
 
@@ -91,8 +80,8 @@ func TestBuildResponseDTOContent(t *testing.T) {
 	content := gen.buildResponseDTOContent()
 
 	// Check package declaration
-	if !strings.Contains(content, "package article") {
-		t.Error("expected package article declaration")
+	if !strings.Contains(content, "package articledto") {
+		t.Error("expected package articledto declaration")
 	}
 
 	// Check imports
