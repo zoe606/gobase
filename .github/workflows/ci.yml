@@ -21,12 +21,10 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      # Install golangci-lint v2 from source (config uses v2 format)
-      - name: Install golangci-lint
-        run: go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@latest
-
       - name: Run golangci-lint
-        run: golangci-lint run --timeout=10m
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: v2.11.2
 
   format:
     name: Format Check
