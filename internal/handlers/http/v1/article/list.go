@@ -3,7 +3,7 @@ package article
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"go-boilerplate/internal/dto/article"
+	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/pkg/response"
 )
 

@@ -51,7 +51,7 @@ func wireRouter(cfg Config, f Feature) error {
 		return nil
 	}
 
-	if err := os.WriteFile(fullPath, []byte(contentStr), 0o600); err != nil {
+	if err := os.WriteFile(fullPath, []byte(contentStr), 0o600); err != nil { //nolint:gosec // trusted local path from codegen
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 

@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"go-boilerplate/internal/dto/article"
+	articledto "go-boilerplate/internal/dto/article"
 )
 
 // List retrieves a paginated list of articles with filters.

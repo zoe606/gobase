@@ -3,9 +3,8 @@ package profile_test
 
 import (
 	"context"
+	profiledto "go-boilerplate/internal/dto/profile"
 	"reflect"
-
-	"go-boilerplate/internal/dto/profile"
 
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"

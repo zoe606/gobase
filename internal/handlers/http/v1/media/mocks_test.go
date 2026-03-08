@@ -7,7 +7,7 @@ import (
 	"context"
 	"reflect"
 
-	"go-boilerplate/internal/dto/media"
+	mediadto "go-boilerplate/internal/dto/media"
 	"go-boilerplate/internal/entity"
 
 	"go.uber.org/mock/gomock"

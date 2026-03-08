@@ -8,7 +8,7 @@ import (
 
 	"github.com/google/uuid"
 
-	"go-boilerplate/internal/dto/media"
+	mediadto "go-boilerplate/internal/dto/media"
 	"go-boilerplate/internal/entity"
 )
 

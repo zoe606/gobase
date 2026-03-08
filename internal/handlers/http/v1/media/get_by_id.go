@@ -3,7 +3,7 @@ package media
 import (
 	"github.com/gofiber/fiber/v2"
 
-	"go-boilerplate/internal/dto/media"
+	mediadto "go-boilerplate/internal/dto/media"
 	"go-boilerplate/pkg/response"
 )
 

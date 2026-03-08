@@ -6,7 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
-	"go-boilerplate/internal/dto/article"
+	articledto "go-boilerplate/internal/dto/article"
 	v1 "go-boilerplate/internal/handlers/http/v1"
 	articleuc "go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/response"

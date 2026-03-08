@@ -38,7 +38,7 @@ func (g *Generator) buildRequestDTOContent() string {
 	fmt.Fprintf(&sb, "import (\n\t%q\n)\n\n", g.config.ModuleName+"/pkg/pagination")
 
 	// CreateRequest
-	sb.WriteString(fmt.Sprintf("// CreateRequest represents the request to create a %s.\n", entityName))
+	fmt.Fprintf(&sb, "// CreateRequest represents the request to create a %s.\n", entityName)
 	sb.WriteString("type CreateRequest struct {\n")
 	for _, field := range g.result.Fields {
 		if g.isCreateRequestField(field.ColumnName) {
@@ -49,7 +49,7 @@ func (g *Generator) buildRequestDTOContent() string {
 	sb.WriteString("}\n\n")
 
 	// UpdateRequest
-	sb.WriteString(fmt.Sprintf("// UpdateRequest represents the request to update a %s.\n", entityName))
+	fmt.Fprintf(&sb, "// UpdateRequest represents the request to update a %s.\n", entityName)
 	sb.WriteString("type UpdateRequest struct {\n")
 	for _, field := range g.result.Fields {
 		if g.isUpdateRequestField(field.ColumnName) {
@@ -65,7 +65,7 @@ func (g *Generator) buildRequestDTOContent() string {
 	sb.WriteString("}\n\n")
 
 	// ListRequest (pagination)
-	sb.WriteString(fmt.Sprintf("// ListRequest represents the request to list %ss with filters.\n", strings.ToLower(entityName)))
+	fmt.Fprintf(&sb, "// ListRequest represents the request to list %ss with filters.\n", strings.ToLower(entityName))
 	sb.WriteString("type ListRequest struct {\n")
 	sb.WriteString("\tpagination.Params\n")
 	sb.WriteString("}\n")
@@ -82,7 +82,7 @@ func (g *Generator) buildResponseDTOContent() string {
 	varName := g.varName()
 
 	// Package declaration
-	sb.WriteString(fmt.Sprintf("package %sdto\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %sdto\n\n", pkgName)
 
 	// Imports - check if we need time package
 	needsTime := false
@@ -97,11 +97,11 @@ func (g *Generator) buildResponseDTOContent() string {
 	if needsTime {
 		sb.WriteString("\t\"time\"\n\n")
 	}
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
 	sb.WriteString(")\n\n")
 
 	// Response
-	sb.WriteString(fmt.Sprintf("// Response represents a %s response.\n", entityName))
+	fmt.Fprintf(&sb, "// Response represents a %s response.\n", entityName)
 	sb.WriteString("type Response struct {\n")
 	for _, field := range g.result.Fields {
 		if g.isResponseField(field.ColumnName) {
@@ -112,22 +112,22 @@ func (g *Generator) buildResponseDTOContent() string {
 	sb.WriteString("}\n\n")
 
 	// NewResponse constructor
-	sb.WriteString(fmt.Sprintf("// NewResponse creates a Response from an entity.%s.\n", entityName))
-	sb.WriteString(fmt.Sprintf("func NewResponse(%s *entity.%s) *Response {\n", varName, entityName))
-	sb.WriteString(fmt.Sprintf("\tif %s == nil {\n", varName))
+	fmt.Fprintf(&sb, "// NewResponse creates a Response from an entity.%s.\n", entityName)
+	fmt.Fprintf(&sb, "func NewResponse(%s *entity.%s) *Response {\n", varName, entityName)
+	fmt.Fprintf(&sb, "\tif %s == nil {\n", varName)
 	sb.WriteString("\t\treturn nil\n")
 	sb.WriteString("\t}\n")
 	sb.WriteString("\treturn &Response{\n")
 	for _, field := range g.result.Fields {
 		if g.isResponseField(field.ColumnName) {
-			sb.WriteString(fmt.Sprintf("\t\t%s: %s.%s,\n", field.Name, varName, field.Name))
+			fmt.Fprintf(&sb, "\t\t%s: %s.%s,\n", field.Name, varName, field.Name)
 		}
 	}
 	sb.WriteString("\t}\n")
 	sb.WriteString("}\n\n")
 
 	// ListResponse
-	sb.WriteString(fmt.Sprintf("// ListResponse represents a list of %s responses.\n", entityName))
+	fmt.Fprintf(&sb, "// ListResponse represents a list of %s responses.\n", entityName)
 	sb.WriteString("type ListResponse struct {\n")
 	sb.WriteString("\tData       []*Response `json:\"data\"`\n")
 	sb.WriteString("\tTotal      int64       `json:\"total\"`\n")
@@ -137,11 +137,11 @@ func (g *Generator) buildResponseDTOContent() string {
 	sb.WriteString("}\n\n")
 
 	// NewListResponse constructor
-	sb.WriteString(fmt.Sprintf("// NewListResponse creates a ListResponse from a slice of %ss.\n", entityName))
-	sb.WriteString(fmt.Sprintf("func NewListResponse(%ss []*entity.%s, total int64, page, pageSize int) *ListResponse {\n", varName, entityName))
-	sb.WriteString(fmt.Sprintf("\tdata := make([]*Response, len(%ss))\n", varName))
-	sb.WriteString(fmt.Sprintf("\tfor i, %s := range %ss {\n", varName, varName))
-	sb.WriteString(fmt.Sprintf("\t\tdata[i] = NewResponse(%s)\n", varName))
+	fmt.Fprintf(&sb, "// NewListResponse creates a ListResponse from a slice of %ss.\n", entityName)
+	fmt.Fprintf(&sb, "func NewListResponse(%ss []*entity.%s, total int64, page, pageSize int) *ListResponse {\n", varName, entityName)
+	fmt.Fprintf(&sb, "\tdata := make([]*Response, len(%ss))\n", varName)
+	fmt.Fprintf(&sb, "\tfor i, %s := range %ss {\n", varName, varName)
+	fmt.Fprintf(&sb, "\t\tdata[i] = NewResponse(%s)\n", varName)
 	sb.WriteString("\t}\n\n")
 	sb.WriteString("\ttotalPages := int(total) / pageSize\n")
 	sb.WriteString("\tif int(total)%pageSize > 0 {\n")

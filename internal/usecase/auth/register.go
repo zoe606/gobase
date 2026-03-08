@@ -7,7 +7,7 @@ import (
 
 	"github.com/hibiken/asynq"
 
-	"go-boilerplate/internal/dto/auth"
+	authdto "go-boilerplate/internal/dto/auth"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/worker/tasks"

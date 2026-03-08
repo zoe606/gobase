@@ -291,5 +291,5 @@ func updateEnvFile(path, newAppName string) error {
 		return nil
 	}
 
-	return os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600)
+	return os.WriteFile(path, []byte(strings.Join(lines, "\n")+"\n"), 0o600) //nolint:gosec // dev tool operating on trusted local paths
 }

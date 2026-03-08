@@ -82,14 +82,14 @@ func (g *Generator) buildUseCaseInterfaceContent() string {
 	dtoImport := g.config.ModuleName + "/internal/dto/" + pkgName
 
 	// Include import hint so the caller knows which import to add
-	sb.WriteString(fmt.Sprintf("\n\t// import %q\n", dtoImport))
+	fmt.Fprintf(&sb, "\n\t// import %q\n", dtoImport)
 
-	sb.WriteString(fmt.Sprintf("\n\t// %s defines %s use case operations.\n", entityName, entityName))
-	sb.WriteString(fmt.Sprintf("\t%s interface {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\tCreate(ctx context.Context, req %s.CreateRequest) (*%s.Response, error)\n", dtoAlias, dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\tGetByID(ctx context.Context, id uint) (*%s.Response, error)\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\tList(ctx context.Context, req %s.ListRequest) (*%s.ListResponse, error)\n", dtoAlias, dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\tUpdate(ctx context.Context, id uint, req %s.UpdateRequest) (*%s.Response, error)\n", dtoAlias, dtoAlias))
+	fmt.Fprintf(&sb, "\n\t// %s defines %s use case operations.\n", entityName, entityName)
+	fmt.Fprintf(&sb, "\t%s interface {\n", entityName)
+	fmt.Fprintf(&sb, "\t\tCreate(ctx context.Context, req %s.CreateRequest) (*%s.Response, error)\n", dtoAlias, dtoAlias)
+	fmt.Fprintf(&sb, "\t\tGetByID(ctx context.Context, id uint) (*%s.Response, error)\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\tList(ctx context.Context, req %s.ListRequest) (*%s.ListResponse, error)\n", dtoAlias, dtoAlias)
+	fmt.Fprintf(&sb, "\t\tUpdate(ctx context.Context, id uint, req %s.UpdateRequest) (*%s.Response, error)\n", dtoAlias, dtoAlias)
 	sb.WriteString("\t\tDelete(ctx context.Context, id uint) error\n")
 	sb.WriteString("\t}\n")
 
@@ -104,27 +104,27 @@ func (g *Generator) buildUseCaseMainContent() string {
 	entityName := g.entityName()
 
 	// Package declaration with go:generate
-	sb.WriteString(fmt.Sprintf("// Package %s provides %s management use cases.\n", pkgName, pkgName))
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "// Package %s provides %s management use cases.\n", pkgName, pkgName)
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 
 	sb.WriteString("//go:generate mockgen -source=../../repo/contracts.go -destination=mocks_repo_test.go -package=" + pkgName + "_test\n\n")
 
 	// Imports
 	sb.WriteString("import (\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
 	sb.WriteString(")\n\n")
 
 	// Struct
-	sb.WriteString(fmt.Sprintf("// UseCase implements %s business logic.\n", pkgName))
+	fmt.Fprintf(&sb, "// UseCase implements %s business logic.\n", pkgName)
 	sb.WriteString("type UseCase struct {\n")
-	sb.WriteString(fmt.Sprintf("\t%sRepo repo.%sRepo\n", g.varName(), entityName))
+	fmt.Fprintf(&sb, "\t%sRepo repo.%sRepo\n", g.varName(), entityName)
 	sb.WriteString("}\n\n")
 
 	// Constructor
-	sb.WriteString(fmt.Sprintf("// New creates a new %s use case.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func New(%sRepo repo.%sRepo) *UseCase {\n", g.varName(), entityName))
+	fmt.Fprintf(&sb, "// New creates a new %s use case.\n", pkgName)
+	fmt.Fprintf(&sb, "func New(%sRepo repo.%sRepo) *UseCase {\n", g.varName(), entityName)
 	sb.WriteString("\treturn &UseCase{\n")
-	sb.WriteString(fmt.Sprintf("\t\t%sRepo: %sRepo,\n", g.varName(), g.varName()))
+	fmt.Fprintf(&sb, "\t\t%sRepo: %sRepo,\n", g.varName(), g.varName())
 	sb.WriteString("\t}\n")
 	sb.WriteString("}\n")
 
@@ -138,17 +138,17 @@ func (g *Generator) buildUseCaseErrorsContent() string {
 	pkgName := g.packageName()
 	entityName := g.entityName()
 
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 	sb.WriteString("import \"errors\"\n\n")
 
 	sb.WriteString("// Error definitions.\n")
 	sb.WriteString("var (\n")
-	sb.WriteString(fmt.Sprintf("\t// ErrNotFound indicates that the %s was not found.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("\tErrNotFound = errors.New(\"%s not found\")\n\n", pkgName))
-	sb.WriteString(fmt.Sprintf("\t// ErrAlreadyExists indicates that the %s already exists.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("\tErrAlreadyExists = errors.New(\"%s already exists\")\n\n", pkgName))
-	sb.WriteString(fmt.Sprintf("\t// ErrInvalid indicates invalid %s data.\n", entityName))
-	sb.WriteString(fmt.Sprintf("\tErrInvalid = errors.New(\"invalid %s data\")\n", pkgName))
+	fmt.Fprintf(&sb, "\t// ErrNotFound indicates that the %s was not found.\n", pkgName)
+	fmt.Fprintf(&sb, "\tErrNotFound = errors.New(\"%s not found\")\n\n", pkgName)
+	fmt.Fprintf(&sb, "\t// ErrAlreadyExists indicates that the %s already exists.\n", pkgName)
+	fmt.Fprintf(&sb, "\tErrAlreadyExists = errors.New(\"%s already exists\")\n\n", pkgName)
+	fmt.Fprintf(&sb, "\t// ErrInvalid indicates invalid %s data.\n", entityName)
+	fmt.Fprintf(&sb, "\tErrInvalid = errors.New(\"invalid %s data\")\n", pkgName)
 	sb.WriteString(")\n")
 
 	return sb.String()
@@ -163,33 +163,33 @@ func (g *Generator) buildUseCaseCreateContent() string {
 	varName := g.varName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
 	sb.WriteString(")\n\n")
 
 	// Method
-	sb.WriteString(fmt.Sprintf("// Create creates a new %s.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (uc *UseCase) Create(ctx context.Context, req %s.CreateRequest) (*%s.Response, error) {\n", dtoAlias, dtoAlias))
+	fmt.Fprintf(&sb, "// Create creates a new %s.\n", pkgName)
+	fmt.Fprintf(&sb, "func (uc *UseCase) Create(ctx context.Context, req %s.CreateRequest) (*%s.Response, error) {\n", dtoAlias, dtoAlias)
 
 	// Build entity from request fields
-	sb.WriteString(fmt.Sprintf("\t%s := &entity.%s{\n", varName, entityName))
+	fmt.Fprintf(&sb, "\t%s := &entity.%s{\n", varName, entityName)
 	for _, field := range g.result.Fields {
 		if g.isCreateRequestField(field.ColumnName) {
-			sb.WriteString(fmt.Sprintf("\t\t%s: req.%s,\n", field.Name, field.Name))
+			fmt.Fprintf(&sb, "\t\t%s: req.%s,\n", field.Name, field.Name)
 		}
 	}
 	sb.WriteString("\t}\n\n")
 
-	sb.WriteString(fmt.Sprintf("\tif err := uc.%sRepo.Create(ctx, %s); err != nil {\n", varName, varName))
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Create: %%w\", err)\n", pkgName))
+	fmt.Fprintf(&sb, "\tif err := uc.%sRepo.Create(ctx, %s); err != nil {\n", varName, varName)
+	fmt.Fprintf(&sb, "\t\treturn nil, fmt.Errorf(\"%s - Create: %%w\", err)\n", pkgName)
 	sb.WriteString("\t}\n\n")
-	sb.WriteString(fmt.Sprintf("\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName))
+	fmt.Fprintf(&sb, "\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName)
 	sb.WriteString("}\n")
 
 	return sb.String()
@@ -203,28 +203,28 @@ func (g *Generator) buildUseCaseGetByIDContent() string {
 	varName := g.varName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
 	sb.WriteString(")\n\n")
 
 	// Method
-	sb.WriteString(fmt.Sprintf("// GetByID retrieves a %s by ID.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (uc *UseCase) GetByID(ctx context.Context, id uint) (*%s.Response, error) {\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t%s, err := uc.%sRepo.GetByID(ctx, id)\n", varName, varName))
+	fmt.Fprintf(&sb, "// GetByID retrieves a %s by ID.\n", pkgName)
+	fmt.Fprintf(&sb, "func (uc *UseCase) GetByID(ctx context.Context, id uint) (*%s.Response, error) {\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t%s, err := uc.%sRepo.GetByID(ctx, id)\n", varName, varName)
 	sb.WriteString("\tif err != nil {\n")
 	sb.WriteString("\t\tif errors.Is(err, repo.ErrNotFound) {\n")
 	sb.WriteString("\t\t\treturn nil, ErrNotFound\n")
 	sb.WriteString("\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - GetByID: %%w\", err)\n", pkgName))
+	fmt.Fprintf(&sb, "\t\treturn nil, fmt.Errorf(\"%s - GetByID: %%w\", err)\n", pkgName)
 	sb.WriteString("\t}\n\n")
-	sb.WriteString(fmt.Sprintf("\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName))
+	fmt.Fprintf(&sb, "\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName)
 	sb.WriteString("}\n")
 
 	return sb.String()
@@ -238,24 +238,24 @@ func (g *Generator) buildUseCaseListContent() string {
 	varName := g.varName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
 	sb.WriteString(")\n\n")
 
 	// Method
-	sb.WriteString(fmt.Sprintf("// List retrieves a paginated list of %ss with filters.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (uc *UseCase) List(ctx context.Context, req %s.ListRequest) (*%s.ListResponse, error) {\n", dtoAlias, dtoAlias))
+	fmt.Fprintf(&sb, "// List retrieves a paginated list of %ss with filters.\n", pkgName)
+	fmt.Fprintf(&sb, "func (uc *UseCase) List(ctx context.Context, req %s.ListRequest) (*%s.ListResponse, error) {\n", dtoAlias, dtoAlias)
 	sb.WriteString("\treq.Params.Normalize()\n\n")
-	sb.WriteString(fmt.Sprintf("\t%ss, total, err := uc.%sRepo.List(ctx, req.Params)\n", varName, varName))
+	fmt.Fprintf(&sb, "\t%ss, total, err := uc.%sRepo.List(ctx, req.Params)\n", varName, varName)
 	sb.WriteString("\tif err != nil {\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - List: %%w\", err)\n", pkgName))
+	fmt.Fprintf(&sb, "\t\treturn nil, fmt.Errorf(\"%s - List: %%w\", err)\n", pkgName)
 	sb.WriteString("\t}\n\n")
-	sb.WriteString(fmt.Sprintf("\treturn %s.NewListResponse(%ss, total, req.Params), nil\n", dtoAlias, varName))
+	fmt.Fprintf(&sb, "\treturn %s.NewListResponse(%ss, total, req.Params), nil\n", dtoAlias, varName)
 	sb.WriteString("}\n")
 
 	return sb.String()
@@ -269,43 +269,43 @@ func (g *Generator) buildUseCaseUpdateContent() string {
 	varName := g.varName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
 	sb.WriteString(")\n\n")
 
 	// Method
-	sb.WriteString(fmt.Sprintf("// Update updates a %s.\n", pkgName))
-	sb.WriteString(fmt.Sprintf("func (uc *UseCase) Update(ctx context.Context, id uint, req %s.UpdateRequest) (*%s.Response, error) {\n", dtoAlias, dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t%s, err := uc.%sRepo.GetByID(ctx, id)\n", varName, varName))
+	fmt.Fprintf(&sb, "// Update updates a %s.\n", pkgName)
+	fmt.Fprintf(&sb, "func (uc *UseCase) Update(ctx context.Context, id uint, req %s.UpdateRequest) (*%s.Response, error) {\n", dtoAlias, dtoAlias)
+	fmt.Fprintf(&sb, "\t%s, err := uc.%sRepo.GetByID(ctx, id)\n", varName, varName)
 	sb.WriteString("\tif err != nil {\n")
 	sb.WriteString("\t\tif errors.Is(err, repo.ErrNotFound) {\n")
 	sb.WriteString("\t\t\treturn nil, ErrNotFound\n")
 	sb.WriteString("\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Update: %%w\", err)\n", pkgName))
+	fmt.Fprintf(&sb, "\t\treturn nil, fmt.Errorf(\"%s - Update: %%w\", err)\n", pkgName)
 	sb.WriteString("\t}\n\n")
 
 	// Generate partial update field checks
 	sb.WriteString("\t// Apply partial updates\n")
 	for _, field := range g.result.Fields {
 		if g.isUpdateRequestField(field.ColumnName) {
-			sb.WriteString(fmt.Sprintf("\tif req.%s != nil {\n", field.Name))
-			sb.WriteString(fmt.Sprintf("\t\t%s.%s = *req.%s\n", varName, field.Name, field.Name))
+			fmt.Fprintf(&sb, "\tif req.%s != nil {\n", field.Name)
+			fmt.Fprintf(&sb, "\t\t%s.%s = *req.%s\n", varName, field.Name, field.Name)
 			sb.WriteString("\t}\n")
 		}
 	}
 	sb.WriteString("\n")
 
-	sb.WriteString(fmt.Sprintf("\tif err := uc.%sRepo.Update(ctx, %s); err != nil {\n", varName, varName))
-	sb.WriteString(fmt.Sprintf("\t\treturn nil, fmt.Errorf(\"%s - Update: %%w\", err)\n", pkgName))
+	fmt.Fprintf(&sb, "\tif err := uc.%sRepo.Update(ctx, %s); err != nil {\n", varName, varName)
+	fmt.Fprintf(&sb, "\t\treturn nil, fmt.Errorf(\"%s - Update: %%w\", err)\n", pkgName)
 	sb.WriteString("\t}\n\n")
-	sb.WriteString(fmt.Sprintf("\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName))
+	fmt.Fprintf(&sb, "\treturn %s.NewResponse(%s), nil\n", dtoAlias, varName)
 	sb.WriteString("}\n")
 
 	return sb.String()
@@ -318,24 +318,24 @@ func (g *Generator) buildUseCaseDeleteContent() string {
 	pkgName := g.packageName()
 	varName := g.varName()
 
-	sb.WriteString(fmt.Sprintf("package %s\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s\n\n", pkgName)
 
 	// Imports
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"fmt\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
 	sb.WriteString(")\n\n")
 
 	// Method
-	sb.WriteString(fmt.Sprintf("// Delete deletes a %s by ID.\n", pkgName))
+	fmt.Fprintf(&sb, "// Delete deletes a %s by ID.\n", pkgName)
 	sb.WriteString("func (uc *UseCase) Delete(ctx context.Context, id uint) error {\n")
-	sb.WriteString(fmt.Sprintf("\tif err := uc.%sRepo.Delete(ctx, id); err != nil {\n", varName))
+	fmt.Fprintf(&sb, "\tif err := uc.%sRepo.Delete(ctx, id); err != nil {\n", varName)
 	sb.WriteString("\t\tif errors.Is(err, repo.ErrNotFound) {\n")
 	sb.WriteString("\t\t\treturn ErrNotFound\n")
 	sb.WriteString("\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\treturn fmt.Errorf(\"%s - Delete: %%w\", err)\n", pkgName))
+	fmt.Fprintf(&sb, "\t\treturn fmt.Errorf(\"%s - Delete: %%w\", err)\n", pkgName)
 	sb.WriteString("\t}\n\n")
 	sb.WriteString("\treturn nil\n")
 	sb.WriteString("}\n")
@@ -369,16 +369,16 @@ func (g *Generator) buildUseCaseCreateTestContent() string {
 	entityName := g.entityName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"testing\"\n\n")
 	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName)
 	sb.WriteString(")\n\n")
 
 	sb.WriteString("func TestCreate(t *testing.T) {\n")
@@ -386,17 +386,17 @@ func (g *Generator) buildUseCaseCreateTestContent() string {
 
 	sb.WriteString("\ttests := []struct {\n")
 	sb.WriteString("\t\tname    string\n")
-	sb.WriteString(fmt.Sprintf("\t\treq     %s.CreateRequest\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	fmt.Fprintf(&sb, "\t\treq     %s.CreateRequest\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\tmockFn  func(*mock%sRepo)\n", entityName)
 	sb.WriteString("\t\twantErr bool\n")
 	sb.WriteString("\t}{\n")
 
 	// Success case
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"success\",\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.CreateRequest{},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.createFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.CreateRequest{},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.createFn = func(ctx context.Context, e *entity.%s) error {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn nil\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -405,9 +405,9 @@ func (g *Generator) buildUseCaseCreateTestContent() string {
 	// Error case
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"repo error\",\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.CreateRequest{},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.createFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.CreateRequest{},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.createFn = func(ctx context.Context, e *entity.%s) error {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn errors.New(\"db error\")\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -420,9 +420,9 @@ func (g *Generator) buildUseCaseCreateTestContent() string {
 	sb.WriteString("\tfor _, tt := range tests {\n")
 	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
 	sb.WriteString("\t\t\tt.Parallel()\n\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockRepo := &mock%sRepo{}\n", entityName)
 	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	fmt.Fprintf(&sb, "\t\t\tuc := %s.New(mockRepo)\n\n", pkgName)
 	sb.WriteString("\t\t\tresult, err := uc.Create(context.Background(), tt.req)\n")
 	sb.WriteString("\t\t\tif tt.wantErr {\n")
 	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
@@ -444,16 +444,16 @@ func (g *Generator) buildUseCaseGetByIDTestContent() string {
 	pkgName := g.packageName()
 	entityName := g.entityName()
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"testing\"\n\n")
 	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName)
 	sb.WriteString(")\n\n")
 
 	sb.WriteString("func TestGetByID(t *testing.T) {\n")
@@ -462,7 +462,7 @@ func (g *Generator) buildUseCaseGetByIDTestContent() string {
 	sb.WriteString("\ttests := []struct {\n")
 	sb.WriteString("\t\tname    string\n")
 	sb.WriteString("\t\tid      uint\n")
-	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	fmt.Fprintf(&sb, "\t\tmockFn  func(*mock%sRepo)\n", entityName)
 	sb.WriteString("\t\twantErr bool\n")
 	sb.WriteString("\t}{\n")
 
@@ -470,9 +470,9 @@ func (g *Generator) buildUseCaseGetByIDTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"success\",\n")
 	sb.WriteString("\t\t\tid:   1,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn &entity.%s{}, nil\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\t\treturn &entity.%s{}, nil\n", entityName)
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
 	sb.WriteString("\t\t},\n")
@@ -481,8 +481,8 @@ func (g *Generator) buildUseCaseGetByIDTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"not found\",\n")
 	sb.WriteString("\t\t\tid:   999,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn nil, repo.ErrNotFound\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -493,8 +493,8 @@ func (g *Generator) buildUseCaseGetByIDTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"repo error\",\n")
 	sb.WriteString("\t\t\tid:   1,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn nil, errors.New(\"db error\")\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -507,9 +507,9 @@ func (g *Generator) buildUseCaseGetByIDTestContent() string {
 	sb.WriteString("\tfor _, tt := range tests {\n")
 	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
 	sb.WriteString("\t\t\tt.Parallel()\n\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockRepo := &mock%sRepo{}\n", entityName)
 	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	fmt.Fprintf(&sb, "\t\t\tuc := %s.New(mockRepo)\n\n", pkgName)
 	sb.WriteString("\t\t\tresult, err := uc.GetByID(context.Background(), tt.id)\n")
 	sb.WriteString("\t\t\tif tt.wantErr {\n")
 	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
@@ -532,17 +532,17 @@ func (g *Generator) buildUseCaseListTestContent() string {
 	entityName := g.entityName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"testing\"\n\n")
 	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/pagination"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/pkg/pagination")
 	sb.WriteString(")\n\n")
 
 	sb.WriteString("func TestList(t *testing.T) {\n")
@@ -550,18 +550,18 @@ func (g *Generator) buildUseCaseListTestContent() string {
 
 	sb.WriteString("\ttests := []struct {\n")
 	sb.WriteString("\t\tname    string\n")
-	sb.WriteString(fmt.Sprintf("\t\treq     %s.ListRequest\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	fmt.Fprintf(&sb, "\t\treq     %s.ListRequest\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\tmockFn  func(*mock%sRepo)\n", entityName)
 	sb.WriteString("\t\twantErr bool\n")
 	sb.WriteString("\t}{\n")
 
 	// Success case
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"success\",\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.ListRequest{Params: pagination.NewParams()},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.listFn = func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn []*entity.%s{{}}, 1, nil\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.ListRequest{Params: pagination.NewParams()},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.listFn = func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\t\treturn []*entity.%s{{}}, 1, nil\n", entityName)
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
 	sb.WriteString("\t\t},\n")
@@ -569,9 +569,9 @@ func (g *Generator) buildUseCaseListTestContent() string {
 	// Repo error case
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"repo error\",\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.ListRequest{Params: pagination.NewParams()},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.listFn = func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.ListRequest{Params: pagination.NewParams()},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.listFn = func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn nil, 0, errors.New(\"db error\")\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -584,9 +584,9 @@ func (g *Generator) buildUseCaseListTestContent() string {
 	sb.WriteString("\tfor _, tt := range tests {\n")
 	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
 	sb.WriteString("\t\t\tt.Parallel()\n\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockRepo := &mock%sRepo{}\n", entityName)
 	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	fmt.Fprintf(&sb, "\t\t\tuc := %s.New(mockRepo)\n\n", pkgName)
 	sb.WriteString("\t\t\tresult, err := uc.List(context.Background(), tt.req)\n")
 	sb.WriteString("\t\t\tif tt.wantErr {\n")
 	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
@@ -609,17 +609,17 @@ func (g *Generator) buildUseCaseUpdateTestContent() string {
 	entityName := g.entityName()
 	dtoAlias := pkgName + "dto"
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"testing\"\n\n")
 	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/dto/"+pkgName)
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName)
 	sb.WriteString(")\n\n")
 
 	sb.WriteString("func TestUpdate(t *testing.T) {\n")
@@ -628,8 +628,8 @@ func (g *Generator) buildUseCaseUpdateTestContent() string {
 	sb.WriteString("\ttests := []struct {\n")
 	sb.WriteString("\t\tname    string\n")
 	sb.WriteString("\t\tid      uint\n")
-	sb.WriteString(fmt.Sprintf("\t\treq     %s.UpdateRequest\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	fmt.Fprintf(&sb, "\t\treq     %s.UpdateRequest\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\tmockFn  func(*mock%sRepo)\n", entityName)
 	sb.WriteString("\t\twantErr bool\n")
 	sb.WriteString("\t}{\n")
 
@@ -637,12 +637,12 @@ func (g *Generator) buildUseCaseUpdateTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"success\",\n")
 	sb.WriteString("\t\t\tid:   1,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn &entity.%s{}, nil\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\t\treturn &entity.%s{}, nil\n", entityName)
 	sb.WriteString("\t\t\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.updateFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\t\tm.updateFn = func(ctx context.Context, e *entity.%s) error {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn nil\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -652,9 +652,9 @@ func (g *Generator) buildUseCaseUpdateTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"not found\",\n")
 	sb.WriteString("\t\t\tid:   999,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn nil, repo.ErrNotFound\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -665,12 +665,12 @@ func (g *Generator) buildUseCaseUpdateTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"repo error\",\n")
 	sb.WriteString("\t\t\tid:   1,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias))
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\t\t\t\t\treturn &entity.%s{}, nil\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\treq:  %s.UpdateRequest{},\n", dtoAlias)
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\tm.getByIDFn = func(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName)
+	fmt.Fprintf(&sb, "\t\t\t\t\treturn &entity.%s{}, nil\n", entityName)
 	sb.WriteString("\t\t\t\t}\n")
-	sb.WriteString(fmt.Sprintf("\t\t\t\tm.updateFn = func(ctx context.Context, e *entity.%s) error {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\t\tm.updateFn = func(ctx context.Context, e *entity.%s) error {\n", entityName)
 	sb.WriteString("\t\t\t\t\treturn errors.New(\"db error\")\n")
 	sb.WriteString("\t\t\t\t}\n")
 	sb.WriteString("\t\t\t},\n")
@@ -683,9 +683,9 @@ func (g *Generator) buildUseCaseUpdateTestContent() string {
 	sb.WriteString("\tfor _, tt := range tests {\n")
 	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
 	sb.WriteString("\t\t\tt.Parallel()\n\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockRepo := &mock%sRepo{}\n", entityName)
 	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	fmt.Fprintf(&sb, "\t\t\tuc := %s.New(mockRepo)\n\n", pkgName)
 	sb.WriteString("\t\t\tresult, err := uc.Update(context.Background(), tt.id, tt.req)\n")
 	sb.WriteString("\t\t\tif tt.wantErr {\n")
 	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
@@ -707,15 +707,15 @@ func (g *Generator) buildUseCaseDeleteTestContent() string {
 	pkgName := g.packageName()
 	entityName := g.entityName()
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n")
 	sb.WriteString("\t\"errors\"\n")
 	sb.WriteString("\t\"testing\"\n\n")
 	sb.WriteString("\t\"github.com/stretchr/testify/require\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/repo"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/repo")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/usecase/"+pkgName)
 	sb.WriteString(")\n\n")
 
 	sb.WriteString("func TestDelete(t *testing.T) {\n")
@@ -724,7 +724,7 @@ func (g *Generator) buildUseCaseDeleteTestContent() string {
 	sb.WriteString("\ttests := []struct {\n")
 	sb.WriteString("\t\tname    string\n")
 	sb.WriteString("\t\tid      uint\n")
-	sb.WriteString(fmt.Sprintf("\t\tmockFn  func(*mock%sRepo)\n", entityName))
+	fmt.Fprintf(&sb, "\t\tmockFn  func(*mock%sRepo)\n", entityName)
 	sb.WriteString("\t\twantErr bool\n")
 	sb.WriteString("\t}{\n")
 
@@ -732,7 +732,7 @@ func (g *Generator) buildUseCaseDeleteTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"success\",\n")
 	sb.WriteString("\t\t\tid:   1,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
 	sb.WriteString("\t\t\t\tm.deleteFn = func(ctx context.Context, id uint) error {\n")
 	sb.WriteString("\t\t\t\t\treturn nil\n")
 	sb.WriteString("\t\t\t\t}\n")
@@ -743,7 +743,7 @@ func (g *Generator) buildUseCaseDeleteTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"not found\",\n")
 	sb.WriteString("\t\t\tid:   999,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
 	sb.WriteString("\t\t\t\tm.deleteFn = func(ctx context.Context, id uint) error {\n")
 	sb.WriteString("\t\t\t\t\treturn repo.ErrNotFound\n")
 	sb.WriteString("\t\t\t\t}\n")
@@ -755,7 +755,7 @@ func (g *Generator) buildUseCaseDeleteTestContent() string {
 	sb.WriteString("\t\t{\n")
 	sb.WriteString("\t\t\tname: \"repo error\",\n")
 	sb.WriteString("\t\t\tid:   1,\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockFn: func(m *mock%sRepo) {\n", entityName)
 	sb.WriteString("\t\t\t\tm.deleteFn = func(ctx context.Context, id uint) error {\n")
 	sb.WriteString("\t\t\t\t\treturn errors.New(\"db error\")\n")
 	sb.WriteString("\t\t\t\t}\n")
@@ -769,9 +769,9 @@ func (g *Generator) buildUseCaseDeleteTestContent() string {
 	sb.WriteString("\tfor _, tt := range tests {\n")
 	sb.WriteString("\t\tt.Run(tt.name, func(t *testing.T) {\n")
 	sb.WriteString("\t\t\tt.Parallel()\n\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tmockRepo := &mock%sRepo{}\n", entityName))
+	fmt.Fprintf(&sb, "\t\t\tmockRepo := &mock%sRepo{}\n", entityName)
 	sb.WriteString("\t\t\ttt.mockFn(mockRepo)\n")
-	sb.WriteString(fmt.Sprintf("\t\t\tuc := %s.New(mockRepo)\n\n", pkgName))
+	fmt.Fprintf(&sb, "\t\t\tuc := %s.New(mockRepo)\n\n", pkgName)
 	sb.WriteString("\t\t\terr := uc.Delete(context.Background(), tt.id)\n")
 	sb.WriteString("\t\t\tif tt.wantErr {\n")
 	sb.WriteString("\t\t\t\trequire.Error(t, err)\n")
@@ -791,13 +791,13 @@ func (g *Generator) buildUseCaseGenericTestContent(methodName string) string {
 
 	pkgName := g.packageName()
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"testing\"\n")
 	sb.WriteString(")\n\n")
 
-	sb.WriteString(fmt.Sprintf("func Test%s(t *testing.T) {\n", methodName))
+	fmt.Fprintf(&sb, "func Test%s(t *testing.T) {\n", methodName)
 	sb.WriteString("\tt.Parallel()\n")
 	sb.WriteString("\t// TODO: Implement test\n")
 	sb.WriteString("}\n")
@@ -813,45 +813,45 @@ func (g *Generator) buildUseCaseMocksTestContent() string {
 	entityName := g.entityName()
 	varName := g.varName()
 
-	sb.WriteString(fmt.Sprintf("package %s_test\n\n", pkgName))
+	fmt.Fprintf(&sb, "package %s_test\n\n", pkgName)
 
 	sb.WriteString("import (\n")
 	sb.WriteString("\t\"context\"\n\n")
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/internal/entity"))
-	sb.WriteString(fmt.Sprintf("\t%q\n", g.config.ModuleName+"/pkg/pagination"))
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/internal/entity")
+	fmt.Fprintf(&sb, "\t%q\n", g.config.ModuleName+"/pkg/pagination")
 	sb.WriteString(")\n\n")
 
 	// Mock struct
-	sb.WriteString(fmt.Sprintf("type mock%sRepo struct {\n", entityName))
-	sb.WriteString(fmt.Sprintf("\tcreateFn  func(ctx context.Context, %s *entity.%s) error\n", varName, entityName))
-	sb.WriteString(fmt.Sprintf("\tgetByIDFn func(ctx context.Context, id uint) (*entity.%s, error)\n", entityName))
-	sb.WriteString(fmt.Sprintf("\tlistFn    func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error)\n", entityName))
-	sb.WriteString(fmt.Sprintf("\tupdateFn  func(ctx context.Context, %s *entity.%s) error\n", varName, entityName))
+	fmt.Fprintf(&sb, "type mock%sRepo struct {\n", entityName)
+	fmt.Fprintf(&sb, "\tcreateFn  func(ctx context.Context, %s *entity.%s) error\n", varName, entityName)
+	fmt.Fprintf(&sb, "\tgetByIDFn func(ctx context.Context, id uint) (*entity.%s, error)\n", entityName)
+	fmt.Fprintf(&sb, "\tlistFn    func(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error)\n", entityName)
+	fmt.Fprintf(&sb, "\tupdateFn  func(ctx context.Context, %s *entity.%s) error\n", varName, entityName)
 	sb.WriteString("\tdeleteFn  func(ctx context.Context, id uint) error\n")
 	sb.WriteString("}\n\n")
 
 	// Create method
-	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) Create(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
-	sb.WriteString(fmt.Sprintf("\treturn m.createFn(ctx, %s)\n", varName))
+	fmt.Fprintf(&sb, "func (m *mock%sRepo) Create(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName)
+	fmt.Fprintf(&sb, "\treturn m.createFn(ctx, %s)\n", varName)
 	sb.WriteString("}\n\n")
 
 	// GetByID method
-	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) GetByID(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName, entityName))
+	fmt.Fprintf(&sb, "func (m *mock%sRepo) GetByID(ctx context.Context, id uint) (*entity.%s, error) {\n", entityName, entityName)
 	sb.WriteString("\treturn m.getByIDFn(ctx, id)\n")
 	sb.WriteString("}\n\n")
 
 	// List method
-	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) List(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName, entityName))
+	fmt.Fprintf(&sb, "func (m *mock%sRepo) List(ctx context.Context, params pagination.Params) ([]*entity.%s, int64, error) {\n", entityName, entityName)
 	sb.WriteString("\treturn m.listFn(ctx, params)\n")
 	sb.WriteString("}\n\n")
 
 	// Update method
-	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) Update(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName))
-	sb.WriteString(fmt.Sprintf("\treturn m.updateFn(ctx, %s)\n", varName))
+	fmt.Fprintf(&sb, "func (m *mock%sRepo) Update(ctx context.Context, %s *entity.%s) error {\n", entityName, varName, entityName)
+	fmt.Fprintf(&sb, "\treturn m.updateFn(ctx, %s)\n", varName)
 	sb.WriteString("}\n\n")
 
 	// Delete method
-	sb.WriteString(fmt.Sprintf("func (m *mock%sRepo) Delete(ctx context.Context, id uint) error {\n", entityName))
+	fmt.Fprintf(&sb, "func (m *mock%sRepo) Delete(ctx context.Context, id uint) error {\n", entityName)
 	sb.WriteString("\treturn m.deleteFn(ctx, id)\n")
 	sb.WriteString("}\n")
 

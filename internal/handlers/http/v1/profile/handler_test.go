@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.uber.org/mock/gomock"
 
-	"go-boilerplate/internal/dto/profile"
+	profiledto "go-boilerplate/internal/dto/profile"
 	"go-boilerplate/internal/handlers/http/v1/profile"
 	profileuc "go-boilerplate/internal/usecase/profile"
 	"go-boilerplate/pkg/jwt"
@@ -91,7 +91,7 @@ func TestHandler_GetProfile(t *testing.T) {
 
 			tt.setupMock(mockProfileUC)
 
-			req := httptest.NewRequest(http.MethodGet, "/v1/profile", http.NoBody)
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/profile", http.NoBody)
 			req.Header.Set("Authorization", "Bearer "+token)
 
 			resp, err := app.Test(req)
@@ -188,7 +188,7 @@ func TestHandler_UpdateProfile(t *testing.T) {
 
 			tt.setupMock(mockProfileUC)
 
-			req := httptest.NewRequest(http.MethodPatch, "/v1/profile", bytes.NewBufferString(tt.body))
+			req := httptest.NewRequestWithContext(t.Context(), http.MethodPatch, "/v1/profile", bytes.NewBufferString(tt.body))
 			req.Header.Set("Authorization", "Bearer "+token)
 			req.Header.Set("Content-Type", "application/json")
 
@@ -211,7 +211,7 @@ func TestHandler_Unauthorized(t *testing.T) {
 	app, _ := setupTestApp(t, mockProfileUC)
 
 	// Test without token
-	req := httptest.NewRequest(http.MethodGet, "/v1/profile", http.NoBody)
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/profile", http.NoBody)
 
 	resp, err := app.Test(req)
 	require.NoError(t, err)
