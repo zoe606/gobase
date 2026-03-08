@@ -1,6 +1,7 @@
 package wire
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -355,7 +356,7 @@ func TestFindUnwired_PartiallyWired(t *testing.T) {
 func TestWireRepoContract(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
 
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireRepoContract(cfg, f); err != nil {
@@ -381,7 +382,7 @@ func TestWireRepoContract(t *testing.T) {
 func TestWireUsecaseContract(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
 
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireUsecaseContract(cfg, f); err != nil {
@@ -404,7 +405,7 @@ func TestWireUsecaseContract(t *testing.T) {
 func TestWireRouter(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
 
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireRouter(cfg, f); err != nil {
@@ -430,7 +431,7 @@ func TestWireRouter(t *testing.T) {
 func TestWireApp(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
 
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireApp(cfg, f); err != nil {
@@ -467,7 +468,7 @@ func TestWireApp(t *testing.T) {
 
 func TestIdempotency_RepoContract(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	// Wire once
@@ -489,7 +490,7 @@ func TestIdempotency_RepoContract(t *testing.T) {
 
 func TestIdempotency_UsecaseContract(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireUsecaseContract(cfg, f); err != nil {
@@ -509,7 +510,7 @@ func TestIdempotency_UsecaseContract(t *testing.T) {
 
 func TestIdempotency_Router(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireRouter(cfg, f); err != nil {
@@ -529,7 +530,7 @@ func TestIdempotency_Router(t *testing.T) {
 
 func TestIdempotency_App(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	f := Feature{Name: "product", EntityName: "Product", PackageName: "product", VarName: "product"}
 
 	if err := wireApp(cfg, f); err != nil {
@@ -550,7 +551,7 @@ func TestIdempotency_App(t *testing.T) {
 func TestFullWiringRun(t *testing.T) {
 	dir := setupTestProject(t, []string{"product", "category"}, []string{"product"})
 
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	w := New(cfg)
 
 	if err := w.Run(); err != nil {
@@ -587,7 +588,7 @@ func TestFullWiringRun(t *testing.T) {
 func TestFullWiringRun_Idempotent(t *testing.T) {
 	dir := setupTestProject(t, []string{"product"}, nil)
 
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	w := New(cfg)
 
 	// First run
@@ -704,7 +705,7 @@ func TestSnakeCaseFeature(t *testing.T) {
 	}
 
 	// Wire it
-	cfg := Config{ModuleName: "test-project", OutputDir: dir}
+	cfg := Config{ModuleName: "test-project", OutputDir: dir, Output: io.Discard}
 	if err := wireRepoContract(cfg, f); err != nil {
 		t.Fatalf("wireRepoContract failed: %v", err)
 	}

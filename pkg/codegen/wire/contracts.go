@@ -21,7 +21,7 @@ func wireRepoContract(cfg Config, f Feature) error {
 
 	// Check if already wired
 	if strings.Contains(contentStr, f.EntityName+"Repo interface") {
-		fmt.Printf("  [skip] repo contract: %sRepo already exists\n", f.EntityName)
+		fmt.Fprintf(cfg.output(), "  [skip] repo contract: %sRepo already exists\n", f.EntityName)
 		return nil
 	}
 
@@ -57,7 +57,7 @@ func wireRepoContract(cfg Config, f Feature) error {
 	newContent := contentStr[:lastParen] + iface + contentStr[lastParen:]
 
 	if cfg.DryRun {
-		fmt.Printf("  [dry-run] would update %s: add %sRepo interface\n", relPath, f.EntityName)
+		fmt.Fprintf(cfg.output(), "  [dry-run] would update %s: add %sRepo interface\n", relPath, f.EntityName)
 		return nil
 	}
 
@@ -65,7 +65,7 @@ func wireRepoContract(cfg Config, f Feature) error {
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 
-	fmt.Printf("  [updated] %s: added %sRepo interface\n", relPath, f.EntityName)
+	fmt.Fprintf(cfg.output(), "  [updated] %s: added %sRepo interface\n", relPath, f.EntityName)
 	return nil
 }
 
@@ -83,7 +83,7 @@ func wireUsecaseContract(cfg Config, f Feature) error {
 
 	// Check if already wired
 	if strings.Contains(contentStr, f.EntityName+" interface") {
-		fmt.Printf("  [skip] usecase contract: %s already exists\n", f.EntityName)
+		fmt.Fprintf(cfg.output(), "  [skip] usecase contract: %s already exists\n", f.EntityName)
 		return nil
 	}
 
@@ -119,7 +119,7 @@ func wireUsecaseContract(cfg Config, f Feature) error {
 	newContent := contentStr[:lastParen] + iface + contentStr[lastParen:]
 
 	if cfg.DryRun {
-		fmt.Printf("  [dry-run] would update %s: add %s interface\n", relPath, f.EntityName)
+		fmt.Fprintf(cfg.output(), "  [dry-run] would update %s: add %s interface\n", relPath, f.EntityName)
 		return nil
 	}
 
@@ -127,7 +127,7 @@ func wireUsecaseContract(cfg Config, f Feature) error {
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 
-	fmt.Printf("  [updated] %s: added %s interface\n", relPath, f.EntityName)
+	fmt.Fprintf(cfg.output(), "  [updated] %s: added %s interface\n", relPath, f.EntityName)
 	return nil
 }
 

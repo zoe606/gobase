@@ -29,7 +29,7 @@ func wireApp(cfg Config, f Feature) error {
 	// Check if already wired by looking for the usecase import
 	ucImport := fmt.Sprintf(`"%s/internal/usecase/%s"`, cfg.ModuleName, f.PackageName)
 	if strings.Contains(contentStr, ucImport) {
-		fmt.Printf("  [skip] app.go: %s already wired\n", f.EntityName)
+		fmt.Fprintf(cfg.output(), "  [skip] app.go: %s already wired\n", f.EntityName)
 		return nil
 	}
 
@@ -58,7 +58,7 @@ func wireApp(cfg Config, f Feature) error {
 	contentStr = addAutoMigrateEntity(contentStr, f.EntityName)
 
 	if cfg.DryRun {
-		fmt.Printf("  [dry-run] would update %s: wire %s\n", relPath, f.EntityName)
+		fmt.Fprintf(cfg.output(), "  [dry-run] would update %s: wire %s\n", relPath, f.EntityName)
 		return nil
 	}
 
@@ -66,7 +66,7 @@ func wireApp(cfg Config, f Feature) error {
 		return fmt.Errorf("writing %s: %w", relPath, err)
 	}
 
-	fmt.Printf("  [updated] %s: wired %s\n", relPath, f.EntityName)
+	fmt.Fprintf(cfg.output(), "  [updated] %s: wired %s\n", relPath, f.EntityName)
 	return nil
 }
 

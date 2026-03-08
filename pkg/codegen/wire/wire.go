@@ -4,14 +4,25 @@ package wire
 
 import (
 	"fmt"
+	"io"
+	"os"
 	"strings"
 )
 
 // Config holds configuration for the wiring process.
 type Config struct {
-	ModuleName string // Go module name (e.g., "go-boilerplate")
-	OutputDir  string // Project root directory
-	DryRun     bool   // If true, print changes without writing
+	ModuleName string    // Go module name (e.g., "go-boilerplate")
+	OutputDir  string    // Project root directory
+	DryRun     bool      // If true, print changes without writing
+	Output     io.Writer // Output writer for log messages (defaults to os.Stdout)
+}
+
+// output returns the configured writer or os.Stdout.
+func (c Config) output() io.Writer {
+	if c.Output != nil {
+		return c.Output
+	}
+	return os.Stdout
 }
 
 // Feature represents a detected feature that may need wiring.
@@ -39,12 +50,14 @@ func (w *Wirer) Run() error {
 		return fmt.Errorf("scanning features: %w", err)
 	}
 
+	out := w.config.output()
+
 	if len(features) == 0 {
-		fmt.Println("No features found in internal/usecase/")
+		fmt.Fprintln(out, "No features found in internal/usecase/")
 		return nil
 	}
 
-	fmt.Printf("Found %d feature(s): %s\n", len(features), featureNames(features))
+	fmt.Fprintf(out, "Found %d feature(s): %s\n", len(features), featureNames(features))
 
 	unwired, err := findUnwired(w.config.OutputDir, features)
 	if err != nil {
@@ -52,11 +65,11 @@ func (w *Wirer) Run() error {
 	}
 
 	if len(unwired) == 0 {
-		fmt.Println("All features are already wired.")
+		fmt.Fprintln(out, "All features are already wired.")
 		return nil
 	}
 
-	fmt.Printf("Unwired feature(s): %s\n\n", featureNames(unwired))
+	fmt.Fprintf(out, "Unwired feature(s): %s\n\n", featureNames(unwired))
 
 	for _, f := range unwired {
 		if err := w.wireFeature(f); err != nil {
@@ -69,7 +82,7 @@ func (w *Wirer) Run() error {
 
 // wireFeature wires a single feature into all target files.
 func (w *Wirer) wireFeature(f Feature) error {
-	fmt.Printf("Wiring feature: %s\n", f.EntityName)
+	fmt.Fprintf(w.config.output(), "Wiring feature: %s\n", f.EntityName)
 
 	// Wire repo contracts
 	if err := wireRepoContract(w.config, f); err != nil {
@@ -91,7 +104,7 @@ func (w *Wirer) wireFeature(f Feature) error {
 		return fmt.Errorf("app.go: %w", err)
 	}
 
-	fmt.Println()
+	fmt.Fprintln(w.config.output())
 	return nil
 }
 
