@@ -3,6 +3,7 @@ package redis
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -96,5 +97,15 @@ func (c *Client) Exists(ctx context.Context, key string) (bool, error) {
 
 // SetNX sets a value only if the key does not exist.
 func (c *Client) SetNX(ctx context.Context, key string, value interface{}, expiration time.Duration) (bool, error) {
-	return c.Client.SetNX(ctx, key, value, expiration).Result()
+	result, err := c.Client.SetArgs(ctx, key, value, redis.SetArgs{
+		Mode: "NX",
+		TTL:  expiration,
+	}).Result()
+	if errors.Is(err, redis.Nil) {
+		return false, nil
+	}
+	if err != nil {
+		return false, err
+	}
+	return result == "OK", nil
 }
