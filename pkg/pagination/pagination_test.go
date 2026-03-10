@@ -3,7 +3,10 @@ package pagination_test
 import (
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
+	"gorm.io/driver/postgres"
+	"gorm.io/gorm"
 
 	"go-boilerplate/pkg/pagination"
 )
@@ -156,6 +159,72 @@ func TestNewParams(t *testing.T) {
 	require.Equal(t, pagination.DefaultPage, params.Page)
 	require.Equal(t, pagination.DefaultLimit, params.Limit)
 	require.Equal(t, "desc", params.Order)
+}
+
+func newTestDB(t *testing.T) *gorm.DB {
+	t.Helper()
+	db, _, err := sqlmock.New()
+	require.NoError(t, err)
+	t.Cleanup(func() { db.Close() })
+	gormDB, err := gorm.Open(postgres.New(postgres.Config{Conn: db}), &gorm.Config{})
+	require.NoError(t, err)
+	return gormDB
+}
+
+func TestApply(t *testing.T) {
+	t.Parallel()
+
+	t.Run("with allowed sort", func(t *testing.T) {
+		t.Parallel()
+		gormDB := newTestDB(t)
+		params := pagination.Params{Page: 2, Limit: 10, Sort: "name", Order: "asc"}
+		result := params.Apply(gormDB, []string{"name", "created_at"})
+		require.NotNil(t, result)
+	})
+
+	t.Run("sort not in allowed list is ignored", func(t *testing.T) {
+		t.Parallel()
+		gormDB := newTestDB(t)
+		params := pagination.Params{Page: 1, Limit: 10, Sort: "password", Order: "asc"}
+		result := params.Apply(gormDB, []string{"name", "created_at"})
+		require.NotNil(t, result)
+	})
+
+	t.Run("no sort", func(t *testing.T) {
+		t.Parallel()
+		gormDB := newTestDB(t)
+		params := pagination.Params{Page: 1, Limit: 5}
+		result := params.Apply(gormDB, []string{"name"})
+		require.NotNil(t, result)
+	})
+}
+
+func TestNewMeta(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name      string
+		page      int
+		limit     int
+		total     int64
+		wantPages int
+	}{
+		{"normal", 1, 10, 25, 3},
+		{"exact division", 2, 10, 20, 2},
+		{"zero limit", 1, 0, 10, 0},
+		{"zero total", 1, 10, 0, 0},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			meta := pagination.NewMeta(tt.page, tt.limit, tt.total)
+			require.Equal(t, tt.page, meta.Page)
+			require.Equal(t, tt.limit, meta.Limit)
+			require.Equal(t, tt.total, meta.Total)
+			require.Equal(t, tt.wantPages, meta.TotalPages)
+		})
+	}
 }
 
 func TestNewResult(t *testing.T) {

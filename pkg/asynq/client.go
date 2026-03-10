@@ -35,6 +35,12 @@ func (c *Client) EnqueueTask(task *asynq.Task, opts ...asynq.Option) (*asynq.Tas
 	return c.Enqueue(task, opts...)
 }
 
+// EnqueueWithRetry enqueues a task with a specific max retry count.
+func (c *Client) EnqueueWithRetry(task *asynq.Task, maxRetry int, opts ...asynq.Option) (*asynq.TaskInfo, error) {
+	opts = append([]asynq.Option{asynq.MaxRetry(maxRetry)}, opts...)
+	return c.Enqueue(task, opts...)
+}
+
 // Close closes the Asynq client.
 func (c *Client) Close() error {
 	return c.Client.Close()

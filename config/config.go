@@ -41,6 +41,7 @@ type (
 		EmailVerification EmailVerification `mapstructure:"email_verification"`
 		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
 		CircuitBreaker    CircuitBreaker    `mapstructure:"circuit_breaker"`
+		Telemetry         Telemetry         `mapstructure:"telemetry"`
 	}
 
 	// App holds application-specific configuration.
@@ -122,6 +123,7 @@ type (
 	Asynq struct {
 		Concurrency int           `mapstructure:"concurrency"`
 		JobTimeout  time.Duration `mapstructure:"job_timeout"` // Default job timeout
+		MaxRetry    int           `mapstructure:"max_retry"`   // Max retry attempts before archiving
 	}
 
 	// Email holds email service configuration.
@@ -180,6 +182,13 @@ type (
 		Timeout      time.Duration `mapstructure:"timeout"`       // Time in open state before half-open
 		FailureRatio float64       `mapstructure:"failure_ratio"` // Failure ratio to trip (0.0-1.0)
 		MinRequests  uint32        `mapstructure:"min_requests"`  // Min requests before evaluating ratio
+	}
+
+	// Telemetry holds OpenTelemetry configuration.
+	Telemetry struct {
+		Enabled      bool   `mapstructure:"enabled"`       // Enable/disable OpenTelemetry
+		OTLPEndpoint string `mapstructure:"otlp_endpoint"` // OTLP gRPC endpoint
+		OTLPInsecure bool   `mapstructure:"otlp_insecure"` // Use insecure gRPC connection
 	}
 )
 
@@ -261,6 +270,11 @@ func (c *Config) Validate() error {
 		if c.JWT.SecretKey == "" || c.JWT.SecretKey == "change-me-in-production" {
 			errs = append(errs, "JWT_SECRET_KEY must be set in production")
 		}
+
+		// PostgreSQL SSL is required in production
+		if c.Postgres.SSLMode == "disable" {
+			errs = append(errs, "POSTGRES_SSLMODE must not be 'disable' in production (use 'require', 'verify-ca', or 'verify-full')")
+		}
 	}
 
 	// Database config validation
@@ -275,6 +289,23 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("config validation failed: %s", strings.Join(errs, "; "))
 	}
 	return nil
+}
+
+// Warnings returns non-fatal configuration warnings.
+func (c *Config) Warnings() []string {
+	var warnings []string
+
+	if c.App.IsProduction() {
+		if c.CORS.AllowOrigins == "*" {
+			warnings = append(warnings, "CORS_ALLOW_ORIGINS is set to '*' in production — consider restricting to specific origins")
+		}
+
+		if !c.Storage.S3UseSSL && c.Storage.Driver == "s3" {
+			warnings = append(warnings, "STORAGE_S3_USE_SSL is false in production — consider enabling SSL for S3 connections")
+		}
+	}
+
+	return warnings
 }
 
 func setDefaults() {
@@ -336,6 +367,7 @@ func setDefaults() {
 	// Asynq defaults
 	viper.SetDefault("asynq.concurrency", DefaultAsynqConcurrency)
 	viper.SetDefault("asynq.job_timeout", "5m")
+	viper.SetDefault("asynq.max_retry", 3)
 
 	// Email defaults
 	viper.SetDefault("email.provider", "resend")
@@ -372,6 +404,11 @@ func setDefaults() {
 	// PasswordReset defaults
 	viper.SetDefault("password_reset.token_ttl", "1h")
 	viper.SetDefault("password_reset.base_url", "http://localhost:3000")
+
+	// Telemetry defaults
+	viper.SetDefault("telemetry.enabled", false)
+	viper.SetDefault("telemetry.otlp_endpoint", "localhost:4317")
+	viper.SetDefault("telemetry.otlp_insecure", true)
 
 	// CircuitBreaker defaults
 	viper.SetDefault("circuit_breaker.enabled", true)
@@ -439,6 +476,7 @@ func bindEnvVars() {
 	// Asynq
 	viper.BindEnv("asynq.concurrency", "ASYNQ_CONCURRENCY")
 	viper.BindEnv("asynq.job_timeout", "ASYNQ_JOB_TIMEOUT")
+	viper.BindEnv("asynq.max_retry", "ASYNQ_MAX_RETRY")
 
 	// Email
 	viper.BindEnv("email.provider", "EMAIL_PROVIDER")
@@ -475,6 +513,11 @@ func bindEnvVars() {
 	// PasswordReset
 	viper.BindEnv("password_reset.token_ttl", "PASSWORD_RESET_TOKEN_TTL")
 	viper.BindEnv("password_reset.base_url", "PASSWORD_RESET_BASE_URL")
+
+	// Telemetry
+	viper.BindEnv("telemetry.enabled", "TELEMETRY_ENABLED")
+	viper.BindEnv("telemetry.otlp_endpoint", "TELEMETRY_OTLP_ENDPOINT")
+	viper.BindEnv("telemetry.otlp_insecure", "TELEMETRY_OTLP_INSECURE")
 
 	// CircuitBreaker
 	viper.BindEnv("circuit_breaker.enabled", "CIRCUIT_BREAKER_ENABLED")

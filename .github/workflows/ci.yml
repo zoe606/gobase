@@ -73,7 +73,19 @@ jobs:
           go-version: ${{ env.GO_VERSION }}
 
       - name: Run tests
-        run: go test -v -race -covermode=atomic -coverprofile=coverage.txt ./internal/... ./pkg/...
+        run: |
+          PKGS=$(go list ./internal/... ./pkg/... | grep -v -E '(internal/app$|pkg/postgres$|pkg/redis$|pkg/asynq|pkg/telemetry|pkg/codegen/cmd|pkg/tools|pkg/logger$|storage/|internal/handlers/http$|internal/worker$|webapi/email$|pkg/audit$)' | tr '\n' ',' | sed 's/,$//')
+          go test -v -race -covermode=atomic -coverprofile=coverage.txt -coverpkg="$PKGS" ./internal/... ./pkg/...
+
+      - name: Check coverage threshold
+        run: |
+          coverage=$(go tool cover -func=coverage.txt | grep total: | awk '{print int($3)}')
+          echo "Total coverage: ${coverage}%"
+          if [ "${coverage}" -lt "85" ]; then
+            echo "::error::Coverage ${coverage}% is below 85% threshold"
+            exit 1
+          fi
+          echo "Coverage meets 85% threshold"
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5

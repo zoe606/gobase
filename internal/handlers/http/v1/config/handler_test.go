@@ -1,15 +1,22 @@
 package config
 
 import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 
 	"go-boilerplate/config"
+	"go-boilerplate/internal/handlers/http/middleware"
 	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/response"
 )
 
 // mockLogger implements logger.Interface for testing.
@@ -187,6 +194,90 @@ func TestHandler_Cache(t *testing.T) {
 	// Cache should be cleared
 	assert.Nil(t, h.cache)
 	assert.True(t, h.cachedAt.IsZero())
+}
+
+func setupTestApp(t *testing.T) (app *fiber.App, token string) {
+	t.Helper()
+	cfg := &config.Config{
+		App: config.App{Name: "test", Version: "1.0", Env: "test"},
+	}
+	jwtSvc := jwt.New("test-secret-key-long-enough", 15*time.Minute, 24*time.Hour)
+	l := &mockLogger{}
+	h := New(cfg, jwtSvc, l)
+
+	app = fiber.New()
+	grp := app.Group("/v1")
+	cfgGroup := grp.Group("/config")
+	cfgGroup.Use(middleware.JWTAuth(jwtSvc, l))
+	cfgGroup.Use(middleware.RequireRole("admin", "superadmin"))
+	cfgGroup.Get("", h.GetConfig)
+	cfgGroup.Post("/cache/invalidate", h.InvalidateCache)
+
+	var err error
+	token, _, err = jwtSvc.GenerateAccessToken(1, "admin@example.com", "admin", nil)
+	require.NoError(t, err)
+	return app, token
+}
+
+func TestHandler_GetConfig(t *testing.T) {
+	t.Parallel()
+	app, token := setupTestApp(t)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/config", http.NoBody)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+
+	body, _ := io.ReadAll(resp.Body) //nolint:errcheck // test
+	var result response.Response[ConfigResponse]
+	require.NoError(t, json.Unmarshal(body, &result))
+	require.True(t, result.Success)
+	require.Equal(t, "test", result.Data.App.Name)
+}
+
+func TestHandler_GetConfig_CacheHit(t *testing.T) {
+	t.Parallel()
+	app, token := setupTestApp(t)
+
+	// First request populates cache
+	req1 := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/config", http.NoBody)
+	req1.Header.Set("Authorization", "Bearer "+token)
+	resp1, err := app.Test(req1)
+	require.NoError(t, err)
+	resp1.Body.Close() //nolint:errcheck // test
+
+	// Second request should hit cache
+	req2 := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/config", http.NoBody)
+	req2.Header.Set("Authorization", "Bearer "+token)
+	resp2, err := app.Test(req2)
+	require.NoError(t, err)
+	defer resp2.Body.Close() //nolint:errcheck // test
+	require.Equal(t, http.StatusOK, resp2.StatusCode)
+}
+
+func TestHandler_InvalidateCache(t *testing.T) {
+	t.Parallel()
+	app, token := setupTestApp(t)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/config/cache/invalidate", http.NoBody)
+	req.Header.Set("Authorization", "Bearer "+token)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
+	require.Equal(t, http.StatusOK, resp.StatusCode)
+}
+
+func TestHandler_GetConfig_Unauthorized(t *testing.T) {
+	t.Parallel()
+	app, _ := setupTestApp(t)
+
+	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/config", http.NoBody)
+	resp, err := app.Test(req)
+	require.NoError(t, err)
+	defer resp.Body.Close() //nolint:errcheck // test
+	require.Equal(t, http.StatusUnauthorized, resp.StatusCode)
 }
 
 func TestConfigResponse_Structure(t *testing.T) {

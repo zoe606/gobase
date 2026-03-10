@@ -141,6 +141,25 @@ func TestCodec(t *testing.T) {
 	require.Equal(t, 456, result.Value)
 }
 
+func TestMarshalIndent(t *testing.T) {
+	t.Parallel()
+
+	data := testStruct{Name: "indent", Value: 1}
+	out, err := json.MarshalIndent(data, "", "  ")
+	require.NoError(t, err)
+	require.Contains(t, string(out), "\n")
+	require.Contains(t, string(out), "indent")
+}
+
+func TestCodec_MarshalIndent(t *testing.T) {
+	t.Parallel()
+
+	codec := json.NewGoJSONCodec()
+	out, err := codec.MarshalIndent(testStruct{Name: "ci", Value: 2}, "", "\t")
+	require.NoError(t, err)
+	require.Contains(t, string(out), "\n")
+}
+
 func BenchmarkMarshal(b *testing.B) {
 	data := testStruct{Name: "benchmark", Value: 999}
 	for b.Loop() {

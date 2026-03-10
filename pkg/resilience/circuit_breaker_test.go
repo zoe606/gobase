@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/sony/gobreaker/v2"
 	"github.com/stretchr/testify/require"
 
 	"go-boilerplate/pkg/resilience"
@@ -182,11 +183,13 @@ func TestConfig_WithMethods(t *testing.T) {
 		WithInterval(30 * time.Second).
 		WithTimeout(15 * time.Second).
 		WithFailureRatio(0.6).
-		WithMinRequests(20)
+		WithMinRequests(20).
+		WithOnStateChange(func(_ string, _, _ gobreaker.State) {})
 
 	require.Equal(t, uint32(5), cfg.MaxRequests)
 	require.Equal(t, 30*time.Second, cfg.Interval)
 	require.Equal(t, 15*time.Second, cfg.Timeout)
 	require.Equal(t, 0.6, cfg.FailureRatio)
 	require.Equal(t, uint32(20), cfg.MinRequests)
+	require.NotNil(t, cfg.OnStateChange)
 }

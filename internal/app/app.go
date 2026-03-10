@@ -2,6 +2,7 @@
 package app
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/signal"
@@ -27,6 +28,8 @@ import (
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
 	"go-boilerplate/pkg/postgres"
+	"go-boilerplate/pkg/telemetry"
+	"go-boilerplate/pkg/telemetry/gormtracing"
 )
 
 // repositories holds all repository instances.
@@ -58,8 +61,38 @@ func Run(cfg *config.Config) {
 
 	l.Info("Starting %s v%s (env: %s)", cfg.App.Name, cfg.App.Version, cfg.App.Env)
 
+	for _, w := range cfg.Warnings() {
+		l.Warn(w)
+	}
+
+	// Initialize telemetry (no-op when disabled)
+	shutdownTelemetry, err := telemetry.Init(telemetry.Config{
+		Enabled:        cfg.Telemetry.Enabled,
+		ServiceName:    cfg.App.Name,
+		ServiceVersion: cfg.App.Version,
+		OTLPEndpoint:   cfg.Telemetry.OTLPEndpoint,
+		OTLPInsecure:   cfg.Telemetry.OTLPInsecure,
+		Environment:    cfg.App.Env,
+	})
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - Run - telemetry.Init: %w", err))
+	}
+	defer func() { _ = shutdownTelemetry(context.Background()) }()
+
 	pg := initDatabase(cfg, l)
 	defer pg.Close()
+
+	// Register GORM tracing plugin when telemetry is enabled
+	if cfg.Telemetry.Enabled {
+		if err := pg.DB.Use(gormtracing.New()); err != nil {
+			l.Error(fmt.Errorf("app - Run - gormtracing plugin: %w", err))
+		}
+
+		// Register DB pool metrics
+		if sqlDB, dbErr := pg.DB.DB(); dbErr == nil {
+			telemetry.RegisterDBMetrics(sqlDB)
+		}
+	}
 
 	asynqClient := initAsynqClient(cfg)
 	defer asynqClient.Close()

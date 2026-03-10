@@ -21,10 +21,16 @@ type ServerConfig struct {
 	RedisPassword string
 	RedisDB       int
 	Concurrency   int
+	MaxRetry      int
 }
 
 // NewServer creates a new Asynq server.
 func NewServer(cfg ServerConfig, l logger.Interface) *Server {
+	maxRetry := cfg.MaxRetry
+	if maxRetry <= 0 {
+		maxRetry = 3
+	}
+
 	srv := asynq.NewServer(
 		asynq.RedisClientOpt{
 			Addr:     cfg.RedisAddr,
@@ -38,9 +44,13 @@ func NewServer(cfg ServerConfig, l logger.Interface) *Server {
 				"default":  3,
 				"low":      1,
 			},
+			RetryDelayFunc: asynq.DefaultRetryDelayFunc,
 			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
+				retried, _ := asynq.GetRetryCount(ctx)
 				l.Error(err, "asynq task failed",
 					"type", task.Type(),
+					"retry", retried,
+					"max_retry", maxRetry,
 				)
 			}),
 		},
@@ -51,6 +61,11 @@ func NewServer(cfg ServerConfig, l logger.Interface) *Server {
 		mux:    asynq.NewServeMux(),
 		l:      l,
 	}
+}
+
+// Use registers middleware on the server mux.
+func (s *Server) Use(mws ...asynq.MiddlewareFunc) {
+	s.mux.Use(mws...)
 }
 
 // HandleFunc registers a handler function for a task type.

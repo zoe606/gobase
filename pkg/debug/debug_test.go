@@ -105,3 +105,18 @@ func TestToFile_InvalidPath(t *testing.T) {
 	err := debug.ToFile("test", "/nonexistent/path/file.log")
 	require.Error(t, err)
 }
+
+func TestPrint(t *testing.T) {
+	t.Parallel()
+
+	// Just verifying it doesn't panic
+	debug.Print("hello")
+	debug.Print(testStruct{Name: "test", Value: 1})
+}
+
+func TestPrintLabeled(t *testing.T) {
+	t.Parallel()
+
+	debug.PrintLabeled("LABEL", "value")
+	debug.PrintLabeled("STRUCT", testStruct{Name: "x", Value: 2})
+}

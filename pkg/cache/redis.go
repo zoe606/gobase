@@ -10,10 +10,17 @@ import (
 	"go-boilerplate/pkg/json"
 )
 
+// MetricsHook allows recording cache hit/miss events without coupling to a specific metrics library.
+type MetricsHook interface {
+	RecordHit()
+	RecordMiss()
+}
+
 // RedisCache implements Cache using Redis.
 type RedisCache struct {
-	client *redis.Client
-	prefix string
+	client  *redis.Client
+	prefix  string
+	metrics MetricsHook
 }
 
 // NewRedis creates a new Redis cache.
@@ -22,6 +29,11 @@ func NewRedis(client *redis.Client, prefix string) *RedisCache {
 		client: client,
 		prefix: prefix,
 	}
+}
+
+// SetMetricsHook sets the metrics hook for recording cache hit/miss events.
+func (c *RedisCache) SetMetricsHook(hook MetricsHook) {
+	c.metrics = hook
 }
 
 // prefixKey adds the configured prefix to a key.
@@ -34,9 +46,15 @@ func (c *RedisCache) Get(ctx context.Context, key string, dest interface{}) erro
 	data, err := c.client.Get(ctx, c.prefixKey(key)).Bytes()
 	if err != nil {
 		if errors.Is(err, redis.Nil) {
+			if c.metrics != nil {
+				c.metrics.RecordMiss()
+			}
 			return ErrNotFound
 		}
 		return err
+	}
+	if c.metrics != nil {
+		c.metrics.RecordHit()
 	}
 	return json.Unmarshal(data, dest)
 }

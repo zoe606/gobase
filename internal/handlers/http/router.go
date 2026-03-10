@@ -50,6 +50,9 @@ func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Trans
 
 // setupMiddleware configures global middleware chain.
 func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface) {
+	if cfg.Telemetry.Enabled {
+		app.Use(middleware.Tracing())
+	}
 	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(requestid.New())
 	app.Use(cors.New(cors.Config{
@@ -67,6 +70,9 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface) {
 		KeyGenerator: func(c *fiber.Ctx) string { return c.IP() },
 		LimitReached: rateLimitReached,
 	}))
+	if cfg.HTTP.RequestTimeout > 0 {
+		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
+	}
 	app.Use(middleware.Logger(l))
 }
 

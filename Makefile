@@ -53,17 +53,33 @@ vuln: ## Run vulnerability check on dependencies
 		govulncheck ./...; \
 	fi
 
+# Packages excluded from coverage: infra bootstrap, connection wrappers, telemetry, codegen CLI, tools, logger, storage providers, worker bootstrap, email sender, audit postgres
+COV_EXCLUDE := internal/app$$|pkg/postgres$$|pkg/redis$$|pkg/asynq|pkg/telemetry|pkg/codegen/cmd|pkg/tools|pkg/logger$$|storage/|internal/handlers/http$$|internal/worker$$|webapi/email$$|pkg/audit$$
+
 .PHONY: test
-test: ## Run tests
-	go test -v -race -covermode=atomic -coverprofile=coverage.txt ./internal/... ./pkg/...
+test: ## Run tests with selective coverage (excludes infra packages)
+	@PKGS=$$(go list ./internal/... ./pkg/... | grep -v -E '$(COV_EXCLUDE)' | tr '\n' ',' | sed 's/,$$//'); \
+	go test -v -race -covermode=atomic -coverprofile=coverage.txt -coverpkg="$$PKGS" ./internal/... ./pkg/...
 
 .PHONY: test-integration
 test-integration: ## Run integration tests
 	go clean -testcache && go test -v ./integration-test/...
 
+COVERAGE_THRESHOLD ?= 85
+
 .PHONY: coverage
 coverage: test ## Run tests with coverage report
 	go tool cover -html=coverage.txt -o coverage.html
+
+.PHONY: coverage-check
+coverage-check: ## Check test coverage meets minimum threshold (default 70%)
+	@coverage=$$(go tool cover -func=coverage.txt | grep total: | awk '{print int($$3)}'); \
+	echo "Total coverage: $${coverage}%"; \
+	if [ "$${coverage}" -lt "$(COVERAGE_THRESHOLD)" ]; then \
+		echo "FAIL: Coverage $${coverage}% is below threshold $(COVERAGE_THRESHOLD)%"; \
+		exit 1; \
+	fi; \
+	echo "PASS: Coverage meets threshold"
 
 ##@ Database
 
@@ -181,6 +197,10 @@ docker-logs: ## View Docker logs
 docker-monitoring: ## Start services with Asynqmon dashboard
 	docker compose -f deployment/docker/docker-compose.yml --profile monitoring --env-file .env up -d
 
+.PHONY: docker-observability
+docker-observability: ## Start OTel Collector + Jaeger for distributed tracing
+	docker compose -f deployment/docker/docker-compose.observability.yml up -d
+
 ##@ Worker
 
 .PHONY: run-worker
@@ -293,7 +313,7 @@ uninstall-hooks: ## Remove git hooks
 pre-commit: fmt lint test ## Run all checks before commit
 
 .PHONY: check-all
-check-all: fmt lint vuln test ## Run all quality checks including vulnerability scan
+check-all: fmt lint vuln test coverage-check ## Run all quality checks including vulnerability scan
 
 .PHONY: ci
 ci: fmt lint vuln test build ## Run full CI pipeline locally

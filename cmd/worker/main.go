@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -16,6 +17,8 @@ import (
 	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/logger"
 	"go-boilerplate/pkg/postgres"
+	"go-boilerplate/pkg/telemetry"
+	"go-boilerplate/pkg/telemetry/asynqtracing"
 )
 
 func main() {
@@ -31,6 +34,20 @@ func main() {
 	defer func() { _ = l.Sync() }() //nolint:errcheck // best effort sync
 
 	l.Info("Starting worker (env: %s)", cfg.App.Env)
+
+	// Initialize telemetry (no-op when disabled)
+	shutdownTelemetry, err := telemetry.Init(telemetry.Config{
+		Enabled:        cfg.Telemetry.Enabled,
+		ServiceName:    cfg.App.Name + "-worker",
+		ServiceVersion: cfg.App.Version,
+		OTLPEndpoint:   cfg.Telemetry.OTLPEndpoint,
+		OTLPInsecure:   cfg.Telemetry.OTLPInsecure,
+		Environment:    cfg.App.Env,
+	})
+	if err != nil {
+		l.Fatal(fmt.Errorf("telemetry.Init: %w", err))
+	}
+	defer func() { _ = shutdownTelemetry(context.Background()) }()
 
 	// Initialize database
 	pg, err := postgres.New(
@@ -60,7 +77,13 @@ func main() {
 		RedisPassword: cfg.Redis.Password,
 		RedisDB:       cfg.Redis.DB,
 		Concurrency:   cfg.Asynq.Concurrency,
+		MaxRetry:      cfg.Asynq.MaxRetry,
 	}, l)
+
+	// Register tracing middleware when telemetry is enabled
+	if cfg.Telemetry.Enabled {
+		srv.Use(asynqtracing.Middleware())
+	}
 
 	// Create worker with dependencies
 	w := worker.New(srv, l, mailer, mediaRepo, storageProvider)
