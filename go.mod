@@ -12,6 +12,8 @@ tool (
 
 require (
 	github.com/Conight/go-googletrans v0.2.4
+	github.com/DATA-DOG/go-sqlmock v1.5.2
+	github.com/alicebob/miniredis/v2 v2.37.0
 	github.com/ansrivas/fiberprometheus/v2 v2.17.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/validator/v10 v10.30.1
@@ -36,7 +38,7 @@ require (
 	go.uber.org/mock v0.6.0
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
-	golang.org/x/sync v0.19.0
+	golang.org/x/sync v0.20.0
 	google.golang.org/grpc v1.79.2
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
@@ -53,7 +55,6 @@ require (
 	github.com/Antonboom/testifylint v1.5.2 // indirect
 	github.com/BurntSushi/toml v1.4.1-0.20240526193622-a339e1f7089c // indirect
 	github.com/Crocmagnon/fatcontext v0.7.1 // indirect
-	github.com/DATA-DOG/go-sqlmock v1.5.2 // indirect
 	github.com/Djarvur/go-err113 v0.0.0-20210108212216-aea10b59be24 // indirect
 	github.com/GaijinEntertainment/go-exhaustruct/v3 v3.3.1 // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
@@ -63,7 +64,6 @@ require (
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/alexkohler/nakedret/v2 v2.0.5 // indirect
 	github.com/alexkohler/prealloc v1.0.0 // indirect
-	github.com/alicebob/miniredis/v2 v2.37.0 // indirect
 	github.com/alingse/asasalint v0.0.11 // indirect
 	github.com/alingse/nilnesserr v0.1.2 // indirect
 	github.com/andybalholm/brotli v1.2.0 // indirect
