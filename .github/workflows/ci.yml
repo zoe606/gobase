@@ -74,8 +74,20 @@ jobs:
 
       - name: Run tests
         run: |
-          PKGS=$(go list ./internal/... ./pkg/... | grep -v -E '(internal/app$|pkg/postgres$|pkg/redis$|pkg/asynq|pkg/telemetry|pkg/codegen/cmd|pkg/tools|pkg/logger$|storage/|internal/handlers/http$|internal/worker$|webapi/email$|pkg/audit$)' | tr '\n' ',' | sed 's/,$//')
-          go test -v -race -covermode=atomic -coverprofile=coverage.txt -coverpkg="$PKGS" ./internal/... ./pkg/...
+          EXCLUDE='internal/app$|pkg/postgres$|pkg/redis$'
+          EXCLUDE="$EXCLUDE|pkg/asynq|pkg/telemetry"
+          EXCLUDE="$EXCLUDE|pkg/codegen/cmd|pkg/tools"
+          EXCLUDE="$EXCLUDE|pkg/logger$|storage/"
+          EXCLUDE="$EXCLUDE|internal/handlers/http$"
+          EXCLUDE="$EXCLUDE|internal/worker$"
+          EXCLUDE="$EXCLUDE|webapi/email$|pkg/audit$"
+          PKGS=$(go list ./internal/... ./pkg/... \
+            | grep -v -E "($EXCLUDE)" \
+            | tr '\n' ',' | sed 's/,$//')
+          go test -v -race -covermode=atomic \
+            -coverprofile=coverage.txt \
+            -coverpkg="$PKGS" \
+            ./internal/... ./pkg/...
 
       - name: Check coverage threshold
         run: |

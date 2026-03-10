@@ -2,8 +2,8 @@ services:
   otel-collector:
     image: otel/opentelemetry-collector-contrib:latest
     ports:
-      - "4317:4317"   # OTLP gRPC
-      - "4318:4318"   # OTLP HTTP
+      - "4317:4317"  # OTLP gRPC
+      - "4318:4318"  # OTLP HTTP
     volumes:
       - ./otelcol-config.yaml:/etc/otelcol-contrib/config.yaml
     depends_on:
@@ -12,7 +12,7 @@ services:
   jaeger:
     image: jaegertracing/all-in-one:latest
     ports:
-      - "16686:16686" # Jaeger UI
-      - "4319:4317"   # Internal OTLP gRPC (used by collector)
+      - "16686:16686"  # Jaeger UI
+      - "4319:4317"  # Internal OTLP gRPC (used by collector)
     environment:
       - COLLECTOR_OTLP_ENABLED=true
