@@ -6,7 +6,6 @@ import (
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
 
-	translationdto "go-boilerplate/internal/dto/translation"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/repo/persistent"
@@ -42,10 +41,10 @@ func TestTranslationRepo_GetHistory(t *testing.T) {
 	mock.ExpectQuery(`SELECT \* FROM "translations"`).
 		WillReturnRows(rows)
 
-	req := translationdto.HistoryRequest{
+	params := repo.TranslationHistoryParams{
 		Params: pagination.Params{Page: 1, Limit: 10},
 	}
-	translations, total, err := r.GetHistory(t.Context(), req)
+	translations, total, err := r.GetHistory(t.Context(), params)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), total)
 	require.Len(t, translations, 1)

@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 
-	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/tx"
@@ -43,19 +42,19 @@ func (r *ArticleRepo) GetByID(ctx context.Context, id uint) (*entity.Article, er
 }
 
 // List retrieves a paginated list of articles with filters.
-func (r *ArticleRepo) List(ctx context.Context, req articledto.ListRequest) ([]*entity.Article, int64, error) {
+func (r *ArticleRepo) List(ctx context.Context, params repo.ArticleListParams) ([]*entity.Article, int64, error) {
 	db := tx.DBFromContext(ctx, r.db)
 	query := db.Model(&entity.Article{})
 
 	// Apply filters
-	if req.Status != "" {
-		query = query.Where("status = ?", req.Status)
+	if params.Status != "" {
+		query = query.Where("status = ?", params.Status)
 	}
-	if req.UserID > 0 {
-		query = query.Where("user_id = ?", req.UserID)
+	if params.UserID > 0 {
+		query = query.Where("user_id = ?", params.UserID)
 	}
-	if req.Search != "" {
-		searchPattern := "%" + req.Search + "%"
+	if params.Search != "" {
+		searchPattern := "%" + params.Search + "%"
 		query = query.Where("title ILIKE ? OR content ILIKE ?", searchPattern, searchPattern)
 	}
 
@@ -67,7 +66,7 @@ func (r *ArticleRepo) List(ctx context.Context, req articledto.ListRequest) ([]*
 
 	// Apply pagination and sorting
 	var articles []*entity.Article
-	query = req.Apply(query, []string{"id", "created_at", "published_at", "title"})
+	query = params.Apply(query, []string{"id", "created_at", "published_at", "title"})
 	if err := query.Find(&articles).Error; err != nil {
 		return nil, 0, err
 	}
