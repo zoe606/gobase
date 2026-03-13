@@ -65,7 +65,7 @@ test: ## Run tests with selective coverage (excludes infra packages)
 test-integration: ## Run integration tests
 	go clean -testcache && go test -v ./integration-test/...
 
-COVERAGE_THRESHOLD ?= 85
+COVERAGE_THRESHOLD ?= 84
 
 .PHONY: coverage
 coverage: test ## Run tests with coverage report

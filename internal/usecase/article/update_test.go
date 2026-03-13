@@ -13,6 +13,7 @@ import (
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestUpdate(t *testing.T) {
@@ -119,7 +120,7 @@ func TestUpdate(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo)
+			uc := article.New(mockArticleRepo, audit.NewNoop())
 			got, err := uc.Update(context.Background(), tt.id, tt.req)
 
 			if tt.wantErr != nil {

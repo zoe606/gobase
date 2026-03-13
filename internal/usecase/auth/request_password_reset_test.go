@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestRequestPasswordReset(t *testing.T) {
@@ -178,7 +179,7 @@ func TestRequestPasswordReset(t *testing.T) {
 
 			tt.setupMock(mockUserRepo, mockPRRepo)
 
-			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT)
+			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT, audit.NewNoop())
 			tt.setupUC(uc, mockPRRepo)
 
 			err := uc.RequestPasswordReset(tt.args.ctx, tt.args.email)

@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestSendVerificationEmail(t *testing.T) {
@@ -260,7 +261,7 @@ func TestSendVerificationEmail(t *testing.T) {
 
 			tt.setupMock(mockUserRepo, mockEVRepo)
 
-			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT)
+			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT, audit.NewNoop())
 			tt.setupUC(uc, mockEVRepo)
 
 			err := uc.SendVerificationEmail(tt.args.ctx, tt.args.userID)

@@ -42,3 +42,10 @@ func ShutdownTimeout(timeout time.Duration) Option {
 		s.shutdownTimeout = timeout
 	}
 }
+
+// BodyLimit sets the maximum allowed request body size in bytes.
+func BodyLimit(limit int) Option {
+	return func(s *Server) {
+		s.bodyLimit = limit
+	}
+}

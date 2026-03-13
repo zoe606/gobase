@@ -10,10 +10,16 @@ http:
   read_timeout: 15s
   write_timeout: 15s
   idle_timeout: 60s
+  shutdown_timeout: 15s  # Graceful shutdown timeout
+  body_limit: 4194304  # 4MB in bytes
 
 # Logging Configuration
 log:
   level: debug  # debug, info, warn, error
+  # file: /var/log/app.log  # Optional file output
+  log_request_body: false    # Log request bodies (may contain sensitive data)
+  log_response_body: false   # Log response bodies
+  redact_fields: "password,token,secret,authorization,credit_card"  # Fields to redact from body logs
 
 # PostgreSQL Configuration
 postgres:
@@ -35,3 +41,22 @@ metrics:
 # Swagger Documentation
 swagger:
   enabled: true
+
+# Rate Limiting
+rate_limit:
+  max: 100
+  expiration: 1m
+  store: memory  # "memory" (default) or "redis" (requires Redis connection)
+
+# JWT Configuration
+jwt:
+  secret_key: change-me-in-production
+  access_expiry: 15m
+  refresh_expiry: 168h  # 7 days
+  algorithm: hs256  # hs256, rs256, or es256
+  # private_key_path: /path/to/private.pem  # Required for rs256/es256
+  # public_key_path: /path/to/public.pem    # Required for rs256/es256
+
+# Distributed Lock
+lock:
+  provider: noop  # "noop" (single instance) or "redis" (multi-replica)

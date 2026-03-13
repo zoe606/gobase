@@ -9,6 +9,7 @@ import (
 	"go.uber.org/mock/gomock"
 
 	"go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestLogout(t *testing.T) {
@@ -56,7 +57,7 @@ func TestLogout(t *testing.T) {
 
 			tt.setupMock(mockRefreshRepo)
 
-			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT)
+			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT, audit.NewNoop())
 			err := uc.Logout(context.Background(), tt.refreshToken)
 
 			if tt.wantErr != nil {

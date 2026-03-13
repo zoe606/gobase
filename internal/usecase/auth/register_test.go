@@ -13,6 +13,7 @@ import (
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestRegister(t *testing.T) {
@@ -154,7 +155,7 @@ func TestRegister(t *testing.T) {
 
 			tt.setupMock(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT)
 
-			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT)
+			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT, audit.NewNoop())
 			got, err := uc.Register(tt.args.ctx, tt.args.input)
 
 			if tt.wantErr != nil {

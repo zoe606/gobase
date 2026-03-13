@@ -15,6 +15,11 @@ var (
 	ErrExpiredToken = errors.New("token has expired")
 )
 
+// isExpiredError checks if a JWT error is an expiration error.
+func isExpiredError(err error) bool {
+	return errors.Is(err, jwt.ErrTokenExpired)
+}
+
 // Service defines the JWT service interface.
 type Service interface {
 	// GenerateAccessToken generates a new access token.
@@ -89,14 +94,14 @@ func (s *service) GenerateRefreshToken() (string, time.Time, error) {
 
 // ValidateToken validates a token and returns the claims.
 func (s *service) ValidateToken(tokenString string) (*Claims, error) {
-	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, ErrInvalidToken
 		}
 		return s.secretKey, nil
 	})
 	if err != nil {
-		if errors.Is(err, jwt.ErrTokenExpired) {
+		if isExpiredError(err) {
 			return nil, ErrExpiredToken
 		}
 		return nil, ErrInvalidToken

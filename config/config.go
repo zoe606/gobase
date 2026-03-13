@@ -37,6 +37,7 @@ type (
 		Swagger           Swagger           `mapstructure:"swagger"`
 		Storage           Storage           `mapstructure:"storage"`
 		Cache             Cache             `mapstructure:"cache"`
+		Lock              Lock              `mapstructure:"lock"`
 		AuditLog          AuditLog          `mapstructure:"audit_log"`
 		EmailVerification EmailVerification `mapstructure:"email_verification"`
 		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
@@ -53,16 +54,21 @@ type (
 
 	// HTTP holds HTTP server configuration.
 	HTTP struct {
-		Port           string        `mapstructure:"port"`
-		Timeout        time.Duration `mapstructure:"timeout"`         // Network read/write timeout
-		IdleTimeout    time.Duration `mapstructure:"idle_timeout"`    // Keep-alive connection timeout
-		RequestTimeout time.Duration `mapstructure:"request_timeout"` // Handler execution timeout
+		Port            string        `mapstructure:"port"`
+		Timeout         time.Duration `mapstructure:"timeout"`          // Network read/write timeout
+		IdleTimeout     time.Duration `mapstructure:"idle_timeout"`     // Keep-alive connection timeout
+		RequestTimeout  time.Duration `mapstructure:"request_timeout"`  // Handler execution timeout
+		BodyLimit       int           `mapstructure:"body_limit"`       // Max request body size in bytes (default: 4MB)
+		ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"` // Graceful shutdown timeout
 	}
 
 	// Log holds logging configuration.
 	Log struct {
-		Level string `mapstructure:"level"`
-		File  string `mapstructure:"file"` // Optional file path for log output (empty = stdout only)
+		Level           string `mapstructure:"level"`
+		File            string `mapstructure:"file"`              // Optional file path for log output (empty = stdout only)
+		LogRequestBody  bool   `mapstructure:"log_request_body"`  // Log request bodies (default: false)
+		LogResponseBody bool   `mapstructure:"log_response_body"` // Log response bodies (default: false)
+		RedactFields    string `mapstructure:"redact_fields"`     // Comma-separated fields to redact from body logs
 	}
 
 	// Postgres holds PostgreSQL configuration.
@@ -99,9 +105,12 @@ type (
 
 	// JWT holds JWT configuration.
 	JWT struct {
-		SecretKey     string        `mapstructure:"secret_key"`
-		AccessExpiry  time.Duration `mapstructure:"access_expiry"`
-		RefreshExpiry time.Duration `mapstructure:"refresh_expiry"`
+		SecretKey      string        `mapstructure:"secret_key"`
+		AccessExpiry   time.Duration `mapstructure:"access_expiry"`
+		RefreshExpiry  time.Duration `mapstructure:"refresh_expiry"`
+		Algorithm      string        `mapstructure:"algorithm"`        // hs256, rs256, es256
+		PrivateKeyPath string        `mapstructure:"private_key_path"` // Path to private key (RS256/ES256)
+		PublicKeyPath  string        `mapstructure:"public_key_path"`  // Path to public key (RS256/ES256)
 	}
 
 	// CORS holds CORS configuration.
@@ -117,6 +126,7 @@ type (
 	RateLimit struct {
 		Max        int           `mapstructure:"max"`
 		Expiration time.Duration `mapstructure:"expiration"`
+		Store      string        `mapstructure:"store"` // "memory" (default) or "redis" (Phase 3)
 	}
 
 	// Asynq holds Asynq task queue configuration.
@@ -158,6 +168,11 @@ type (
 	// AuditLog holds audit logging configuration.
 	AuditLog struct {
 		Enabled bool `mapstructure:"enabled"` // Enable/disable audit logging
+	}
+
+	// Lock holds distributed lock configuration.
+	Lock struct {
+		Provider string `mapstructure:"provider"` // "noop" (default) or "redis"
 	}
 
 	// EmailVerification holds email verification configuration.
@@ -277,6 +292,21 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// JWT algorithm validation
+	switch c.JWT.Algorithm {
+	case "hs256", "":
+		// HS256 is default, no extra validation needed here
+	case "rs256", "es256":
+		if c.JWT.PrivateKeyPath == "" {
+			errs = append(errs, "JWT_PRIVATE_KEY_PATH is required for "+c.JWT.Algorithm)
+		}
+		if c.JWT.PublicKeyPath == "" {
+			errs = append(errs, "JWT_PUBLIC_KEY_PATH is required for "+c.JWT.Algorithm)
+		}
+	default:
+		errs = append(errs, fmt.Sprintf("JWT_ALGORITHM must be hs256, rs256, or es256 (got %q)", c.JWT.Algorithm))
+	}
+
 	// Database config validation
 	if c.Postgres.Host == "" {
 		errs = append(errs, "POSTGRES_HOST is required")
@@ -316,13 +346,18 @@ func setDefaults() {
 
 	// HTTP defaults
 	viper.SetDefault("http.port", "8080")
-	viper.SetDefault("http.timeout", "15s")         // Network read/write
-	viper.SetDefault("http.idle_timeout", "60s")    // Keep-alive connections
-	viper.SetDefault("http.request_timeout", "30s") // Handler execution
+	viper.SetDefault("http.timeout", "15s")          // Network read/write
+	viper.SetDefault("http.idle_timeout", "60s")     // Keep-alive connections
+	viper.SetDefault("http.request_timeout", "30s")  // Handler execution
+	viper.SetDefault("http.body_limit", 4*1024*1024) // 4MB
+	viper.SetDefault("http.shutdown_timeout", "15s") // Graceful shutdown
 
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
-	viper.SetDefault("log.file", "") // Empty = stdout only
+	viper.SetDefault("log.file", "")                                                         // Empty = stdout only
+	viper.SetDefault("log.log_request_body", false)                                          //nolint:revive // explicit false
+	viper.SetDefault("log.log_response_body", false)                                         //nolint:revive // explicit false
+	viper.SetDefault("log.redact_fields", "password,token,secret,authorization,credit_card") //nolint:revive // default
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")
@@ -352,6 +387,9 @@ func setDefaults() {
 	viper.SetDefault("jwt.secret_key", "change-me-in-production")
 	viper.SetDefault("jwt.access_expiry", "15m")
 	viper.SetDefault("jwt.refresh_expiry", "168h")
+	viper.SetDefault("jwt.algorithm", "hs256")
+	viper.SetDefault("jwt.private_key_path", "")
+	viper.SetDefault("jwt.public_key_path", "")
 
 	// CORS defaults
 	viper.SetDefault("cors.allow_origins", "*")
@@ -363,6 +401,7 @@ func setDefaults() {
 	// RateLimit defaults
 	viper.SetDefault("rate_limit.max", DefaultRateLimitMax)
 	viper.SetDefault("rate_limit.expiration", "1m")
+	viper.SetDefault("rate_limit.store", "memory")
 
 	// Asynq defaults
 	viper.SetDefault("asynq.concurrency", DefaultAsynqConcurrency)
@@ -391,6 +430,9 @@ func setDefaults() {
 	viper.SetDefault("cache.enabled", true)
 	viper.SetDefault("cache.ttl", "5m")
 	viper.SetDefault("cache.prefix", "app:")
+
+	// Lock defaults
+	viper.SetDefault("lock.provider", "noop")
 
 	// AuditLog defaults
 	viper.SetDefault("audit_log.enabled", false)
@@ -431,10 +473,15 @@ func bindEnvVars() {
 	viper.BindEnv("http.timeout", "HTTP_TIMEOUT")
 	viper.BindEnv("http.idle_timeout", "HTTP_IDLE_TIMEOUT")
 	viper.BindEnv("http.request_timeout", "HTTP_REQUEST_TIMEOUT")
+	viper.BindEnv("http.body_limit", "HTTP_BODY_LIMIT")
+	viper.BindEnv("http.shutdown_timeout", "HTTP_SHUTDOWN_TIMEOUT")
 
 	// Log
 	viper.BindEnv("log.level", "LOG_LEVEL")
 	viper.BindEnv("log.file", "LOG_FILE")
+	viper.BindEnv("log.log_request_body", "LOG_REQUEST_BODY")
+	viper.BindEnv("log.log_response_body", "LOG_RESPONSE_BODY")
+	viper.BindEnv("log.redact_fields", "LOG_REDACT_FIELDS")
 
 	// Postgres
 	viper.BindEnv("postgres.host", "POSTGRES_HOST", "DB_HOST")
@@ -461,6 +508,9 @@ func bindEnvVars() {
 	viper.BindEnv("jwt.secret_key", "JWT_SECRET_KEY")
 	viper.BindEnv("jwt.access_expiry", "JWT_ACCESS_EXPIRY")
 	viper.BindEnv("jwt.refresh_expiry", "JWT_REFRESH_EXPIRY")
+	viper.BindEnv("jwt.algorithm", "JWT_ALGORITHM")
+	viper.BindEnv("jwt.private_key_path", "JWT_PRIVATE_KEY_PATH")
+	viper.BindEnv("jwt.public_key_path", "JWT_PUBLIC_KEY_PATH")
 
 	// CORS
 	viper.BindEnv("cors.allow_origins", "CORS_ALLOW_ORIGINS")
@@ -472,6 +522,7 @@ func bindEnvVars() {
 	// RateLimit
 	viper.BindEnv("rate_limit.max", "RATE_LIMIT_MAX")
 	viper.BindEnv("rate_limit.expiration", "RATE_LIMIT_EXPIRATION")
+	viper.BindEnv("rate_limit.store", "RATE_LIMIT_STORE")
 
 	// Asynq
 	viper.BindEnv("asynq.concurrency", "ASYNQ_CONCURRENCY")
@@ -500,6 +551,9 @@ func bindEnvVars() {
 	viper.BindEnv("cache.enabled", "CACHE_ENABLED")
 	viper.BindEnv("cache.ttl", "CACHE_TTL")
 	viper.BindEnv("cache.prefix", "CACHE_PREFIX")
+
+	// Lock
+	viper.BindEnv("lock.provider", "LOCK_PROVIDER")
 
 	// AuditLog
 	viper.BindEnv("audit_log.enabled", "AUDIT_LOG_ENABLED")

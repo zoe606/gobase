@@ -8,7 +8,6 @@ import (
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
-	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/repo/persistent"
@@ -93,10 +92,10 @@ func TestArticleRepo_List(t *testing.T) {
 	mock.ExpectQuery(`SELECT \* FROM "articles"`).
 		WillReturnRows(rows)
 
-	req := articledto.ListRequest{
+	params := repo.ArticleListParams{
 		Params: pagination.Params{Page: 1, Limit: 10},
 	}
-	articles, total, err := r.List(t.Context(), req)
+	articles, total, err := r.List(t.Context(), params)
 	require.NoError(t, err)
 	require.Equal(t, int64(1), total)
 	require.Len(t, articles, 1)

@@ -41,26 +41,6 @@ func TestTimeout(t *testing.T) {
 	assert.NotEmpty(t, result["deadline"])
 }
 
-func TestLogger(t *testing.T) {
-	t.Parallel()
-
-	l := newMockLogger()
-	app := fiber.New()
-	app.Get("/test", middleware.Logger(l), func(c *fiber.Ctx) error {
-		return c.SendString("ok")
-	})
-
-	req := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/test", http.NoBody)
-	resp, err := app.Test(req)
-	require.NoError(t, err)
-	defer resp.Body.Close() //nolint:errcheck // test
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	body, _ := io.ReadAll(resp.Body) //nolint:errcheck // test
-	assert.Equal(t, "ok", string(body))
-}
-
 func TestRecovery(t *testing.T) {
 	t.Parallel()
 

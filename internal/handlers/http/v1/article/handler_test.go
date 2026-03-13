@@ -16,19 +16,26 @@ import (
 	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/handlers/http/v1/article"
 	articleuc "go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/pagination"
 )
 
-func setupTestApp(t *testing.T, mockArticleUC *MockArticle) *fiber.App {
+func setupTestApp(t *testing.T, mockArticleUC *MockArticle) (app *fiber.App, token string) {
 	t.Helper()
 
+	jwtService := jwt.New("test-secret", 15*time.Minute, 24*time.Hour)
 	l := NewMockLogger()
-	handler := article.New(mockArticleUC, l)
+	handler := article.New(mockArticleUC, jwtService, l)
 
-	app := fiber.New()
+	app = fiber.New()
 	handler.RegisterRoutes(app.Group("/v1"))
 
-	return app
+	// Generate a valid test token
+	var err error
+	token, _, err = jwtService.GenerateAccessToken(1, "test@example.com", "user", nil)
+	require.NoError(t, err)
+
+	return app, token
 }
 
 func TestHandler_Create(t *testing.T) {
@@ -38,11 +45,10 @@ func TestHandler_Create(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockArticleUC := NewMockArticle(ctrl)
-	app := setupTestApp(t, mockArticleUC)
+	app, token := setupTestApp(t, mockArticleUC)
 
 	now := time.Now().UTC().Truncate(time.Second)
 	validBody := `{
-		"user_id": 1,
 		"title": "Test Article",
 		"slug": "test-article",
 		"content": "Article content here",
@@ -56,15 +62,17 @@ func TestHandler_Create(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       string
+		addAuth    bool
 		setupMock  func()
 		wantStatus int
 	}{
 		{
-			name: "success",
-			body: validBody,
+			name:    "success",
+			body:    validBody,
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
+					Create(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&articledto.Response{
 						ID:     1,
 						UserID: 1,
@@ -76,24 +84,34 @@ func TestHandler_Create(t *testing.T) {
 		{
 			name:       "invalid json",
 			body:       `{invalid}`,
+			addAuth:    true,
 			setupMock:  func() {},
 			wantStatus: fiber.StatusBadRequest,
 		},
 		{
 			name:       "validation error - missing required fields",
 			body:       `{"title":"only title"}`,
+			addAuth:    true,
 			setupMock:  func() {},
 			wantStatus: fiber.StatusBadRequest,
 		},
 		{
-			name: "usecase error",
-			body: validBody,
+			name:    "usecase error",
+			body:    validBody,
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
+					Create(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("database error"))
 			},
 			wantStatus: fiber.StatusInternalServerError,
+		},
+		{
+			name:       "unauthorized - no token",
+			body:       validBody,
+			addAuth:    false,
+			setupMock:  func() {},
+			wantStatus: fiber.StatusUnauthorized,
 		},
 	}
 
@@ -103,6 +121,10 @@ func TestHandler_Create(t *testing.T) {
 
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/v1/articles/", bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
+
+			if tt.addAuth {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
@@ -119,7 +141,7 @@ func TestHandler_GetByID(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockArticleUC := NewMockArticle(ctrl)
-	app := setupTestApp(t, mockArticleUC)
+	app, _ := setupTestApp(t, mockArticleUC)
 
 	tests := []struct {
 		name       string
@@ -191,7 +213,7 @@ func TestHandler_List(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockArticleUC := NewMockArticle(ctrl)
-	app := setupTestApp(t, mockArticleUC)
+	app, _ := setupTestApp(t, mockArticleUC)
 
 	tests := []struct {
 		name       string
@@ -214,6 +236,12 @@ func TestHandler_List(t *testing.T) {
 					}, nil)
 			},
 			wantStatus: fiber.StatusOK,
+		},
+		{
+			name:       "invalid query params",
+			query:      "?user_id=abc",
+			setupMock:  func() {},
+			wantStatus: fiber.StatusBadRequest,
 		},
 		{
 			name:  "success - with filters",
@@ -262,7 +290,7 @@ func TestHandler_Update(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockArticleUC := NewMockArticle(ctrl)
-	app := setupTestApp(t, mockArticleUC)
+	app, token := setupTestApp(t, mockArticleUC)
 
 	title := "Updated Title"
 	validBody := `{"title":"Updated Title"}`
@@ -271,13 +299,15 @@ func TestHandler_Update(t *testing.T) {
 		name       string
 		id         string
 		body       string
+		addAuth    bool
 		setupMock  func()
 		wantStatus int
 	}{
 		{
-			name: "success",
-			id:   "1",
-			body: validBody,
+			name:    "success",
+			id:      "1",
+			body:    validBody,
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
 					Update(gomock.Any(), uint(1), articledto.UpdateRequest{
@@ -294,6 +324,7 @@ func TestHandler_Update(t *testing.T) {
 			name:       "invalid id",
 			id:         "invalid",
 			body:       validBody,
+			addAuth:    true,
 			setupMock:  func() {},
 			wantStatus: fiber.StatusBadRequest,
 		},
@@ -301,13 +332,15 @@ func TestHandler_Update(t *testing.T) {
 			name:       "invalid json",
 			id:         "1",
 			body:       `{invalid}`,
+			addAuth:    true,
 			setupMock:  func() {},
 			wantStatus: fiber.StatusBadRequest,
 		},
 		{
-			name: "not found",
-			id:   "999",
-			body: validBody,
+			name:    "not found",
+			id:      "999",
+			body:    validBody,
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
 					Update(gomock.Any(), uint(999), articledto.UpdateRequest{
@@ -318,9 +351,10 @@ func TestHandler_Update(t *testing.T) {
 			wantStatus: fiber.StatusNotFound,
 		},
 		{
-			name: "internal error",
-			id:   "1",
-			body: validBody,
+			name:    "internal error",
+			id:      "1",
+			body:    validBody,
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
 					Update(gomock.Any(), uint(1), articledto.UpdateRequest{
@@ -330,6 +364,14 @@ func TestHandler_Update(t *testing.T) {
 			},
 			wantStatus: fiber.StatusInternalServerError,
 		},
+		{
+			name:       "unauthorized - no token",
+			id:         "1",
+			body:       validBody,
+			addAuth:    false,
+			setupMock:  func() {},
+			wantStatus: fiber.StatusUnauthorized,
+		},
 	}
 
 	for _, tt := range tests {
@@ -338,6 +380,10 @@ func TestHandler_Update(t *testing.T) {
 
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodPut, "/v1/articles/"+tt.id, bytes.NewBufferString(tt.body))
 			req.Header.Set("Content-Type", "application/json")
+
+			if tt.addAuth {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)
@@ -354,17 +400,19 @@ func TestHandler_Delete(t *testing.T) {
 	defer ctrl.Finish()
 
 	mockArticleUC := NewMockArticle(ctrl)
-	app := setupTestApp(t, mockArticleUC)
+	app, token := setupTestApp(t, mockArticleUC)
 
 	tests := []struct {
 		name       string
 		id         string
+		addAuth    bool
 		setupMock  func()
 		wantStatus int
 	}{
 		{
-			name: "success",
-			id:   "1",
+			name:    "success",
+			id:      "1",
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
 					Delete(gomock.Any(), uint(1)).
@@ -375,12 +423,14 @@ func TestHandler_Delete(t *testing.T) {
 		{
 			name:       "invalid id",
 			id:         "invalid",
+			addAuth:    true,
 			setupMock:  func() {},
 			wantStatus: fiber.StatusBadRequest,
 		},
 		{
-			name: "not found",
-			id:   "999",
+			name:    "not found",
+			id:      "999",
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
 					Delete(gomock.Any(), uint(999)).
@@ -389,14 +439,22 @@ func TestHandler_Delete(t *testing.T) {
 			wantStatus: fiber.StatusNotFound,
 		},
 		{
-			name: "internal error",
-			id:   "1",
+			name:    "internal error",
+			id:      "1",
+			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
 					Delete(gomock.Any(), uint(1)).
 					Return(errors.New("database error"))
 			},
 			wantStatus: fiber.StatusInternalServerError,
+		},
+		{
+			name:       "unauthorized - no token",
+			id:         "1",
+			addAuth:    false,
+			setupMock:  func() {},
+			wantStatus: fiber.StatusUnauthorized,
 		},
 	}
 
@@ -406,6 +464,10 @@ func TestHandler_Delete(t *testing.T) {
 
 			req := httptest.NewRequestWithContext(t.Context(), http.MethodDelete, "/v1/articles/"+tt.id, http.NoBody)
 			req.Header.Set("Content-Type", "application/json")
+
+			if tt.addAuth {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
 
 			resp, err := app.Test(req)
 			require.NoError(t, err)

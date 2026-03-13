@@ -7,6 +7,7 @@ import (
 
 	authdto "go-boilerplate/internal/dto/auth"
 	"go-boilerplate/internal/repo"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/hasher"
 )
 
@@ -23,6 +24,14 @@ func (uc *UseCase) Login(ctx context.Context, input authdto.LoginRequest) (*auth
 
 	// Check password
 	if !hasher.Check(input.Password, user.Password) {
+		// Audit failed login (best-effort)
+		_ = uc.auditLogger.Log(ctx, audit.Entry{
+			EntityType: "user",
+			EntityID:   user.ID,
+			Action:     "login_failed",
+			UserID:     &user.ID,
+			Metadata:   map[string]any{"reason": "invalid_password"},
+		})
 		return nil, ErrInvalidCredentials
 	}
 
@@ -41,6 +50,14 @@ func (uc *UseCase) Login(ctx context.Context, input authdto.LoginRequest) (*auth
 	if err := uc.storeRefreshToken(ctx, user.ID, tokens.RefreshToken, tokens.RefreshExpiresAt); err != nil {
 		return nil, fmt.Errorf("auth - Login - storeRefreshToken: %w", err)
 	}
+
+	// Audit successful login (best-effort)
+	_ = uc.auditLogger.Log(ctx, audit.Entry{
+		EntityType: "user",
+		EntityID:   user.ID,
+		Action:     "login_success",
+		UserID:     &user.ID,
+	})
 
 	return authdto.NewLoginResponse(user, tokens.AccessToken, tokens.RefreshToken, tokens.AccessExpiresAt), nil
 }

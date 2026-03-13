@@ -4,6 +4,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/handlers/http/middleware"
 	v1 "go-boilerplate/internal/handlers/http/v1"
 	"go-boilerplate/pkg/response"
 )
@@ -15,9 +16,11 @@ import (
 // @Tags        articles
 // @Accept      json
 // @Produce     json
+// @Security    BearerAuth
 // @Param       request body articledto.CreateRequest true "Create Article request"
 // @Success     201 {object} response.Response[articledto.Response]
 // @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
 // @Failure     500 {object} response.ErrorResponse
 // @Router      /articles [post]
 func (h *Handler) Create(ctx *fiber.Ctx) error {
@@ -30,7 +33,9 @@ func (h *Handler) Create(ctx *fiber.Ctx) error {
 		return response.ValidationError(ctx, v1.ParseValidationErrors(err))
 	}
 
-	result, err := h.articleUC.Create(ctx.UserContext(), req)
+	userID := middleware.GetUserID(ctx)
+
+	result, err := h.articleUC.Create(ctx.UserContext(), userID, req)
 	if err != nil {
 		h.l.Error(err, "handlers - http - v1 - article - Create")
 		return response.InternalError(ctx)

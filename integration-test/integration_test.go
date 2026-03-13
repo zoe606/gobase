@@ -16,16 +16,17 @@ import (
 
 const (
 	// Base settings
-	host     = "app"
-	attempts = 20
+	defaultHost = "app"
+	attempts    = 20
 
-	// Attempts connection
-	httpURL        = "http://" + host + ":8080"
-	healthPath     = httpURL + "/healthz"
 	requestTimeout = 5 * time.Second
+)
 
-	// HTTP REST
-	basePathV1 = httpURL + "/v1"
+// Resolved in TestMain from TEST_HTTP_HOST env var (default "app" for Docker Compose).
+var (
+	httpURL    string
+	healthPath string
+	basePathV1 string
 )
 
 var errHealthCheck = fmt.Errorf("url %s is not available", healthPath)
@@ -77,6 +78,15 @@ func healthCheck(attempts int) error {
 }
 
 func TestMain(m *testing.M) {
+	host := os.Getenv("TEST_HTTP_HOST")
+	if host == "" {
+		host = defaultHost
+	}
+
+	httpURL = "http://" + host + ":8080"
+	healthPath = httpURL + "/healthz"
+	basePathV1 = httpURL + "/v1"
+
 	err := healthCheck(attempts)
 	if err != nil {
 		log.Fatalf("Integration tests: httpURL %s is not available: %s", httpURL, err)

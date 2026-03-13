@@ -3,15 +3,21 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/golang-migrate/migrate/v4"
+	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver for golang-migrate
 	"gorm.io/gorm"
 
+	"github.com/gofiber/fiber/v2"
+	goredis "github.com/redis/go-redis/v9"
+
 	"go-boilerplate/config"
-	"go-boilerplate/internal/entity"
 	httphandler "go-boilerplate/internal/handlers/http"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/repo/persistent"
@@ -24,10 +30,12 @@ import (
 	"go-boilerplate/internal/usecase/profile"
 	"go-boilerplate/internal/usecase/translation"
 	"go-boilerplate/pkg/asynq"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/httpserver"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
 	"go-boilerplate/pkg/postgres"
+	"go-boilerplate/pkg/ratelimiter"
 	"go-boilerplate/pkg/telemetry"
 	"go-boilerplate/pkg/telemetry/gormtracing"
 )
@@ -99,9 +107,17 @@ func Run(cfg *config.Config) {
 
 	storageProvider := initStorage(cfg, l)
 
+	// Initialize audit logger
+	var auditLogger audit.Logger
+	if cfg.AuditLog.Enabled {
+		auditLogger = audit.NewPostgres(pg.DB)
+	} else {
+		auditLogger = audit.NewNoop()
+	}
+
 	jwtService := initJWT(cfg)
 	repos := initRepositories(pg.DB)
-	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l)
+	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l, auditLogger)
 	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg)
 
 	l.Info("Server started on port %s", cfg.HTTP.Port)
@@ -131,47 +147,84 @@ func initDatabase(cfg *config.Config, l *logger.Logger) *postgres.Postgres {
 		l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
 	}
 
-	runAutoMigrate(cfg, pg.DB, l)
+	runMigrations(cfg, pg.DB, l)
 
 	return pg
 }
 
-// runAutoMigrate runs database migrations in development mode.
-func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
+// runMigrations runs database migrations using golang-migrate.
+// In development mode, migrations run automatically on startup.
+// In production, this is a no-op — use the CLI migrate tool.
+func runMigrations(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 	if !cfg.App.ShouldAutoMigrate() {
-		l.Info("Skipping AutoMigrate (production mode) - use CLI migrations")
+		l.Info("Skipping auto-migration (production mode) - use CLI migrations")
 
 		return
 	}
 
-	l.Info("Running AutoMigrate (development mode)")
+	l.Info("Running migrations (development mode)")
 
-	if err := db.AutoMigrate(
-		&entity.Translation{},
-		&entity.Permission{},
-		&entity.Role{},
-		&entity.User{},
-		&entity.RefreshToken{},
-		&entity.Media{},
-		&entity.Profile{},
-		&entity.Article{},
-	); err != nil {
-		l.Fatal(fmt.Errorf("app - Run - AutoMigrate: %w", err))
+	sqlDB, err := db.DB()
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - runMigrations - db.DB(): %w", err))
 	}
 
-	l.Info("Database migration completed")
+	driver, err := pgmigrate.WithInstance(sqlDB, &pgmigrate.Config{})
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - runMigrations - pgmigrate.WithInstance: %w", err))
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres",
+		driver,
+	)
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - runMigrations - migrate.New: %w", err))
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		l.Fatal(fmt.Errorf("app - runMigrations - m.Up: %w", err))
+	}
+
+	l.Info("Database migrations completed")
 
 	// Seed default data in development mode
 	runSeeder(db, l)
 }
 
-// initJWT creates JWT service.
+// initJWT creates JWT service based on configured algorithm.
 func initJWT(cfg *config.Config) jwt.Service {
-	return jwt.New(
-		cfg.JWT.SecretKey,
-		cfg.JWT.AccessExpiry,
-		cfg.JWT.RefreshExpiry,
-	)
+	switch cfg.JWT.Algorithm {
+	case "rs256":
+		svc, err := jwt.NewRS256(
+			cfg.JWT.PrivateKeyPath,
+			cfg.JWT.PublicKeyPath,
+			cfg.JWT.AccessExpiry,
+			cfg.JWT.RefreshExpiry,
+		)
+		if err != nil {
+			panic(fmt.Sprintf("app - initJWT - jwt.NewRS256: %v", err))
+		}
+		return svc
+	case "es256":
+		svc, err := jwt.NewES256(
+			cfg.JWT.PrivateKeyPath,
+			cfg.JWT.PublicKeyPath,
+			cfg.JWT.AccessExpiry,
+			cfg.JWT.RefreshExpiry,
+		)
+		if err != nil {
+			panic(fmt.Sprintf("app - initJWT - jwt.NewES256: %v", err))
+		}
+		return svc
+	default: // "hs256" or empty
+		return jwt.New(
+			cfg.JWT.SecretKey,
+			cfg.JWT.AccessExpiry,
+			cfg.JWT.RefreshExpiry,
+		)
+	}
 }
 
 // initStorage creates storage provider based on configuration.
@@ -221,8 +274,8 @@ func initAsynqClient(cfg *config.Config) *asynq.Client {
 }
 
 // initUseCases creates all usecase instances.
-func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface) *usecases {
-	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService).
+func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface, auditLogger audit.Logger) *usecases {
+	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService, auditLogger).
 		WithAsynq(asynqClient, cfg.App.Name)
 
 	mediaUC := media.New(
@@ -241,7 +294,7 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 		l,
 	)
 
-	articleUC := article.New(repos.article)
+	articleUC := article.New(repos.article, auditLogger)
 
 	return &usecases{
 		translation: translation.New(repos.translation, repos.translationAPI),
@@ -259,12 +312,34 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 		httpserver.Port(cfg.HTTP.Port),
 		httpserver.ReadTimeout(cfg.HTTP.Timeout),
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
+		httpserver.BodyLimit(cfg.HTTP.BodyLimit),
+		httpserver.ShutdownTimeout(cfg.HTTP.ShutdownTimeout),
 	)
 
-	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg)
+	rateLimitStore := initRateLimitStorage(cfg, l)
+
+	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg, rateLimitStore)
 	httpServer.Start()
 
 	return httpServer
+}
+
+// initRateLimitStorage creates rate limiter storage based on config.
+func initRateLimitStorage(cfg *config.Config, l *logger.Logger) fiber.Storage {
+	if cfg.RateLimit.Store != "redis" {
+		return nil // nil = Fiber built-in memory store
+	}
+
+	redisClient := goredis.NewClient(&goredis.Options{
+		Addr:     cfg.Redis.Addr(),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+
+	adapter := ratelimiter.NewRedisAdapter(redisClient)
+	l.Info("Rate limiter using Redis backend at %s", cfg.Redis.Addr())
+
+	return ratelimiter.NewRedisStore(adapter)
 }
 
 // waitForShutdown blocks until interrupt signal and performs graceful shutdown.

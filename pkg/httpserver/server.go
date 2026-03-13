@@ -18,6 +18,7 @@ const (
 	_defaultReadTimeout     = 5 * time.Second
 	_defaultWriteTimeout    = 5 * time.Second
 	_defaultShutdownTimeout = 3 * time.Second
+	_defaultBodyLimit       = 4 * 1024 * 1024 // 4MB
 )
 
 // Server -.
@@ -33,6 +34,7 @@ type Server struct {
 	readTimeout     time.Duration
 	writeTimeout    time.Duration
 	shutdownTimeout time.Duration
+	bodyLimit       int
 
 	logger logger.Interface
 }
@@ -51,6 +53,7 @@ func New(l logger.Interface, opts ...Option) *Server {
 		readTimeout:     _defaultReadTimeout,
 		writeTimeout:    _defaultWriteTimeout,
 		shutdownTimeout: _defaultShutdownTimeout,
+		bodyLimit:       _defaultBodyLimit,
 		logger:          l,
 	}
 
@@ -63,6 +66,7 @@ func New(l logger.Interface, opts ...Option) *Server {
 		Prefork:      s.prefork,
 		ReadTimeout:  s.readTimeout,
 		WriteTimeout: s.writeTimeout,
+		BodyLimit:    s.bodyLimit,
 		JSONDecoder:  json.Unmarshal,
 		JSONEncoder:  json.Marshal,
 	})

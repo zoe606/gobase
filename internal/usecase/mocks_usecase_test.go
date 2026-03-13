@@ -17,7 +17,7 @@ import (
 	profiledto "go-boilerplate/internal/dto/profile"
 	translationdto "go-boilerplate/internal/dto/translation"
 	entity "go-boilerplate/internal/entity"
-	auth0 "go-boilerplate/internal/usecase/auth"
+	auth "go-boilerplate/internal/usecase/auth"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -204,7 +204,7 @@ func (mr *MockAuthMockRecorder) ResendVerification(ctx, email any) *gomock.Call 
 }
 
 // ResetPassword mocks base method.
-func (m *MockAuth) ResetPassword(ctx context.Context, input auth0.ResetPasswordInput) error {
+func (m *MockAuth) ResetPassword(ctx context.Context, input auth.ResetPasswordInput) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "ResetPassword", ctx, input)
 	ret0, _ := ret[0].(error)
@@ -329,18 +329,18 @@ func (mr *MockMediaMockRecorder) GetPresignedUploadURL(ctx, filename any) *gomoc
 }
 
 // GetURL mocks base method.
-func (m *MockMedia) GetURL(ctx context.Context, arg1 *entity.Media, variant string) (string, error) {
+func (m *MockMedia) GetURL(ctx context.Context, media *entity.Media, variant string) (string, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetURL", ctx, arg1, variant)
+	ret := m.ctrl.Call(m, "GetURL", ctx, media, variant)
 	ret0, _ := ret[0].(string)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // GetURL indicates an expected call of GetURL.
-func (mr *MockMediaMockRecorder) GetURL(ctx, arg1, variant any) *gomock.Call {
+func (mr *MockMediaMockRecorder) GetURL(ctx, media, variant any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockMedia)(nil).GetURL), ctx, arg1, variant)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetURL", reflect.TypeOf((*MockMedia)(nil).GetURL), ctx, media, variant)
 }
 
 // Upload mocks base method.
@@ -437,18 +437,18 @@ func (m *MockArticle) EXPECT() *MockArticleMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockArticle) Create(ctx context.Context, req articledto.CreateRequest) (*articledto.Response, error) {
+func (m *MockArticle) Create(ctx context.Context, userID uint, req articledto.CreateRequest) (*articledto.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, req)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, req)
 	ret0, _ := ret[0].(*articledto.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockArticleMockRecorder) Create(ctx, req any) *gomock.Call {
+func (mr *MockArticleMockRecorder) Create(ctx, userID, req any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticle)(nil).Create), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticle)(nil).Create), ctx, userID, req)
 }
 
 // Delete mocks base method.

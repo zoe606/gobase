@@ -24,7 +24,9 @@ import (
 // @Success     200 {object} response.Response[articledto.Response]
 // @Failure     400 {object} response.ErrorResponse
 // @Failure     404 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
 // @Failure     500 {object} response.ErrorResponse
+// @Security    BearerAuth
 // @Router      /articles/{id} [put]
 func (h *Handler) Update(ctx *fiber.Ctx) error {
 	id, err := strconv.ParseUint(ctx.Params("id"), 10, 32)

@@ -10,14 +10,16 @@ import (
 
 	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestCreate(t *testing.T) {
 	t.Parallel()
 
 	type args struct {
-		ctx context.Context
-		req articledto.CreateRequest
+		ctx    context.Context
+		userID uint
+		req    articledto.CreateRequest
 	}
 
 	tests := []struct {
@@ -29,9 +31,9 @@ func TestCreate(t *testing.T) {
 		{
 			name: "success",
 			args: args{
-				ctx: context.Background(),
+				ctx:    context.Background(),
+				userID: 1,
 				req: articledto.CreateRequest{
-					UserID:  1,
 					Title:   "Test Article",
 					Slug:    "test-article",
 					Content: "Some content",
@@ -49,9 +51,9 @@ func TestCreate(t *testing.T) {
 		{
 			name: "repo error",
 			args: args{
-				ctx: context.Background(),
+				ctx:    context.Background(),
+				userID: 1,
 				req: articledto.CreateRequest{
-					UserID:  1,
 					Title:   "Test Article",
 					Slug:    "test-article",
 					Content: "Some content",
@@ -79,8 +81,8 @@ func TestCreate(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo)
-			got, err := uc.Create(tt.args.ctx, tt.args.req)
+			uc := article.New(mockArticleRepo, audit.NewNoop())
+			got, err := uc.Create(tt.args.ctx, tt.args.userID, tt.args.req)
 
 			if tt.wantErr != nil {
 				require.Error(t, err)

@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/audit"
 )
 
 func TestRefresh(t *testing.T) {
@@ -169,7 +170,7 @@ func TestRefresh(t *testing.T) {
 
 			tt.setupMock(mockUserRepo, mockRefreshRepo, mockJWT)
 
-			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT)
+			uc := auth.New(mockUserRepo, mockRoleRepo, mockRefreshRepo, mockJWT, audit.NewNoop())
 			got, err := uc.Refresh(tt.args.ctx, tt.args.input)
 
 			if tt.wantErr != nil {

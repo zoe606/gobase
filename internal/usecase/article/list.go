@@ -5,13 +5,21 @@ import (
 	"fmt"
 
 	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/repo"
 )
 
 // List retrieves a paginated list of articles with filters.
 func (uc *UseCase) List(ctx context.Context, req articledto.ListRequest) (*articledto.ListResponse, error) {
 	req.Normalize()
 
-	articles, total, err := uc.articleRepo.List(ctx, req)
+	params := repo.ArticleListParams{
+		Params: req.Params,
+		Status: req.Status,
+		UserID: req.UserID,
+		Search: req.Search,
+	}
+
+	articles, total, err := uc.articleRepo.List(ctx, params)
 	if err != nil {
 		return nil, fmt.Errorf("article - List - articleRepo.List: %w", err)
 	}
