@@ -37,6 +37,7 @@ type (
 		Swagger           Swagger           `mapstructure:"swagger"`
 		Storage           Storage           `mapstructure:"storage"`
 		Cache             Cache             `mapstructure:"cache"`
+		Lock              Lock              `mapstructure:"lock"`
 		AuditLog          AuditLog          `mapstructure:"audit_log"`
 		EmailVerification EmailVerification `mapstructure:"email_verification"`
 		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
@@ -167,6 +168,11 @@ type (
 	// AuditLog holds audit logging configuration.
 	AuditLog struct {
 		Enabled bool `mapstructure:"enabled"` // Enable/disable audit logging
+	}
+
+	// Lock holds distributed lock configuration.
+	Lock struct {
+		Provider string `mapstructure:"provider"` // "noop" (default) or "redis"
 	}
 
 	// EmailVerification holds email verification configuration.
@@ -425,6 +431,9 @@ func setDefaults() {
 	viper.SetDefault("cache.ttl", "5m")
 	viper.SetDefault("cache.prefix", "app:")
 
+	// Lock defaults
+	viper.SetDefault("lock.provider", "noop")
+
 	// AuditLog defaults
 	viper.SetDefault("audit_log.enabled", false)
 
@@ -542,6 +551,9 @@ func bindEnvVars() {
 	viper.BindEnv("cache.enabled", "CACHE_ENABLED")
 	viper.BindEnv("cache.ttl", "CACHE_TTL")
 	viper.BindEnv("cache.prefix", "CACHE_PREFIX")
+
+	// Lock
+	viper.BindEnv("lock.provider", "LOCK_PROVIDER")
 
 	// AuditLog
 	viper.BindEnv("audit_log.enabled", "AUDIT_LOG_ENABLED")

@@ -56,3 +56,7 @@ jwt:
   algorithm: hs256  # hs256, rs256, or es256
   # private_key_path: /path/to/private.pem  # Required for rs256/es256
   # public_key_path: /path/to/public.pem    # Required for rs256/es256
+
+# Distributed Lock
+lock:
+  provider: noop  # "noop" (single instance) or "redis" (multi-replica)
