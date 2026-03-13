@@ -12,6 +12,7 @@ import (
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/asynq"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/jwt"
 )
 
@@ -23,6 +24,7 @@ type UseCase struct {
 	emailVerificationRepo repo.EmailVerificationRepo
 	passwordResetRepo     repo.PasswordResetRepo
 	jwtService            jwt.Service
+	auditLogger           audit.Logger
 	asynqClient           *asynq.Client
 	appName               string
 	verificationConfig    VerificationConfig
@@ -49,12 +51,14 @@ func New(
 	roleRepo repo.RoleRepo,
 	refreshTokenRepo repo.RefreshTokenRepo,
 	jwtService jwt.Service,
+	auditLogger audit.Logger,
 ) *UseCase {
 	return &UseCase{
 		userRepo:         userRepo,
 		roleRepo:         roleRepo,
 		refreshTokenRepo: refreshTokenRepo,
 		jwtService:       jwtService,
+		auditLogger:      auditLogger,
 		verificationConfig: VerificationConfig{
 			Enabled:    true,
 			AutoVerify: true,

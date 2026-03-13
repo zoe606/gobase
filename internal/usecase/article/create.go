@@ -21,5 +21,11 @@ func (uc *UseCase) Create(ctx context.Context, userID uint, req articledto.Creat
 		return nil, fmt.Errorf("article - Create - articleRepo.Create: %w", err)
 	}
 
+	// Audit log (best-effort — don't fail the operation)
+	_ = uc.auditLogger.LogCreate(ctx, "article", article.ID, &userID, map[string]any{
+		"title": req.Title,
+		"slug":  req.Slug,
+	})
+
 	return articledto.NewResponse(article), nil
 }

@@ -27,5 +27,10 @@ func (uc *UseCase) Update(ctx context.Context, id uint, req articledto.UpdateReq
 		return nil, fmt.Errorf("article - Update - articleRepo.Update: %w", err)
 	}
 
+	// Audit log (best-effort)
+	_ = uc.auditLogger.LogUpdate(ctx, "article", article.ID, nil, nil, map[string]any{
+		"title": article.Title,
+	})
+
 	return articledto.NewResponse(article), nil
 }

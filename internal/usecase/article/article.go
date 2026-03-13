@@ -5,16 +5,19 @@ package article
 
 import (
 	"go-boilerplate/internal/repo"
+	"go-boilerplate/pkg/audit"
 )
 
 // UseCase implements article business logic.
 type UseCase struct {
 	articleRepo repo.ArticleRepo
+	auditLogger audit.Logger
 }
 
 // New creates a new article use case.
-func New(articleRepo repo.ArticleRepo) *UseCase {
+func New(articleRepo repo.ArticleRepo, auditLogger audit.Logger) *UseCase {
 	return &UseCase{
 		articleRepo: articleRepo,
+		auditLogger: auditLogger,
 	}
 }

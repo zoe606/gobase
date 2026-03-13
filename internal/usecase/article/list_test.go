@@ -12,6 +12,7 @@ import (
 	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/pagination"
 )
 
@@ -180,7 +181,7 @@ func TestList(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo)
+			uc := article.New(mockArticleRepo, audit.NewNoop())
 			got, err := uc.List(tt.args.ctx, tt.args.req)
 
 			if tt.wantErr != nil {

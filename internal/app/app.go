@@ -27,6 +27,7 @@ import (
 	"go-boilerplate/internal/usecase/profile"
 	"go-boilerplate/internal/usecase/translation"
 	"go-boilerplate/pkg/asynq"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/httpserver"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
@@ -102,9 +103,17 @@ func Run(cfg *config.Config) {
 
 	storageProvider := initStorage(cfg, l)
 
+	// Initialize audit logger
+	var auditLogger audit.Logger
+	if cfg.AuditLog.Enabled {
+		auditLogger = audit.NewPostgres(pg.DB)
+	} else {
+		auditLogger = audit.NewNoop()
+	}
+
 	jwtService := initJWT(cfg)
 	repos := initRepositories(pg.DB)
-	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l)
+	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l, auditLogger)
 	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg)
 
 	l.Info("Server started on port %s", cfg.HTTP.Port)
@@ -261,8 +270,8 @@ func initAsynqClient(cfg *config.Config) *asynq.Client {
 }
 
 // initUseCases creates all usecase instances.
-func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface) *usecases {
-	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService).
+func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface, auditLogger audit.Logger) *usecases {
+	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService, auditLogger).
 		WithAsynq(asynqClient, cfg.App.Name)
 
 	mediaUC := media.New(
@@ -281,7 +290,7 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 		l,
 	)
 
-	articleUC := article.New(repos.article)
+	articleUC := article.New(repos.article, auditLogger)
 
 	return &usecases{
 		translation: translation.New(repos.translation, repos.translationAPI),

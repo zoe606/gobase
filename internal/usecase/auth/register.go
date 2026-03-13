@@ -53,6 +53,12 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 		return nil, fmt.Errorf("auth - Register - Create: %w", err)
 	}
 
+	// Audit user registration (best-effort)
+	_ = uc.auditLogger.LogCreate(ctx, "user", user.ID, &user.ID, map[string]any{
+		"email": user.Email,
+		"name":  user.Name,
+	})
+
 	// Load role for token generation
 	user.Role = *role
 

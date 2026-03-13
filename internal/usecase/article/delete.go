@@ -17,5 +17,8 @@ func (uc *UseCase) Delete(ctx context.Context, id uint) error {
 		return fmt.Errorf("article - Delete - articleRepo.Delete: %w", err)
 	}
 
+	// Audit log (best-effort)
+	_ = uc.auditLogger.LogDelete(ctx, "article", id, nil, nil)
+
 	return nil
 }
