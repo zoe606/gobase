@@ -14,6 +14,9 @@ import (
 	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver for golang-migrate
 	"gorm.io/gorm"
 
+	"github.com/gofiber/fiber/v2"
+	goredis "github.com/redis/go-redis/v9"
+
 	"go-boilerplate/config"
 	httphandler "go-boilerplate/internal/handlers/http"
 	"go-boilerplate/internal/repo"
@@ -32,6 +35,7 @@ import (
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
 	"go-boilerplate/pkg/postgres"
+	"go-boilerplate/pkg/ratelimiter"
 	"go-boilerplate/pkg/telemetry"
 	"go-boilerplate/pkg/telemetry/gormtracing"
 )
@@ -312,10 +316,30 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 		httpserver.ShutdownTimeout(cfg.HTTP.ShutdownTimeout),
 	)
 
-	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg)
+	rateLimitStore := initRateLimitStorage(cfg, l)
+
+	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg, rateLimitStore)
 	httpServer.Start()
 
 	return httpServer
+}
+
+// initRateLimitStorage creates rate limiter storage based on config.
+func initRateLimitStorage(cfg *config.Config, l *logger.Logger) fiber.Storage {
+	if cfg.RateLimit.Store != "redis" {
+		return nil // nil = Fiber built-in memory store
+	}
+
+	redisClient := goredis.NewClient(&goredis.Options{
+		Addr:     cfg.Redis.Addr(),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+
+	adapter := ratelimiter.NewRedisAdapter(redisClient)
+	l.Info("Rate limiter using Redis backend at %s", cfg.Redis.Addr())
+
+	return ratelimiter.NewRedisStore(adapter)
 }
 
 // waitForShutdown blocks until interrupt signal and performs graceful shutdown.

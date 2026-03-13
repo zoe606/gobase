@@ -41,15 +41,15 @@ type HealthChecker interface {
 //	@version     1.0
 //	@host        localhost:8080
 //	@BasePath    /v1
-func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker) {
-	setupMiddleware(app, cfg, l)
+func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker, rateLimitStore fiber.Storage) {
+	setupMiddleware(app, cfg, l, rateLimitStore)
 	setupOptionalFeatures(app, cfg)
 	setupHealthEndpoints(app, healthChecker)
 	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, jwtService, l)
 }
 
 // setupMiddleware configures global middleware chain.
-func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface) {
+func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rateLimitStore fiber.Storage) {
 	if cfg.Telemetry.Enabled {
 		app.Use(middleware.Tracing())
 	}
@@ -69,10 +69,8 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface) {
 		Expiration:   cfg.RateLimit.Expiration,
 		KeyGenerator: func(c *fiber.Ctx) string { return c.IP() },
 		LimitReached: rateLimitReached,
+		Storage:      rateLimitStore, // nil = Fiber's built-in memory store
 	}
-	// Storage backend is selected by config.
-	// Default: in-memory (Fiber built-in). Redis: Phase 3.
-	// When RATE_LIMIT_STORE=redis is implemented, set limiterCfg.Storage here.
 	app.Use(limiter.New(limiterCfg))
 	if cfg.HTTP.RequestTimeout > 0 {
 		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
