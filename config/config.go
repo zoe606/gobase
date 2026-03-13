@@ -53,11 +53,12 @@ type (
 
 	// HTTP holds HTTP server configuration.
 	HTTP struct {
-		Port           string        `mapstructure:"port"`
-		Timeout        time.Duration `mapstructure:"timeout"`         // Network read/write timeout
-		IdleTimeout    time.Duration `mapstructure:"idle_timeout"`    // Keep-alive connection timeout
-		RequestTimeout time.Duration `mapstructure:"request_timeout"` // Handler execution timeout
-		BodyLimit      int           `mapstructure:"body_limit"`      // Max request body size in bytes (default: 4MB)
+		Port            string        `mapstructure:"port"`
+		Timeout         time.Duration `mapstructure:"timeout"`          // Network read/write timeout
+		IdleTimeout     time.Duration `mapstructure:"idle_timeout"`     // Keep-alive connection timeout
+		RequestTimeout  time.Duration `mapstructure:"request_timeout"`  // Handler execution timeout
+		BodyLimit       int           `mapstructure:"body_limit"`       // Max request body size in bytes (default: 4MB)
+		ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"` // Graceful shutdown timeout
 	}
 
 	// Log holds logging configuration.
@@ -100,9 +101,12 @@ type (
 
 	// JWT holds JWT configuration.
 	JWT struct {
-		SecretKey     string        `mapstructure:"secret_key"`
-		AccessExpiry  time.Duration `mapstructure:"access_expiry"`
-		RefreshExpiry time.Duration `mapstructure:"refresh_expiry"`
+		SecretKey      string        `mapstructure:"secret_key"`
+		AccessExpiry   time.Duration `mapstructure:"access_expiry"`
+		RefreshExpiry  time.Duration `mapstructure:"refresh_expiry"`
+		Algorithm      string        `mapstructure:"algorithm"`        // hs256, rs256, es256
+		PrivateKeyPath string        `mapstructure:"private_key_path"` // Path to private key (RS256/ES256)
+		PublicKeyPath  string        `mapstructure:"public_key_path"`  // Path to public key (RS256/ES256)
 	}
 
 	// CORS holds CORS configuration.
@@ -118,6 +122,7 @@ type (
 	RateLimit struct {
 		Max        int           `mapstructure:"max"`
 		Expiration time.Duration `mapstructure:"expiration"`
+		Store      string        `mapstructure:"store"` // "memory" (default) or "redis" (Phase 3)
 	}
 
 	// Asynq holds Asynq task queue configuration.
@@ -278,6 +283,21 @@ func (c *Config) Validate() error {
 		}
 	}
 
+	// JWT algorithm validation
+	switch c.JWT.Algorithm {
+	case "hs256", "":
+		// HS256 is default, no extra validation needed here
+	case "rs256", "es256":
+		if c.JWT.PrivateKeyPath == "" {
+			errs = append(errs, "JWT_PRIVATE_KEY_PATH is required for "+c.JWT.Algorithm)
+		}
+		if c.JWT.PublicKeyPath == "" {
+			errs = append(errs, "JWT_PUBLIC_KEY_PATH is required for "+c.JWT.Algorithm)
+		}
+	default:
+		errs = append(errs, fmt.Sprintf("JWT_ALGORITHM must be hs256, rs256, or es256 (got %q)", c.JWT.Algorithm))
+	}
+
 	// Database config validation
 	if c.Postgres.Host == "" {
 		errs = append(errs, "POSTGRES_HOST is required")
@@ -321,6 +341,7 @@ func setDefaults() {
 	viper.SetDefault("http.idle_timeout", "60s")     // Keep-alive connections
 	viper.SetDefault("http.request_timeout", "30s")  // Handler execution
 	viper.SetDefault("http.body_limit", 4*1024*1024) // 4MB
+	viper.SetDefault("http.shutdown_timeout", "15s") // Graceful shutdown
 
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
@@ -354,6 +375,9 @@ func setDefaults() {
 	viper.SetDefault("jwt.secret_key", "change-me-in-production")
 	viper.SetDefault("jwt.access_expiry", "15m")
 	viper.SetDefault("jwt.refresh_expiry", "168h")
+	viper.SetDefault("jwt.algorithm", "hs256")
+	viper.SetDefault("jwt.private_key_path", "")
+	viper.SetDefault("jwt.public_key_path", "")
 
 	// CORS defaults
 	viper.SetDefault("cors.allow_origins", "*")
@@ -365,6 +389,7 @@ func setDefaults() {
 	// RateLimit defaults
 	viper.SetDefault("rate_limit.max", DefaultRateLimitMax)
 	viper.SetDefault("rate_limit.expiration", "1m")
+	viper.SetDefault("rate_limit.store", "memory")
 
 	// Asynq defaults
 	viper.SetDefault("asynq.concurrency", DefaultAsynqConcurrency)
@@ -434,6 +459,7 @@ func bindEnvVars() {
 	viper.BindEnv("http.idle_timeout", "HTTP_IDLE_TIMEOUT")
 	viper.BindEnv("http.request_timeout", "HTTP_REQUEST_TIMEOUT")
 	viper.BindEnv("http.body_limit", "HTTP_BODY_LIMIT")
+	viper.BindEnv("http.shutdown_timeout", "HTTP_SHUTDOWN_TIMEOUT")
 
 	// Log
 	viper.BindEnv("log.level", "LOG_LEVEL")
@@ -464,6 +490,9 @@ func bindEnvVars() {
 	viper.BindEnv("jwt.secret_key", "JWT_SECRET_KEY")
 	viper.BindEnv("jwt.access_expiry", "JWT_ACCESS_EXPIRY")
 	viper.BindEnv("jwt.refresh_expiry", "JWT_REFRESH_EXPIRY")
+	viper.BindEnv("jwt.algorithm", "JWT_ALGORITHM")
+	viper.BindEnv("jwt.private_key_path", "JWT_PRIVATE_KEY_PATH")
+	viper.BindEnv("jwt.public_key_path", "JWT_PUBLIC_KEY_PATH")
 
 	// CORS
 	viper.BindEnv("cors.allow_origins", "CORS_ALLOW_ORIGINS")
@@ -475,6 +504,7 @@ func bindEnvVars() {
 	// RateLimit
 	viper.BindEnv("rate_limit.max", "RATE_LIMIT_MAX")
 	viper.BindEnv("rate_limit.expiration", "RATE_LIMIT_EXPIRATION")
+	viper.BindEnv("rate_limit.store", "RATE_LIMIT_STORE")
 
 	// Asynq
 	viper.BindEnv("asynq.concurrency", "ASYNQ_CONCURRENCY")

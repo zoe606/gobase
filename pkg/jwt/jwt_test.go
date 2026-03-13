@@ -92,6 +92,16 @@ func TestValidateToken(t *testing.T) {
 			wantErr: jwt.ErrInvalidToken,
 		},
 		{
+			name: "expired token",
+			setup: func() string {
+				expiredSvc := jwt.New("test-secret-key", 1*time.Nanosecond, 24*time.Hour)
+				token, _, _ := expiredSvc.GenerateAccessToken(1, "test@example.com", "user", nil) //nolint:errcheck // test setup
+				time.Sleep(2 * time.Millisecond)
+				return token
+			},
+			wantErr: jwt.ErrExpiredToken,
+		},
+		{
 			name: "wrong signature",
 			setup: func() string {
 				otherSvc := jwt.New("different-secret", 15*time.Minute, 24*time.Hour)

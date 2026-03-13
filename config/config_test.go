@@ -98,11 +98,60 @@ func TestConfig_Validate_RequiredFields(t *testing.T) {
 			errorMsg:  "JWT_SECRET_KEY must be set in production",
 		},
 		{
+			name: "production with insecure ssl",
+			cfg: Config{
+				App:      App{Env: "production"},
+				Postgres: Postgres{Host: "localhost", DBName: "app", SSLMode: "disable"},
+				JWT:      JWT{SecretKey: "real-secret-key-here"},
+			},
+			wantError: true,
+			errorMsg:  "POSTGRES_SSLMODE must not be 'disable' in production",
+		},
+		{
 			name: "valid production config",
 			cfg: Config{
 				App:      App{Env: "production"},
-				Postgres: Postgres{Host: "localhost", DBName: "app"},
+				Postgres: Postgres{Host: "localhost", DBName: "app", SSLMode: "require"},
 				JWT:      JWT{SecretKey: "real-secret-key-here"},
+			},
+			wantError: false,
+		},
+		{
+			name: "rs256 without key paths",
+			cfg: Config{
+				App:      App{Env: "development"},
+				Postgres: Postgres{Host: "localhost", DBName: "app"},
+				JWT:      JWT{Algorithm: "rs256"},
+			},
+			wantError: true,
+			errorMsg:  "JWT_PRIVATE_KEY_PATH is required",
+		},
+		{
+			name: "es256 without public key",
+			cfg: Config{
+				App:      App{Env: "development"},
+				Postgres: Postgres{Host: "localhost", DBName: "app"},
+				JWT:      JWT{Algorithm: "es256", PrivateKeyPath: "/some/key.pem"},
+			},
+			wantError: true,
+			errorMsg:  "JWT_PUBLIC_KEY_PATH is required",
+		},
+		{
+			name: "invalid jwt algorithm",
+			cfg: Config{
+				App:      App{Env: "development"},
+				Postgres: Postgres{Host: "localhost", DBName: "app"},
+				JWT:      JWT{Algorithm: "ps256"},
+			},
+			wantError: true,
+			errorMsg:  "JWT_ALGORITHM must be hs256, rs256, or es256",
+		},
+		{
+			name: "valid rs256 config",
+			cfg: Config{
+				App:      App{Env: "development"},
+				Postgres: Postgres{Host: "localhost", DBName: "app"},
+				JWT:      JWT{Algorithm: "rs256", PrivateKeyPath: "/key.pem", PublicKeyPath: "/pub.pem"},
 			},
 			wantError: false,
 		},

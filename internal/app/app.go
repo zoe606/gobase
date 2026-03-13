@@ -165,13 +165,38 @@ func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 	runSeeder(db, l)
 }
 
-// initJWT creates JWT service.
+// initJWT creates JWT service based on configured algorithm.
 func initJWT(cfg *config.Config) jwt.Service {
-	return jwt.New(
-		cfg.JWT.SecretKey,
-		cfg.JWT.AccessExpiry,
-		cfg.JWT.RefreshExpiry,
-	)
+	switch cfg.JWT.Algorithm {
+	case "rs256":
+		svc, err := jwt.NewRS256(
+			cfg.JWT.PrivateKeyPath,
+			cfg.JWT.PublicKeyPath,
+			cfg.JWT.AccessExpiry,
+			cfg.JWT.RefreshExpiry,
+		)
+		if err != nil {
+			panic(fmt.Sprintf("app - initJWT - jwt.NewRS256: %v", err))
+		}
+		return svc
+	case "es256":
+		svc, err := jwt.NewES256(
+			cfg.JWT.PrivateKeyPath,
+			cfg.JWT.PublicKeyPath,
+			cfg.JWT.AccessExpiry,
+			cfg.JWT.RefreshExpiry,
+		)
+		if err != nil {
+			panic(fmt.Sprintf("app - initJWT - jwt.NewES256: %v", err))
+		}
+		return svc
+	default: // "hs256" or empty
+		return jwt.New(
+			cfg.JWT.SecretKey,
+			cfg.JWT.AccessExpiry,
+			cfg.JWT.RefreshExpiry,
+		)
+	}
 }
 
 // initStorage creates storage provider based on configuration.
@@ -260,6 +285,7 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 		httpserver.ReadTimeout(cfg.HTTP.Timeout),
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
 		httpserver.BodyLimit(cfg.HTTP.BodyLimit),
+		httpserver.ShutdownTimeout(cfg.HTTP.ShutdownTimeout),
 	)
 
 	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg)
