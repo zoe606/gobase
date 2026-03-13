@@ -11,9 +11,8 @@ package auth_test
 
 import (
 	context "context"
-	articledto "go-boilerplate/internal/dto/article"
-	translationdto "go-boilerplate/internal/dto/translation"
 	entity "go-boilerplate/internal/entity"
+	repo "go-boilerplate/internal/repo"
 	reflect "reflect"
 
 	gomock "go.uber.org/mock/gomock"
@@ -44,9 +43,9 @@ func (m *MockTranslationRepo) EXPECT() *MockTranslationRepoMockRecorder {
 }
 
 // GetHistory mocks base method.
-func (m *MockTranslationRepo) GetHistory(ctx context.Context, req translationdto.HistoryRequest) ([]entity.Translation, int64, error) {
+func (m *MockTranslationRepo) GetHistory(ctx context.Context, params repo.TranslationHistoryParams) ([]entity.Translation, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetHistory", ctx, req)
+	ret := m.ctrl.Call(m, "GetHistory", ctx, params)
 	ret0, _ := ret[0].([]entity.Translation)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
@@ -54,9 +53,9 @@ func (m *MockTranslationRepo) GetHistory(ctx context.Context, req translationdto
 }
 
 // GetHistory indicates an expected call of GetHistory.
-func (mr *MockTranslationRepoMockRecorder) GetHistory(ctx, req any) *gomock.Call {
+func (mr *MockTranslationRepoMockRecorder) GetHistory(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockTranslationRepo)(nil).GetHistory), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetHistory", reflect.TypeOf((*MockTranslationRepo)(nil).GetHistory), ctx, params)
 }
 
 // Store mocks base method.
@@ -722,17 +721,17 @@ func (m *MockArticleRepo) EXPECT() *MockArticleRepoMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockArticleRepo) Create(ctx context.Context, arg1 *entity.Article) error {
+func (m *MockArticleRepo) Create(ctx context.Context, article *entity.Article) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, arg1)
+	ret := m.ctrl.Call(m, "Create", ctx, article)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockArticleRepoMockRecorder) Create(ctx, arg1 any) *gomock.Call {
+func (mr *MockArticleRepoMockRecorder) Create(ctx, article any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticleRepo)(nil).Create), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticleRepo)(nil).Create), ctx, article)
 }
 
 // Delete mocks base method.
@@ -765,9 +764,9 @@ func (mr *MockArticleRepoMockRecorder) GetByID(ctx, id any) *gomock.Call {
 }
 
 // List mocks base method.
-func (m *MockArticleRepo) List(ctx context.Context, req articledto.ListRequest) ([]*entity.Article, int64, error) {
+func (m *MockArticleRepo) List(ctx context.Context, params repo.ArticleListParams) ([]*entity.Article, int64, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "List", ctx, req)
+	ret := m.ctrl.Call(m, "List", ctx, params)
 	ret0, _ := ret[0].([]*entity.Article)
 	ret1, _ := ret[1].(int64)
 	ret2, _ := ret[2].(error)
@@ -775,21 +774,21 @@ func (m *MockArticleRepo) List(ctx context.Context, req articledto.ListRequest) 
 }
 
 // List indicates an expected call of List.
-func (mr *MockArticleRepoMockRecorder) List(ctx, req any) *gomock.Call {
+func (mr *MockArticleRepoMockRecorder) List(ctx, params any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockArticleRepo)(nil).List), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "List", reflect.TypeOf((*MockArticleRepo)(nil).List), ctx, params)
 }
 
 // Update mocks base method.
-func (m *MockArticleRepo) Update(ctx context.Context, arg1 *entity.Article) error {
+func (m *MockArticleRepo) Update(ctx context.Context, article *entity.Article) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, arg1)
+	ret := m.ctrl.Call(m, "Update", ctx, article)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockArticleRepoMockRecorder) Update(ctx, arg1 any) *gomock.Call {
+func (mr *MockArticleRepoMockRecorder) Update(ctx, article any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockArticleRepo)(nil).Update), ctx, arg1)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockArticleRepo)(nil).Update), ctx, article)
 }

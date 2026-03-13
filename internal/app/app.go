@@ -3,15 +3,18 @@ package app
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"os/signal"
 	"syscall"
 
+	"github.com/golang-migrate/migrate/v4"
+	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver for golang-migrate
 	"gorm.io/gorm"
 
 	"go-boilerplate/config"
-	"go-boilerplate/internal/entity"
 	httphandler "go-boilerplate/internal/handlers/http"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/repo/persistent"
@@ -131,35 +134,47 @@ func initDatabase(cfg *config.Config, l *logger.Logger) *postgres.Postgres {
 		l.Fatal(fmt.Errorf("app - Run - postgres.New: %w", err))
 	}
 
-	runAutoMigrate(cfg, pg.DB, l)
+	runMigrations(cfg, pg.DB, l)
 
 	return pg
 }
 
-// runAutoMigrate runs database migrations in development mode.
-func runAutoMigrate(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
+// runMigrations runs database migrations using golang-migrate.
+// In development mode, migrations run automatically on startup.
+// In production, this is a no-op — use the CLI migrate tool.
+func runMigrations(cfg *config.Config, db *gorm.DB, l *logger.Logger) {
 	if !cfg.App.ShouldAutoMigrate() {
-		l.Info("Skipping AutoMigrate (production mode) - use CLI migrations")
+		l.Info("Skipping auto-migration (production mode) - use CLI migrations")
 
 		return
 	}
 
-	l.Info("Running AutoMigrate (development mode)")
+	l.Info("Running migrations (development mode)")
 
-	if err := db.AutoMigrate(
-		&entity.Translation{},
-		&entity.Permission{},
-		&entity.Role{},
-		&entity.User{},
-		&entity.RefreshToken{},
-		&entity.Media{},
-		&entity.Profile{},
-		&entity.Article{},
-	); err != nil {
-		l.Fatal(fmt.Errorf("app - Run - AutoMigrate: %w", err))
+	sqlDB, err := db.DB()
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - runMigrations - db.DB(): %w", err))
 	}
 
-	l.Info("Database migration completed")
+	driver, err := pgmigrate.WithInstance(sqlDB, &pgmigrate.Config{})
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - runMigrations - pgmigrate.WithInstance: %w", err))
+	}
+
+	m, err := migrate.NewWithDatabaseInstance(
+		"file://migrations",
+		"postgres",
+		driver,
+	)
+	if err != nil {
+		l.Fatal(fmt.Errorf("app - runMigrations - migrate.New: %w", err))
+	}
+
+	if err := m.Up(); err != nil && !errors.Is(err, migrate.ErrNoChange) {
+		l.Fatal(fmt.Errorf("app - runMigrations - m.Up: %w", err))
+	}
+
+	l.Info("Database migrations completed")
 
 	// Seed default data in development mode
 	runSeeder(db, l)

@@ -64,12 +64,16 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface) {
 	}))
 	app.Use(helmet.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelDefault}))
-	app.Use(limiter.New(limiter.Config{
+	limiterCfg := limiter.Config{
 		Max:          cfg.RateLimit.Max,
 		Expiration:   cfg.RateLimit.Expiration,
 		KeyGenerator: func(c *fiber.Ctx) string { return c.IP() },
 		LimitReached: rateLimitReached,
-	}))
+	}
+	// Storage backend is selected by config.
+	// Default: in-memory (Fiber built-in). Redis: Phase 3.
+	// When RATE_LIMIT_STORE=redis is implemented, set limiterCfg.Storage here.
+	app.Use(limiter.New(limiterCfg))
 	if cfg.HTTP.RequestTimeout > 0 {
 		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
 	}
