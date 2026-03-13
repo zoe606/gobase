@@ -138,6 +138,6 @@ func setupAPIRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Tr
 	profHandler := profilehandler.New(profileUC, jwtService, l)
 	profHandler.RegisterRoutes(apiV1Group)
 
-	artHandler := articlehandler.New(articleUC, l)
+	artHandler := articlehandler.New(articleUC, jwtService, l)
 	artHandler.RegisterRoutes(apiV1Group)
 }

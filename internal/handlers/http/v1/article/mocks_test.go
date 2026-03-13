@@ -6,8 +6,10 @@ package article_test
 import (
 	"context"
 	"reflect"
+	"time"
 
 	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/pkg/jwt"
 
 	"go.uber.org/mock/gomock"
 	"go.uber.org/zap"
@@ -123,3 +125,30 @@ func (m *MockLogger) Warn(message string, args ...interface{})       {}
 func (m *MockLogger) Error(message interface{}, args ...interface{}) {}
 func (m *MockLogger) Fatal(message interface{}, args ...interface{}) {}
 func (m *MockLogger) GetZapLogger() *zap.Logger                      { return nil }
+
+// MockJWTService is a mock of jwt.Service for testing.
+type MockJWTService struct{}
+
+func NewMockJWTService() *MockJWTService {
+	return &MockJWTService{}
+}
+
+func (m *MockJWTService) GenerateAccessToken(userID uint, email, role string, permissions []string) (string, int64, error) {
+	return "mock-access-token", 9999999999, nil
+}
+
+func (m *MockJWTService) GenerateRefreshToken() (string, time.Time, error) {
+	return "mock-refresh-token", time.Now().Add(24 * time.Hour), nil
+}
+
+func (m *MockJWTService) ValidateToken(tokenString string) (*jwt.Claims, error) {
+	return &jwt.Claims{
+		UserID:      1,
+		Email:       "test@example.com",
+		Role:        "admin",
+		Permissions: []string{"articles:write"},
+	}, nil
+}
+
+func (m *MockJWTService) GetAccessExpiry() time.Duration  { return 15 * time.Minute }
+func (m *MockJWTService) GetRefreshExpiry() time.Duration { return 24 * time.Hour }
