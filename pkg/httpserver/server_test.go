@@ -30,6 +30,7 @@ func TestNew_WithOptions(t *testing.T) {
 		httpserver.WriteTimeout(10*time.Second),
 		httpserver.ShutdownTimeout(5*time.Second),
 		httpserver.Prefork(false),
+		httpserver.BodyLimit(2*1024*1024),
 	)
 
 	require.NotNil(t, s.App)

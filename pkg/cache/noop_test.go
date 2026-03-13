@@ -47,16 +47,31 @@ func TestNoopCache_Exists(t *testing.T) {
 func TestNoopCache_Remember(t *testing.T) {
 	t.Parallel()
 
-	c := cache.NewNoop()
-	var result map[string]string
+	t.Run("success", func(t *testing.T) {
+		t.Parallel()
+		c := cache.NewNoop()
+		var result map[string]string
 
-	called := false
-	err := c.Remember(context.Background(), "key", time.Minute, &result, func() (interface{}, error) {
-		called = true
-		return map[string]string{"hello": "world"}, nil
+		called := false
+		err := c.Remember(context.Background(), "key", time.Minute, &result, func() (interface{}, error) {
+			called = true
+			return map[string]string{"hello": "world"}, nil
+		})
+
+		require.NoError(t, err)
+		require.True(t, called)
+		require.Equal(t, "world", result["hello"])
 	})
 
-	require.NoError(t, err)
-	require.True(t, called)
-	require.Equal(t, "world", result["hello"])
+	t.Run("fn error", func(t *testing.T) {
+		t.Parallel()
+		c := cache.NewNoop()
+		var result string
+
+		err := c.Remember(context.Background(), "key", time.Minute, &result, func() (interface{}, error) {
+			return nil, context.Canceled
+		})
+
+		require.ErrorIs(t, err, context.Canceled)
+	})
 }

@@ -10,6 +10,7 @@ http:
   read_timeout: 15s
   write_timeout: 15s
   idle_timeout: 60s
+  body_limit: 4194304  # 4MB in bytes
 
 # Logging Configuration
 log:

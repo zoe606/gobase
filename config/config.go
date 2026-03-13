@@ -57,6 +57,7 @@ type (
 		Timeout        time.Duration `mapstructure:"timeout"`         // Network read/write timeout
 		IdleTimeout    time.Duration `mapstructure:"idle_timeout"`    // Keep-alive connection timeout
 		RequestTimeout time.Duration `mapstructure:"request_timeout"` // Handler execution timeout
+		BodyLimit      int           `mapstructure:"body_limit"`      // Max request body size in bytes (default: 4MB)
 	}
 
 	// Log holds logging configuration.
@@ -316,9 +317,10 @@ func setDefaults() {
 
 	// HTTP defaults
 	viper.SetDefault("http.port", "8080")
-	viper.SetDefault("http.timeout", "15s")         // Network read/write
-	viper.SetDefault("http.idle_timeout", "60s")    // Keep-alive connections
-	viper.SetDefault("http.request_timeout", "30s") // Handler execution
+	viper.SetDefault("http.timeout", "15s")          // Network read/write
+	viper.SetDefault("http.idle_timeout", "60s")     // Keep-alive connections
+	viper.SetDefault("http.request_timeout", "30s")  // Handler execution
+	viper.SetDefault("http.body_limit", 4*1024*1024) // 4MB
 
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
@@ -431,6 +433,7 @@ func bindEnvVars() {
 	viper.BindEnv("http.timeout", "HTTP_TIMEOUT")
 	viper.BindEnv("http.idle_timeout", "HTTP_IDLE_TIMEOUT")
 	viper.BindEnv("http.request_timeout", "HTTP_REQUEST_TIMEOUT")
+	viper.BindEnv("http.body_limit", "HTTP_BODY_LIMIT")
 
 	// Log
 	viper.BindEnv("log.level", "LOG_LEVEL")
