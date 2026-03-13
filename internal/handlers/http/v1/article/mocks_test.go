@@ -39,18 +39,18 @@ func (m *MockArticle) EXPECT() *MockArticleMockRecorder {
 }
 
 // Create mocks base method.
-func (m *MockArticle) Create(ctx context.Context, req articledto.CreateRequest) (*articledto.Response, error) {
+func (m *MockArticle) Create(ctx context.Context, userID uint, req articledto.CreateRequest) (*articledto.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Create", ctx, req)
+	ret := m.ctrl.Call(m, "Create", ctx, userID, req)
 	ret0, _ := ret[0].(*articledto.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Create indicates an expected call of Create.
-func (mr *MockArticleMockRecorder) Create(ctx, req interface{}) *gomock.Call {
+func (mr *MockArticleMockRecorder) Create(ctx, userID, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticle)(nil).Create), ctx, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Create", reflect.TypeOf((*MockArticle)(nil).Create), ctx, userID, req)
 }
 
 // GetByID mocks base method.

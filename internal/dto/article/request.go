@@ -8,7 +8,6 @@ import (
 
 // CreateRequest represents the request to create a Article.
 type CreateRequest struct {
-	UserID       uint      `json:"user_id" validate:"required"`
 	Title        string    `json:"title" validate:"required"`
 	Slug         string    `json:"slug" validate:"required"`
 	Content      string    `json:"content" validate:"required"`
@@ -21,7 +20,6 @@ type CreateRequest struct {
 
 // UpdateRequest represents the request to update a Article.
 type UpdateRequest struct {
-	UserID       *uint      `json:"user_id,omitempty"`
 	Title        *string    `json:"title,omitempty"`
 	Slug         *string    `json:"slug,omitempty"`
 	Content      *string    `json:"content,omitempty"`

@@ -49,7 +49,6 @@ func TestHandler_Create(t *testing.T) {
 
 	now := time.Now().UTC().Truncate(time.Second)
 	validBody := `{
-		"user_id": 1,
 		"title": "Test Article",
 		"slug": "test-article",
 		"content": "Article content here",
@@ -73,7 +72,7 @@ func TestHandler_Create(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
+					Create(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(&articledto.Response{
 						ID:     1,
 						UserID: 1,
@@ -102,7 +101,7 @@ func TestHandler_Create(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Create(gomock.Any(), gomock.Any()).
+					Create(gomock.Any(), gomock.Any(), gomock.Any()).
 					Return(nil, errors.New("database error"))
 			},
 			wantStatus: fiber.StatusInternalServerError,
