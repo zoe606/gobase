@@ -77,7 +77,7 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface) {
 	if cfg.HTTP.RequestTimeout > 0 {
 		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
 	}
-	app.Use(middleware.Logger(l))
+	app.Use(middleware.StructuredLogger(l.GetZapLogger(), cfg.Log))
 }
 
 // rateLimitReached handles rate limit exceeded responses.

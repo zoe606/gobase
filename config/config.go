@@ -63,8 +63,11 @@ type (
 
 	// Log holds logging configuration.
 	Log struct {
-		Level string `mapstructure:"level"`
-		File  string `mapstructure:"file"` // Optional file path for log output (empty = stdout only)
+		Level           string `mapstructure:"level"`
+		File            string `mapstructure:"file"`              // Optional file path for log output (empty = stdout only)
+		LogRequestBody  bool   `mapstructure:"log_request_body"`  // Log request bodies (default: false)
+		LogResponseBody bool   `mapstructure:"log_response_body"` // Log response bodies (default: false)
+		RedactFields    string `mapstructure:"redact_fields"`     // Comma-separated fields to redact from body logs
 	}
 
 	// Postgres holds PostgreSQL configuration.
@@ -345,7 +348,10 @@ func setDefaults() {
 
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
-	viper.SetDefault("log.file", "") // Empty = stdout only
+	viper.SetDefault("log.file", "")                                                         // Empty = stdout only
+	viper.SetDefault("log.log_request_body", false)                                          //nolint:revive // explicit false
+	viper.SetDefault("log.log_response_body", false)                                         //nolint:revive // explicit false
+	viper.SetDefault("log.redact_fields", "password,token,secret,authorization,credit_card") //nolint:revive // default
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")
@@ -464,6 +470,9 @@ func bindEnvVars() {
 	// Log
 	viper.BindEnv("log.level", "LOG_LEVEL")
 	viper.BindEnv("log.file", "LOG_FILE")
+	viper.BindEnv("log.log_request_body", "LOG_REQUEST_BODY")
+	viper.BindEnv("log.log_response_body", "LOG_RESPONSE_BODY")
+	viper.BindEnv("log.redact_fields", "LOG_REDACT_FIELDS")
 
 	// Postgres
 	viper.BindEnv("postgres.host", "POSTGRES_HOST", "DB_HOST")

@@ -16,6 +16,10 @@ http:
 # Logging Configuration
 log:
   level: debug  # debug, info, warn, error
+  # file: /var/log/app.log  # Optional file output
+  log_request_body: false    # Log request bodies (may contain sensitive data)
+  log_response_body: false   # Log response bodies
+  redact_fields: "password,token,secret,authorization,credit_card"  # Fields to redact from body logs
 
 # PostgreSQL Configuration
 postgres:
