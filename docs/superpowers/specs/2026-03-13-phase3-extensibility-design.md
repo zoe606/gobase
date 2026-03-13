@@ -11,15 +11,15 @@
 **Problem:** Phase 2 wired `cfg.RateLimit.Store` and extracted `limiterCfg` in `router.go`, but only the in-memory backend exists. Multi-replica deploys share no state.
 
 **Solution:**
-- Create `pkg/ratelimiter/redis_store.go` implementing Fiber's `fiber.Storage` interface (`Get`, `Set`, `Delete`, `Reset`) backed by `pkg/redis.Client`.
+- Create `pkg/ratelimiter/redis_store.go` implementing Fiber's `fiber.Storage` interface (`Get`, `Set`, `Delete`, `Reset`, `Close`) backed by `pkg/redis.Client`.
 - In `router.go`, read `cfg.RateLimit.Store`; when `"redis"`, instantiate `RedisStore` and assign to `limiterCfg.Storage`.
-- `redis.Client` is created in `app.go` and passed through to `SetupRoutes`.
+- `redis.Client` must be created in `app.go` (currently only Asynq uses Redis). Create a shared `*redis.Client` when any feature needs it (`RateLimit.Store=redis`, `Lock.Provider=redis`, `Cache.Enabled=true`). Pass through to `SetupRoutes` and `initUseCases` as needed.
 
 **Files:**
 - Create: `pkg/ratelimiter/redis_store.go`
 - Create: `pkg/ratelimiter/redis_store_test.go`
 - Modify: `internal/handlers/http/router.go` — add Redis storage branch
-- Modify: `internal/app/app.go` — create Redis client, pass to `initHTTPServer`
+- Modify: `internal/app/app.go` — create shared Redis client, pass to `initHTTPServer`
 
 **Fiber Storage interface (from `github.com/gofiber/fiber/v2`):**
 ```go
@@ -61,7 +61,7 @@ type Storage interface {
 
 **Solution:**
 - Middleware reads `Idempotency-Key` header on mutating requests (POST, PUT, PATCH).
-- First request: execute handler, cache `{status, headers, body}` in `pkg/cache` with configurable TTL (default 24h).
+- First request: execute handler, cache `{status, content_type, body}` in `pkg/cache` with configurable TTL (default 24h).
 - Duplicate key: return cached response, skip handler execution.
 - Missing key on POST: return 400 (configurable via `IDEMPOTENCY_REQUIRED_FOR_POST`).
 - GET/DELETE/OPTIONS bypass entirely.
@@ -81,7 +81,7 @@ type Storage interface {
 
 **Solution:**
 - Rewrite `middleware/logger.go` to emit structured fields: `method`, `path`, `status`, `latency_ms`, `request_id`, `user_id` (from JWT context if present), `ip`, `user_agent`, `bytes_in`, `bytes_out`.
-- Log level based on status code: 2xx→debug, 3xx→info, 4xx→warn, 5xx→error.
+- Log level based on status code: 2xx→info, 4xx→warn, 5xx→error.
 - Optional request body logging with PII redaction: strip JSON fields matching configurable patterns (default: `password`, `token`, `secret`, `authorization`, `credit_card`).
 - Response body logging disabled by default.
 
@@ -97,7 +97,7 @@ type Storage interface {
 **Problem:** `pkg/cache` has get/set/delete but no pattern for prefix-based invalidation. Write operations leave stale cached data.
 
 **Solution:**
-- Add `DeleteByPrefix(ctx, prefix) error` to `Cache` interface.
+- Add `DeleteByPrefix(ctx, prefix) error` to `Cache` interface. Note: `RedisCache.prefixKey()` prepends the configured prefix — `DeleteByPrefix` must account for this (prepend the cache prefix before scanning).
 - `RedisCache`: implement with `SCAN` + `DEL` (cursor-based, safe for production).
 - `NoopCache`: return nil.
 - Add `CacheKeyBuilder` for consistent key construction: `entity:scope:id` pattern.
