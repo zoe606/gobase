@@ -207,14 +207,56 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Run integration tests
+      - name: Run migrations
         env:
           POSTGRES_URL: postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable
-          REDIS_URL: redis://localhost:6379
         run: |
           go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
           migrate -path migrations -database "$POSTGRES_URL" up
-          go test -v ./integration-test/...
+
+      - name: Build and start app
+        env:
+          APP_ENV: development
+          HTTP_PORT: "8080"
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: "5432"
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DBNAME: test_db
+          POSTGRES_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: "6379"
+          JWT_SECRET_KEY: integration-test-secret-key
+          STORAGE_DRIVER: local
+          STORAGE_LOCAL_PATH: /tmp/uploads
+          STORAGE_LOCAL_URL: http://localhost:8080/uploads
+        run: |
+          CGO_ENABLED=0 go build -o ./bin/app ./cmd/app
+          mkdir -p /tmp/uploads
+          ./bin/app &
+          echo $! > /tmp/app.pid
+          # Wait for app to be ready
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:8080/healthz > /dev/null 2>&1; then
+              echo "App is ready"
+              break
+            fi
+            echo "Waiting for app... ($i/30)"
+            sleep 1
+          done
+
+      - name: Run integration tests
+        env:
+          APP_HOST: localhost
+          APP_PORT: "8080"
+        run: go test -v ./integration-test/...
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f /tmp/app.pid ]; then
+            kill "$(cat /tmp/app.pid)" 2>/dev/null || true
+          fi
 
   # Final status check for branch protection
   ci-success:
