@@ -13,6 +13,7 @@ import (
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/audit"
+	"go-boilerplate/pkg/cache"
 )
 
 func TestGetByID(t *testing.T) {
@@ -80,7 +81,7 @@ func TestGetByID(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo, audit.NewNoop())
+			uc := article.New(mockArticleRepo, audit.NewNoop(), cache.NewNoop())
 			got, err := uc.GetByID(context.Background(), tt.id)
 
 			if tt.wantErr != nil {

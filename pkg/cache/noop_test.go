@@ -44,6 +44,14 @@ func TestNoopCache_Exists(t *testing.T) {
 	require.False(t, exists)
 }
 
+func TestNoopCache_DeleteByPrefix(t *testing.T) {
+	t.Parallel()
+
+	c := cache.NewNoop()
+	err := c.DeleteByPrefix(context.Background(), "article:list:")
+	require.NoError(t, err)
+}
+
 func TestNoopCache_Remember(t *testing.T) {
 	t.Parallel()
 

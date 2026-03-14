@@ -36,6 +36,11 @@ func (c *NoopCache) Exists(_ context.Context, _ string) (bool, error) {
 	return false, nil
 }
 
+// DeleteByPrefix does nothing and returns nil.
+func (c *NoopCache) DeleteByPrefix(_ context.Context, _ string) error {
+	return nil
+}
+
 // Remember always calls the function since there's no cache.
 func (c *NoopCache) Remember(_ context.Context, _ string, _ time.Duration, dest interface{}, fn func() (interface{}, error)) error {
 	value, err := fn()

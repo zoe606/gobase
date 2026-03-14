@@ -32,5 +32,9 @@ func (uc *UseCase) Update(ctx context.Context, id uint, req articledto.UpdateReq
 		"title": article.Title,
 	})
 
+	// Invalidate caches
+	_ = uc.cache.Delete(ctx, uc.cacheKeys.ID(id))
+	_ = uc.cache.DeleteByPrefix(ctx, uc.cacheKeys.ListPrefix())
+
 	return articledto.NewResponse(article), nil
 }

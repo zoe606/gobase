@@ -38,6 +38,7 @@ type (
 		Storage           Storage           `mapstructure:"storage"`
 		Cache             Cache             `mapstructure:"cache"`
 		Lock              Lock              `mapstructure:"lock"`
+		Idempotency       Idempotency       `mapstructure:"idempotency"`
 		AuditLog          AuditLog          `mapstructure:"audit_log"`
 		EmailVerification EmailVerification `mapstructure:"email_verification"`
 		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
@@ -173,6 +174,13 @@ type (
 	// Lock holds distributed lock configuration.
 	Lock struct {
 		Provider string `mapstructure:"provider"` // "noop" (default) or "redis"
+	}
+
+	// Idempotency holds idempotency middleware configuration.
+	Idempotency struct {
+		Enabled         bool          `mapstructure:"enabled"`           // Enable idempotency middleware
+		TTL             time.Duration `mapstructure:"ttl"`               // Cache TTL for idempotent responses
+		RequiredForPost bool          `mapstructure:"required_for_post"` // Require Idempotency-Key for POST
 	}
 
 	// EmailVerification holds email verification configuration.
@@ -354,10 +362,10 @@ func setDefaults() {
 
 	// Log defaults
 	viper.SetDefault("log.level", "debug")
-	viper.SetDefault("log.file", "")                                                         // Empty = stdout only
-	viper.SetDefault("log.log_request_body", false)                                          //nolint:revive // explicit false
-	viper.SetDefault("log.log_response_body", false)                                         //nolint:revive // explicit false
-	viper.SetDefault("log.redact_fields", "password,token,secret,authorization,credit_card") //nolint:revive // default
+	viper.SetDefault("log.file", "") // Empty = stdout only
+	viper.SetDefault("log.log_request_body", false)
+	viper.SetDefault("log.log_response_body", false)
+	viper.SetDefault("log.redact_fields", "password,token,secret,authorization,credit_card")
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")
@@ -433,6 +441,11 @@ func setDefaults() {
 
 	// Lock defaults
 	viper.SetDefault("lock.provider", "noop")
+
+	// Idempotency defaults
+	viper.SetDefault("idempotency.enabled", false)
+	viper.SetDefault("idempotency.ttl", "24h")
+	viper.SetDefault("idempotency.required_for_post", false)
 
 	// AuditLog defaults
 	viper.SetDefault("audit_log.enabled", false)
@@ -554,6 +567,11 @@ func bindEnvVars() {
 
 	// Lock
 	viper.BindEnv("lock.provider", "LOCK_PROVIDER")
+
+	// Idempotency
+	viper.BindEnv("idempotency.enabled", "IDEMPOTENCY_ENABLED")
+	viper.BindEnv("idempotency.ttl", "IDEMPOTENCY_TTL")
+	viper.BindEnv("idempotency.required_for_post", "IDEMPOTENCY_REQUIRED_FOR_POST")
 
 	// AuditLog
 	viper.BindEnv("audit_log.enabled", "AUDIT_LOG_ENABLED")

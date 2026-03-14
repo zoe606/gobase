@@ -107,7 +107,6 @@ linters:
       # Exclude integration tests
       - linters:
           - godot
-          - gochecknoinits
         path: integration-test
       # Exclude internal from godot
       - linters:

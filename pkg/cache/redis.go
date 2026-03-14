@@ -82,6 +82,35 @@ func (c *RedisCache) Exists(ctx context.Context, key string) (bool, error) {
 	return count > 0, nil
 }
 
+// DeleteByPrefix removes all keys matching the given prefix using SCAN+DEL.
+// The cache's configured prefix is prepended before scanning.
+func (c *RedisCache) DeleteByPrefix(ctx context.Context, prefix string) error {
+	fullPrefix := c.prefixKey(prefix)
+	pattern := fullPrefix + "*"
+
+	var cursor uint64
+
+	for {
+		keys, nextCursor, err := c.client.Scan(ctx, cursor, pattern, 100).Result()
+		if err != nil {
+			return err
+		}
+
+		if len(keys) > 0 {
+			if err := c.client.Del(ctx, keys...).Err(); err != nil {
+				return err
+			}
+		}
+
+		cursor = nextCursor
+		if cursor == 0 {
+			break
+		}
+	}
+
+	return nil
+}
+
 // Remember gets from cache or calls fn and caches the result.
 func (c *RedisCache) Remember(ctx context.Context, key string, ttl time.Duration, dest interface{}, fn func() (interface{}, error)) error {
 	// Try to get from cache first

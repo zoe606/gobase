@@ -20,5 +20,9 @@ func (uc *UseCase) Delete(ctx context.Context, id uint) error {
 	// Audit log (best-effort)
 	_ = uc.auditLogger.LogDelete(ctx, "article", id, nil, nil)
 
+	// Invalidate caches
+	_ = uc.cache.Delete(ctx, uc.cacheKeys.ID(id))
+	_ = uc.cache.DeleteByPrefix(ctx, uc.cacheKeys.ListPrefix())
+
 	return nil
 }

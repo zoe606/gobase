@@ -15,19 +15,31 @@ import (
 )
 
 const (
-	// Base settings
-	defaultHost = "app"
-	attempts    = 20
-
+	attempts       = 20
 	requestTimeout = 5 * time.Second
 )
 
-// Resolved in TestMain from TEST_HTTP_HOST env var (default "app" for Docker Compose).
 var (
 	httpURL    string
 	healthPath string
 	basePathV1 string
 )
+
+func setupURLs() {
+	host := os.Getenv("APP_HOST")
+	if host == "" {
+		host = "app" // default for docker-compose
+	}
+
+	port := os.Getenv("APP_PORT")
+	if port == "" {
+		port = "8080"
+	}
+
+	httpURL = "http://" + host + ":" + port
+	healthPath = httpURL + "/healthz"
+	basePathV1 = httpURL + "/v1"
+}
 
 var errHealthCheck = fmt.Errorf("url %s is not available", healthPath)
 
@@ -78,14 +90,7 @@ func healthCheck(attempts int) error {
 }
 
 func TestMain(m *testing.M) {
-	host := os.Getenv("TEST_HTTP_HOST")
-	if host == "" {
-		host = defaultHost
-	}
-
-	httpURL = "http://" + host + ":8080"
-	healthPath = httpURL + "/healthz"
-	basePathV1 = httpURL + "/v1"
+	setupURLs()
 
 	err := healthCheck(attempts)
 	if err != nil {

@@ -140,6 +140,43 @@ func TestRedisCache_Remember_Hit(t *testing.T) {
 	require.Equal(t, "Cached", result.Name)
 }
 
+func TestRedisCache_DeleteByPrefix(t *testing.T) {
+	t.Parallel()
+
+	c := newTestRedisCache(t)
+	ctx := context.Background()
+
+	// Set several keys with shared prefix
+	require.NoError(t, c.Set(ctx, "article:list:page=1", "data1", time.Minute))
+	require.NoError(t, c.Set(ctx, "article:list:page=2", "data2", time.Minute))
+	require.NoError(t, c.Set(ctx, "article:42", "single", time.Minute))
+
+	// Delete only the list keys
+	err := c.DeleteByPrefix(ctx, "article:list:")
+	require.NoError(t, err)
+
+	// List keys should be gone
+	var result string
+	require.ErrorIs(t, c.Get(ctx, "article:list:page=1", &result), cache.ErrNotFound)
+	require.ErrorIs(t, c.Get(ctx, "article:list:page=2", &result), cache.ErrNotFound)
+
+	// Non-list key should remain
+	err = c.Get(ctx, "article:42", &result)
+	require.NoError(t, err)
+	require.Equal(t, "single", result)
+}
+
+func TestRedisCache_DeleteByPrefix_NoMatch(t *testing.T) {
+	t.Parallel()
+
+	c := newTestRedisCache(t)
+	ctx := context.Background()
+
+	// DeleteByPrefix with no matching keys should not error
+	err := c.DeleteByPrefix(ctx, "nonexistent:")
+	require.NoError(t, err)
+}
+
 func TestRedisCache_MetricsHook(t *testing.T) {
 	t.Parallel()
 
