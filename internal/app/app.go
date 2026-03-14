@@ -9,13 +9,12 @@ import (
 	"os/signal"
 	"syscall"
 
+	"github.com/gofiber/fiber/v2"
 	"github.com/golang-migrate/migrate/v4"
 	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver for golang-migrate
-	"gorm.io/gorm"
-
-	"github.com/gofiber/fiber/v2"
 	goredis "github.com/redis/go-redis/v9"
+	"gorm.io/gorm"
 
 	"go-boilerplate/config"
 	httphandler "go-boilerplate/internal/handlers/http"
@@ -31,6 +30,7 @@ import (
 	"go-boilerplate/internal/usecase/translation"
 	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/audit"
+	pkgcache "go-boilerplate/pkg/cache"
 	"go-boilerplate/pkg/httpserver"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
@@ -115,10 +115,12 @@ func Run(cfg *config.Config) {
 		auditLogger = audit.NewNoop()
 	}
 
+	appCache := initAppCache(cfg, l)
+
 	jwtService := initJWT(cfg)
 	repos := initRepositories(pg.DB)
-	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l, auditLogger)
-	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg)
+	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l, auditLogger, appCache)
+	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg, appCache)
 
 	l.Info("Server started on port %s", cfg.HTTP.Port)
 
@@ -274,7 +276,7 @@ func initAsynqClient(cfg *config.Config) *asynq.Client {
 }
 
 // initUseCases creates all usecase instances.
-func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface, auditLogger audit.Logger) *usecases {
+func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface, auditLogger audit.Logger, appCache pkgcache.Cache) *usecases {
 	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService, auditLogger).
 		WithAsynq(asynqClient, cfg.App.Name)
 
@@ -294,7 +296,7 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 		l,
 	)
 
-	articleUC := article.New(repos.article, auditLogger)
+	articleUC := article.New(repos.article, auditLogger, appCache)
 
 	return &usecases{
 		translation: translation.New(repos.translation, repos.translationAPI),
@@ -306,7 +308,7 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 }
 
 // initHTTPServer creates and starts HTTP server with routes.
-func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, pg *postgres.Postgres) *httpserver.Server {
+func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, pg *postgres.Postgres, appCache pkgcache.Cache) *httpserver.Server {
 	httpServer := httpserver.New(
 		l,
 		httpserver.Port(cfg.HTTP.Port),
@@ -318,10 +320,27 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 
 	rateLimitStore := initRateLimitStorage(cfg, l)
 
-	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg, rateLimitStore)
+	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg, rateLimitStore, appCache)
 	httpServer.Start()
 
 	return httpServer
+}
+
+// initAppCache creates the application cache based on config.
+func initAppCache(cfg *config.Config, l *logger.Logger) pkgcache.Cache {
+	if !cfg.Cache.Enabled {
+		return pkgcache.NewNoop()
+	}
+
+	redisClient := goredis.NewClient(&goredis.Options{
+		Addr:     cfg.Redis.Addr(),
+		Password: cfg.Redis.Password,
+		DB:       cfg.Redis.DB,
+	})
+
+	l.Info("Cache using Redis backend at %s", cfg.Redis.Addr())
+
+	return pkgcache.NewRedis(redisClient, cfg.Cache.Prefix)
 }
 
 // initRateLimitStorage creates rate limiter storage based on config.

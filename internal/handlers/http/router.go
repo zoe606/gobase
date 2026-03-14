@@ -24,6 +24,7 @@ import (
 	profilehandler "go-boilerplate/internal/handlers/http/v1/profile"
 	"go-boilerplate/internal/handlers/http/v1/translation"
 	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/cache"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
 )
@@ -41,15 +42,15 @@ type HealthChecker interface {
 //	@version     1.0
 //	@host        localhost:8080
 //	@BasePath    /v1
-func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker, rateLimitStore fiber.Storage) {
-	setupMiddleware(app, cfg, l, rateLimitStore)
+func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker, rateLimitStore fiber.Storage, appCache cache.Cache) {
+	setupMiddleware(app, cfg, l, rateLimitStore, appCache)
 	setupOptionalFeatures(app, cfg)
 	setupHealthEndpoints(app, healthChecker)
 	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, jwtService, l)
 }
 
 // setupMiddleware configures global middleware chain.
-func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rateLimitStore fiber.Storage) {
+func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rateLimitStore fiber.Storage, appCache cache.Cache) {
 	if cfg.Telemetry.Enabled {
 		app.Use(middleware.Tracing())
 	}
@@ -72,6 +73,9 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rat
 		Storage:      rateLimitStore, // nil = Fiber's built-in memory store
 	}
 	app.Use(limiter.New(limiterCfg))
+	if cfg.Idempotency.Enabled && appCache != nil {
+		app.Use(middleware.Idempotency(appCache, cfg.Idempotency))
+	}
 	if cfg.HTTP.RequestTimeout > 0 {
 		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
 	}

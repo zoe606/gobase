@@ -27,5 +27,8 @@ func (uc *UseCase) Create(ctx context.Context, userID uint, req articledto.Creat
 		"slug":  req.Slug,
 	})
 
+	// Invalidate list cache (new article changes any list)
+	_ = uc.cache.DeleteByPrefix(ctx, uc.cacheKeys.ListPrefix())
+
 	return articledto.NewResponse(article), nil
 }

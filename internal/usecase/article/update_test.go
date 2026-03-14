@@ -14,6 +14,7 @@ import (
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/audit"
+	"go-boilerplate/pkg/cache"
 )
 
 func TestUpdate(t *testing.T) {
@@ -120,7 +121,7 @@ func TestUpdate(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo, audit.NewNoop())
+			uc := article.New(mockArticleRepo, audit.NewNoop(), cache.NewNoop())
 			got, err := uc.Update(context.Background(), tt.id, tt.req)
 
 			if tt.wantErr != nil {

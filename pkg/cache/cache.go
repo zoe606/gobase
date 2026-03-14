@@ -28,4 +28,7 @@ type Cache interface {
 	// If the key exists, it returns the cached value.
 	// If not, it calls fn, caches the result with ttl, and returns it.
 	Remember(ctx context.Context, key string, ttl time.Duration, dest interface{}, fn func() (interface{}, error)) error
+
+	// DeleteByPrefix removes all keys matching the given prefix.
+	DeleteByPrefix(ctx context.Context, prefix string) error
 }

@@ -207,47 +207,14 @@ jobs:
         with:
           go-version: ${{ env.GO_VERSION }}
 
-      - name: Run migrations
+      - name: Run integration tests
         env:
           POSTGRES_URL: postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable
+          REDIS_URL: redis://localhost:6379
         run: |
           go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
           migrate -path migrations -database "$POSTGRES_URL" up
-
-      - name: Start application
-        env:
-          APP_ENV: development
-          HTTP_PORT: "8080"
-          POSTGRES_HOST: localhost
-          POSTGRES_PORT: "5432"
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DBNAME: test_db
-          POSTGRES_SSLMODE: disable
-          REDIS_HOST: localhost
-          REDIS_PORT: "6379"
-          CACHE_ENABLED: "false"
-          STORAGE_DRIVER: local
-        run: |
-          go build -o ./bin/app ./cmd/app
-          ./bin/app &
-          # Wait for app to be ready
-          for i in $(seq 1 30); do
-            if curl -sf http://localhost:8080/healthz > /dev/null 2>&1; then
-              echo "App is ready"
-              break
-            fi
-            if [ "$i" -eq 30 ]; then
-              echo "App failed to start within 30s"
-              exit 1
-            fi
-            sleep 1
-          done
-
-      - name: Run integration tests
-        env:
-          TEST_HTTP_HOST: localhost
-        run: go test -v ./integration-test/...
+          go test -v ./integration-test/...
 
   # Final status check for branch protection
   ci-success:

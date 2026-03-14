@@ -11,6 +11,7 @@ import (
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/audit"
+	"go-boilerplate/pkg/cache"
 )
 
 func TestDelete(t *testing.T) {
@@ -65,7 +66,7 @@ func TestDelete(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo, audit.NewNoop())
+			uc := article.New(mockArticleRepo, audit.NewNoop(), cache.NewNoop())
 			err := uc.Delete(context.Background(), tt.id)
 
 			if tt.wantErr != nil {

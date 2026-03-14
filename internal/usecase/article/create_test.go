@@ -11,6 +11,7 @@ import (
 	articledto "go-boilerplate/internal/dto/article"
 	"go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/audit"
+	"go-boilerplate/pkg/cache"
 )
 
 func TestCreate(t *testing.T) {
@@ -81,7 +82,7 @@ func TestCreate(t *testing.T) {
 
 			tt.setupMock(mockArticleRepo)
 
-			uc := article.New(mockArticleRepo, audit.NewNoop())
+			uc := article.New(mockArticleRepo, audit.NewNoop(), cache.NewNoop())
 			got, err := uc.Create(tt.args.ctx, tt.args.userID, tt.args.req)
 
 			if tt.wantErr != nil {
