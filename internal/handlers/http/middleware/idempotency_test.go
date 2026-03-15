@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"sync"
 	"testing"
 	"time"
@@ -223,4 +224,95 @@ func TestIdempotency_SkipsDELETE(t *testing.T) {
 	mc.mu.Lock()
 	assert.Empty(t, mc.store)
 	mc.mu.Unlock()
+}
+
+func TestIdempotency_ScopedByEndpoint(t *testing.T) {
+	t.Parallel()
+
+	mc := newMockIdempotencyCache()
+	cfg := config.Idempotency{
+		Enabled:         true,
+		TTL:             24 * time.Hour,
+		RequiredForPost: false,
+	}
+
+	app := fiber.New()
+	app.Use(middleware.Idempotency(mc, cfg))
+	app.Post("/articles", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"type": "article"})
+	})
+	app.Post("/comments", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"type": "comment"})
+	})
+
+	sameKey := "shared-idem-key"
+
+	// Request to /articles
+	req1 := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/articles", http.NoBody)
+	req1.Header.Set("Idempotency-Key", sameKey)
+
+	resp1, err := app.Test(req1)
+	require.NoError(t, err)
+	defer resp1.Body.Close() //nolint:errcheck // test
+	assert.Equal(t, http.StatusCreated, resp1.StatusCode)
+
+	// Request to /comments with SAME key — must NOT replay the /articles response.
+	req2 := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/comments", http.NoBody)
+	req2.Header.Set("Idempotency-Key", sameKey)
+
+	resp2, err := app.Test(req2)
+	require.NoError(t, err)
+	defer resp2.Body.Close() //nolint:errcheck // test
+	assert.Equal(t, http.StatusCreated, resp2.StatusCode)
+	assert.Empty(t, resp2.Header.Get("X-Idempotent-Replay"), "different endpoint must not replay")
+}
+
+func TestIdempotency_ScopedByUser(t *testing.T) {
+	t.Parallel()
+
+	mc := newMockIdempotencyCache()
+	cfg := config.Idempotency{
+		Enabled:         true,
+		TTL:             24 * time.Hour,
+		RequiredForPost: false,
+	}
+
+	app := fiber.New()
+
+	// Simulate JWTAuth by reading a test header and setting Locals
+	app.Use(func(c *fiber.Ctx) error {
+		if uid := c.Get("X-Test-UserID"); uid != "" {
+			id, _ := strconv.ParseUint(uid, 10, 32)
+			c.Locals(middleware.UserIDKey, uint(id))
+		}
+		return c.Next()
+	})
+
+	app.Use(middleware.Idempotency(mc, cfg))
+	app.Post("/create", func(c *fiber.Ctx) error {
+		return c.Status(fiber.StatusCreated).JSON(fiber.Map{"user": c.Locals(middleware.UserIDKey)})
+	})
+
+	sameKey := "user-idem-key"
+
+	// User 1 creates
+	req1 := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/create", http.NoBody)
+	req1.Header.Set("Idempotency-Key", sameKey)
+	req1.Header.Set("X-Test-UserID", "1")
+
+	resp1, err := app.Test(req1)
+	require.NoError(t, err)
+	defer resp1.Body.Close() //nolint:errcheck // test
+	assert.Equal(t, http.StatusCreated, resp1.StatusCode)
+
+	// User 2 sends same key — must NOT get User 1's cached response
+	req2 := httptest.NewRequestWithContext(t.Context(), http.MethodPost, "/create", http.NoBody)
+	req2.Header.Set("Idempotency-Key", sameKey)
+	req2.Header.Set("X-Test-UserID", "2")
+
+	resp2, err := app.Test(req2)
+	require.NoError(t, err)
+	defer resp2.Body.Close() //nolint:errcheck // test
+	assert.Equal(t, http.StatusCreated, resp2.StatusCode)
+	assert.Empty(t, resp2.Header.Get("X-Idempotent-Replay"), "different user must not replay")
 }

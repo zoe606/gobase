@@ -61,6 +61,11 @@ const docTemplate = `{
                 }
             },
             "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Create a new article",
                 "consumes": [
                     "application/json"
@@ -93,6 +98,12 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
                         "schema": {
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
@@ -151,6 +162,11 @@ const docTemplate = `{
                 }
             },
             "put": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Update an existing article",
                 "consumes": [
                     "application/json"
@@ -194,6 +210,18 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
                     "404": {
                         "description": "Not Found",
                         "schema": {
@@ -209,6 +237,11 @@ const docTemplate = `{
                 }
             },
             "delete": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
                 "description": "Delete a article by ID",
                 "consumes": [
                     "application/json"
@@ -233,6 +266,18 @@ const docTemplate = `{
                 "responses": {
                     "204": {
                         "description": "No Content"
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
                     },
                     "404": {
                         "description": "Not Found",
@@ -1100,12 +1145,8 @@ const docTemplate = `{
                 "content",
                 "cover_media_id",
                 "excerpt",
-                "published_at",
                 "slug",
-                "status",
-                "title",
-                "user_id",
-                "view_count"
+                "title"
             ],
             "properties": {
                 "content": {
@@ -1124,16 +1165,14 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "status": {
-                    "type": "string"
+                    "type": "string",
+                    "enum": [
+                        "draft",
+                        "published"
+                    ]
                 },
                 "title": {
                     "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "view_count": {
-                    "type": "integer"
                 }
             }
         },
@@ -1215,12 +1254,6 @@ const docTemplate = `{
                 },
                 "title": {
                     "type": "string"
-                },
-                "user_id": {
-                    "type": "integer"
-                },
-                "view_count": {
-                    "type": "integer"
                 }
             }
         },

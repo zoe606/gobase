@@ -13,23 +13,18 @@ definitions:
       slug:
         type: string
       status:
+        enum:
+        - draft
+        - published
         type: string
       title:
         type: string
-      user_id:
-        type: integer
-      view_count:
-        type: integer
     required:
     - content
     - cover_media_id
     - excerpt
-    - published_at
     - slug
-    - status
     - title
-    - user_id
-    - view_count
     type: object
   go-boilerplate_internal_dto_article.ListResponse:
     properties:
@@ -83,10 +78,6 @@ definitions:
         type: string
       title:
         type: string
-      user_id:
-        type: integer
-      view_count:
-        type: integer
     type: object
   go-boilerplate_internal_dto_auth.LoginRequest:
     properties:
@@ -689,10 +680,16 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Create article
       tags:
       - articles
@@ -713,6 +710,14 @@ paths:
       responses:
         "204":
           description: No Content
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -721,6 +726,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Delete article
       tags:
       - articles
@@ -781,6 +788,14 @@ paths:
           description: Bad Request
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
         "404":
           description: Not Found
           schema:
@@ -789,6 +804,8 @@ paths:
           description: Internal Server Error
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
       summary: Update article
       tags:
       - articles
