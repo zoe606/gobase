@@ -84,32 +84,32 @@ func (mr *MockArticleMockRecorder) List(ctx, req interface{}) *gomock.Call {
 }
 
 // Update mocks base method.
-func (m *MockArticle) Update(ctx context.Context, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
+func (m *MockArticle) Update(ctx context.Context, userID uint, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Update", ctx, id, req)
+	ret := m.ctrl.Call(m, "Update", ctx, userID, id, req)
 	ret0, _ := ret[0].(*articledto.Response)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // Update indicates an expected call of Update.
-func (mr *MockArticleMockRecorder) Update(ctx, id, req interface{}) *gomock.Call {
+func (mr *MockArticleMockRecorder) Update(ctx, userID, id, req interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockArticle)(nil).Update), ctx, id, req)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Update", reflect.TypeOf((*MockArticle)(nil).Update), ctx, userID, id, req)
 }
 
 // Delete mocks base method.
-func (m *MockArticle) Delete(ctx context.Context, id uint) error {
+func (m *MockArticle) Delete(ctx context.Context, userID uint, id uint) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "Delete", ctx, id)
+	ret := m.ctrl.Call(m, "Delete", ctx, userID, id)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // Delete indicates an expected call of Delete.
-func (mr *MockArticleMockRecorder) Delete(ctx, id interface{}) *gomock.Call {
+func (mr *MockArticleMockRecorder) Delete(ctx, userID, id interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockArticle)(nil).Delete), ctx, id)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Delete", reflect.TypeOf((*MockArticle)(nil).Delete), ctx, userID, id)
 }
 
 // MockLogger is a mock of logger.Interface.

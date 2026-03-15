@@ -9,7 +9,7 @@ import (
 )
 
 // Delete deletes a article by ID after verifying ownership.
-func (uc *UseCase) Delete(ctx context.Context, userID uint, id uint) error {
+func (uc *UseCase) Delete(ctx context.Context, userID, id uint) error {
 	// Fetch article to verify ownership
 	article, err := uc.articleRepo.GetByID(ctx, id)
 	if err != nil {

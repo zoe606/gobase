@@ -10,7 +10,7 @@ import (
 )
 
 // Update updates a article.
-func (uc *UseCase) Update(ctx context.Context, userID uint, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
+func (uc *UseCase) Update(ctx context.Context, userID, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
 	// Get existing article
 	article, err := uc.articleRepo.GetByID(ctx, id)
 	if err != nil {

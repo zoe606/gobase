@@ -6,6 +6,7 @@ import (
 
 	"github.com/gofiber/fiber/v2"
 
+	"go-boilerplate/internal/handlers/http/middleware"
 	articleuc "go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/response"
 )
@@ -19,8 +20,11 @@ import (
 // @Produce     json
 // @Param       id path int true "Article ID"
 // @Success     204 "No Content"
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     403 {object} response.ErrorResponse
 // @Failure     404 {object} response.ErrorResponse
 // @Failure     500 {object} response.ErrorResponse
+// @Security    BearerAuth
 // @Router      /articles/{id} [delete]
 func (h *Handler) Delete(ctx *fiber.Ctx) error {
 	id, err := strconv.ParseUint(ctx.Params("id"), 10, 32)
@@ -28,9 +32,14 @@ func (h *Handler) Delete(ctx *fiber.Ctx) error {
 		return response.BadRequest(ctx, "INVALID_ID", "Invalid article ID")
 	}
 
-	if err := h.articleUC.Delete(ctx.UserContext(), uint(id)); err != nil {
+	userID := middleware.GetUserID(ctx)
+
+	if err := h.articleUC.Delete(ctx.UserContext(), userID, uint(id)); err != nil {
 		if errors.Is(err, articleuc.ErrNotFound) {
 			return response.NotFound(ctx, "Article not found")
+		}
+		if errors.Is(err, articleuc.ErrForbidden) {
+			return response.Forbidden(ctx, "Not authorized to modify this article")
 		}
 		h.l.Error(err, "handlers - http - v1 - article - Delete")
 		return response.InternalError(ctx)
