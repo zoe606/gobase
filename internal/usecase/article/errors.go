@@ -12,4 +12,7 @@ var (
 
 	// ErrInvalid indicates invalid Article data.
 	ErrInvalid = errors.New("invalid article data")
+
+	// ErrForbidden indicates the user is not authorized to modify this article.
+	ErrForbidden = errors.New("not authorized to modify this article")
 )

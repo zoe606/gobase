@@ -10,11 +10,15 @@ import (
 
 // Create creates a new article.
 func (uc *UseCase) Create(ctx context.Context, userID uint, req articledto.CreateRequest) (*articledto.Response, error) {
-	// TODO: Add validation logic
-
 	article := &entity.Article{
-		UserID: userID,
-		// TODO: Map remaining request fields to entity
+		UserID:       userID,
+		Title:        req.Title,
+		Slug:         req.Slug,
+		Content:      &req.Content,
+		Excerpt:      &req.Excerpt,
+		CoverMediaID: &req.CoverMediaID,
+		Status:       ptrOrDefault(req.Status, "draft"),
+		PublishedAt:  req.PublishedAt,
 	}
 
 	if err := uc.articleRepo.Create(ctx, article); err != nil {

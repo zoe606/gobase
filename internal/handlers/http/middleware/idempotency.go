@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"errors"
+	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
@@ -45,7 +46,12 @@ func Idempotency(appCache cache.Cache, cfg config.Idempotency) fiber.Handler {
 			return ctx.Next()
 		}
 
-		cacheKey := "idempotency:" + key
+		// Best-effort user scoping (only works if JWTAuth ran before this middleware)
+		userPart := "shared"
+		if id, ok := ctx.Locals(UserIDKey).(uint); ok {
+			userPart = strconv.FormatUint(uint64(id), 10)
+		}
+		cacheKey := "idempotency:" + userPart + ":" + ctx.Method() + ":" + ctx.Path() + ":" + key
 
 		// Check for cached response.
 		var cached idempotencyResponse

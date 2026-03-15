@@ -10,7 +10,7 @@ import (
 )
 
 // Update updates a article.
-func (uc *UseCase) Update(ctx context.Context, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
+func (uc *UseCase) Update(ctx context.Context, userID, id uint, req articledto.UpdateRequest) (*articledto.Response, error) {
 	// Get existing article
 	article, err := uc.articleRepo.GetByID(ctx, id)
 	if err != nil {
@@ -20,15 +20,43 @@ func (uc *UseCase) Update(ctx context.Context, id uint, req articledto.UpdateReq
 		return nil, fmt.Errorf("article - Update - articleRepo.GetByID: %w", err)
 	}
 
-	// TODO: Update fields from request (check for non-nil pointers)
-	_ = article // Remove this line after implementing
+	// Ownership check
+	if article.UserID != userID {
+		return nil, ErrForbidden
+	}
+
+	// Capture old values for audit
+	oldValues := map[string]any{"title": article.Title, "slug": article.Slug}
+
+	// Apply non-nil fields from request
+	if req.Title != nil {
+		article.Title = *req.Title
+	}
+	if req.Slug != nil {
+		article.Slug = *req.Slug
+	}
+	if req.Content != nil {
+		article.Content = req.Content
+	}
+	if req.Excerpt != nil {
+		article.Excerpt = req.Excerpt
+	}
+	if req.CoverMediaID != nil {
+		article.CoverMediaID = req.CoverMediaID
+	}
+	if req.Status != nil {
+		article.Status = req.Status
+	}
+	if req.PublishedAt != nil {
+		article.PublishedAt = req.PublishedAt
+	}
 
 	if err := uc.articleRepo.Update(ctx, article); err != nil {
 		return nil, fmt.Errorf("article - Update - articleRepo.Update: %w", err)
 	}
 
 	// Audit log (best-effort)
-	_ = uc.auditLogger.LogUpdate(ctx, "article", article.ID, nil, nil, map[string]any{
+	_ = uc.auditLogger.LogUpdate(ctx, "article", article.ID, &userID, oldValues, map[string]any{
 		"title": article.Title,
 	})
 

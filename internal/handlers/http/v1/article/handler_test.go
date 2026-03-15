@@ -55,8 +55,7 @@ func TestHandler_Create(t *testing.T) {
 		"excerpt": "Short excerpt",
 		"cover_media_id": 1,
 		"status": "draft",
-		"published_at": "` + now.Format(time.RFC3339) + `",
-		"view_count": 1
+		"published_at": "` + now.Format(time.RFC3339) + `"
 	}`
 
 	tests := []struct {
@@ -310,7 +309,7 @@ func TestHandler_Update(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Update(gomock.Any(), uint(1), articledto.UpdateRequest{
+					Update(gomock.Any(), uint(1), uint(1), articledto.UpdateRequest{
 						Title: &title,
 					}).
 					Return(&articledto.Response{
@@ -343,12 +342,26 @@ func TestHandler_Update(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Update(gomock.Any(), uint(999), articledto.UpdateRequest{
+					Update(gomock.Any(), uint(1), uint(999), articledto.UpdateRequest{
 						Title: &title,
 					}).
 					Return(nil, articleuc.ErrNotFound)
 			},
 			wantStatus: fiber.StatusNotFound,
+		},
+		{
+			name:    "forbidden",
+			id:      "1",
+			body:    validBody,
+			addAuth: true,
+			setupMock: func() {
+				mockArticleUC.EXPECT().
+					Update(gomock.Any(), uint(1), uint(1), articledto.UpdateRequest{
+						Title: &title,
+					}).
+					Return(nil, articleuc.ErrForbidden)
+			},
+			wantStatus: fiber.StatusForbidden,
 		},
 		{
 			name:    "internal error",
@@ -357,7 +370,7 @@ func TestHandler_Update(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Update(gomock.Any(), uint(1), articledto.UpdateRequest{
+					Update(gomock.Any(), uint(1), uint(1), articledto.UpdateRequest{
 						Title: &title,
 					}).
 					Return(nil, errors.New("database error"))
@@ -415,7 +428,7 @@ func TestHandler_Delete(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Delete(gomock.Any(), uint(1)).
+					Delete(gomock.Any(), uint(1), uint(1)).
 					Return(nil)
 			},
 			wantStatus: fiber.StatusNoContent,
@@ -433,10 +446,21 @@ func TestHandler_Delete(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Delete(gomock.Any(), uint(999)).
+					Delete(gomock.Any(), uint(1), uint(999)).
 					Return(articleuc.ErrNotFound)
 			},
 			wantStatus: fiber.StatusNotFound,
+		},
+		{
+			name:    "forbidden",
+			id:      "1",
+			addAuth: true,
+			setupMock: func() {
+				mockArticleUC.EXPECT().
+					Delete(gomock.Any(), uint(1), uint(1)).
+					Return(articleuc.ErrForbidden)
+			},
+			wantStatus: fiber.StatusForbidden,
 		},
 		{
 			name:    "internal error",
@@ -444,7 +468,7 @@ func TestHandler_Delete(t *testing.T) {
 			addAuth: true,
 			setupMock: func() {
 				mockArticleUC.EXPECT().
-					Delete(gomock.Any(), uint(1)).
+					Delete(gomock.Any(), uint(1), uint(1)).
 					Return(errors.New("database error"))
 			},
 			wantStatus: fiber.StatusInternalServerError,

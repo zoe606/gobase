@@ -61,7 +61,7 @@ type (
 		Create(ctx context.Context, userID uint, req articledto.CreateRequest) (*articledto.Response, error)
 		GetByID(ctx context.Context, id uint) (*articledto.Response, error)
 		List(ctx context.Context, req articledto.ListRequest) (*articledto.ListResponse, error)
-		Update(ctx context.Context, id uint, req articledto.UpdateRequest) (*articledto.Response, error)
-		Delete(ctx context.Context, id uint) error
+		Update(ctx context.Context, userID uint, id uint, req articledto.UpdateRequest) (*articledto.Response, error)
+		Delete(ctx context.Context, userID uint, id uint) error
 	}
 )

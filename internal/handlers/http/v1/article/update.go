@@ -7,6 +7,7 @@ import (
 	"github.com/gofiber/fiber/v2"
 
 	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/handlers/http/middleware"
 	v1 "go-boilerplate/internal/handlers/http/v1"
 	articleuc "go-boilerplate/internal/usecase/article"
 	"go-boilerplate/pkg/response"
@@ -25,6 +26,7 @@ import (
 // @Failure     400 {object} response.ErrorResponse
 // @Failure     404 {object} response.ErrorResponse
 // @Failure     401 {object} response.ErrorResponse
+// @Failure     403 {object} response.ErrorResponse
 // @Failure     500 {object} response.ErrorResponse
 // @Security    BearerAuth
 // @Router      /articles/{id} [put]
@@ -43,10 +45,15 @@ func (h *Handler) Update(ctx *fiber.Ctx) error {
 		return response.ValidationError(ctx, v1.ParseValidationErrors(err))
 	}
 
-	result, err := h.articleUC.Update(ctx.UserContext(), uint(id), req)
+	userID := middleware.GetUserID(ctx)
+
+	result, err := h.articleUC.Update(ctx.UserContext(), userID, uint(id), req)
 	if err != nil {
 		if errors.Is(err, articleuc.ErrNotFound) {
 			return response.NotFound(ctx, "Article not found")
+		}
+		if errors.Is(err, articleuc.ErrForbidden) {
+			return response.Forbidden(ctx, "Not authorized to modify this article")
 		}
 		h.l.Error(err, "handlers - http - v1 - article - Update")
 		return response.InternalError(ctx)
