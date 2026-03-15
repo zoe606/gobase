@@ -26,3 +26,11 @@ func New(articleRepo repo.ArticleRepo, auditLogger audit.Logger, articleCache ca
 		cacheKeys:   cache.NewKeyBuilder("article"),
 	}
 }
+
+// ptrOrDefault returns a pointer to s if non-empty, otherwise a pointer to def.
+func ptrOrDefault(s, def string) *string {
+	if s == "" {
+		return &def
+	}
+	return &s
+}
