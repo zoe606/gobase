@@ -40,7 +40,7 @@ require (
 	go.uber.org/zap v1.27.1
 	golang.org/x/crypto v0.48.0
 	golang.org/x/sync v0.20.0
-	google.golang.org/grpc v1.79.2
+	google.golang.org/grpc v1.79.3
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.1
 )
