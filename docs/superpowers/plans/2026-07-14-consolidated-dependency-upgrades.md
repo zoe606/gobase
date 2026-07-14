@@ -17,6 +17,7 @@
 - Do not run `go get -u ./...` or upgrade an unrelated direct dependency.
 - Transitive changes are allowed only when selected by the approved versions or required to clear a reachable security finding.
 - Do not modify application behavior or public APIs.
+- `.gitignore` may add only `.worktrees/` and `.superpowers/` for the explicitly approved isolated execution workflow.
 - Do not modify the Docker runtime user, MeterProvider setup, Redis client lifecycle, or Dependabot configuration.
 - Do not close existing Dependabot pull requests before the consolidated replacement is verified and merged.
 - Do not push or create a pull request until its title and description are approved.
@@ -29,6 +30,7 @@
 
 | File | Action | Responsibility |
 |------|--------|----------------|
+| `.gitignore` | Modify | Keep isolated worktrees and subagent progress scratch out of repository status |
 | `go.mod` | Modify | Pin Go 1.26.5 and the approved Go module versions |
 | `go.sum` | Modify | Record checksums selected by the approved module graph |
 | `.github/workflows/ci.yml` | Modify | Run CI with Go 1.26.5, checkout v7, and Codecov v7 |
@@ -462,6 +464,7 @@ Expected tracked paths:
 
 ```text
 .github/workflows/ci.yml
+.gitignore
 README.md
 docs/superpowers/plans/2026-07-14-consolidated-dependency-upgrades.md
 docs/superpowers/specs/2026-07-14-consolidated-dependency-upgrades-design.md

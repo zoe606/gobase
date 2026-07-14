@@ -64,12 +64,15 @@ The implementation will record the exact final transitive versions produced by `
 
 ## Files in Scope
 
+- `.gitignore` (ignore `.worktrees/` and `.superpowers/` execution scratch)
 - `go.mod`
 - `go.sum`
 - `.github/workflows/ci.yml`
 - `README.md`
 
 No application behavior or public API changes are expected.
+
+The `.gitignore` addition was approved after the initial design review when the user selected isolated worktree execution. It contains no runtime or dependency behavior.
 
 ## Verification
 
