@@ -30,6 +30,8 @@ coverage.html
 
 # Dependencies
 vendor/
+.worktrees/
+.superpowers/
 
 # OS files
 .DS_Store
