@@ -2,7 +2,7 @@
 
 Production-ready REST API boilerplate with Clean Architecture, JWT authentication, media uploads, and background workers.
 
-[![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Fiber](https://img.shields.io/badge/Fiber-v2-00ACD7?logo=go)](https://gofiber.io/)
 [![GORM](https://img.shields.io/badge/GORM-ORM-00ADD8)](https://gorm.io/)
