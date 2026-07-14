@@ -1,6 +1,6 @@
 module go-boilerplate
 
-go 1.26.1
+go 1.26.5
 
 tool (
 	github.com/air-verse/air
