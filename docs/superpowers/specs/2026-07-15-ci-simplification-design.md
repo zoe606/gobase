@@ -81,3 +81,7 @@ After pushing, confirm the pull request reports a single automatic `Quality` job
 ## Trade-offs
 
 The automatic steps will run sequentially, so the Quality job can take longer than the current parallel required jobs. In exchange, it uses one runner, performs one Go setup, shares one module cache, removes duplicated test logic, and produces one clear result. Manual integration reduces pull-request time and runner usage while preserving an on-demand end-to-end check.
+
+## Post-merge Cleanup
+
+Dependabot pull requests #26 and #32 are already fully represented by pull request #38. They remain open while #38 is under review and are closed with a superseded-by-#38 comment only after #38 reaches the merged state.
