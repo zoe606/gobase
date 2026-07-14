@@ -17,8 +17,9 @@
 - Integration runs only through `workflow_dispatch`.
 - Integration uses PostgreSQL 18 Alpine, Redis 7 Alpine, and migrate v4.19.1.
 - Do not change application code, tests, Docker images, migrations, dependencies, or branch protection.
-- Do not push the branch or mutate pull request #38 until the user approves the verified final diff.
-- Keep Dependabot pull requests #26 and #32 open until pull request #38 is merged.
+- Base and audit this publication branch against the current `origin/master`.
+- Do not push `ci/simplify-workflows` or create its new pull request until the user approves the verified final diff.
+- Treat pull requests #38, #26, and #32 as completed historical cleanup; do not mutate them as part of this plan.
 
 ---
 
@@ -330,7 +331,7 @@ git commit -m "ci: make integration verification manual"
 
 ---
 
-### Task 3: Verify the Complete CI Simplification and Prepare PR Update
+### Task 3: Verify the Complete CI Simplification and Prepare New PR Publication
 
 **Files:**
 - Verify: `.github/workflows/ci.yml`
@@ -340,7 +341,7 @@ git commit -m "ci: make integration verification manual"
 
 **Interfaces:**
 - Consumes: The automatic and manual workflows from Tasks 1 and 2.
-- Produces: Verified commits ready for explicit approval before updating pull request #38.
+- Produces: Verified commits ready for explicit approval before publishing `ci/simplify-workflows` and creating a new pull request.
 
 - [ ] **Step 1: Validate both workflow files together**
 
@@ -376,12 +377,12 @@ Run:
 ```bash
 git diff --check
 git status --short --branch
-git diff --stat origin/chore/consolidated-dependency-upgrades...HEAD
-git diff --name-status origin/chore/consolidated-dependency-upgrades...HEAD
-git log --oneline origin/chore/consolidated-dependency-upgrades..HEAD
+git diff --stat origin/master...HEAD
+git diff --name-status origin/master...HEAD
+git log --oneline origin/master..HEAD
 ```
 
-Expected new tracked paths relative to the published PR branch:
+Expected tracked paths relative to `origin/master`:
 
 ```text
 M .github/workflows/ci.yml
@@ -392,43 +393,47 @@ A docs/superpowers/specs/2026-07-15-ci-simplification-design.md
 
 - [ ] **Step 4: Request final approval before pushing**
 
-Present the commits, exact changed paths, local verification results, and the fact that the next push will replace the current nine-job PR run with one automatic `Quality` job. Do not push until the user explicitly approves.
+Present the commits, exact changed paths relative to `origin/master`, and local verification results. Explain that the approved publication will push `ci/simplify-workflows`, create a new pull request, and replace the current nine-job automatic run with one `Quality` job. Do not push or create the pull request until the user explicitly approves.
 
 - [ ] **Step 5: Push only after approval**
 
 Run:
 
 ```bash
-git push origin chore/consolidated-dependency-upgrades
+git push -u origin ci/simplify-workflows
 ```
 
-Expected: the push succeeds and updates pull request #38.
+Expected: the new remote branch is created successfully.
 
-- [ ] **Step 6: Verify the live pull request checks**
+- [ ] **Step 6: Create the new pull request**
 
 Run:
 
 ```bash
-gh pr checks 38 --repo zoe606/gobase
+gh pr create \
+  --repo zoe606/gobase \
+  --base master \
+  --head ci/simplify-workflows \
+  --title "ci: simplify quality and integration workflows" \
+  --body "Simplifies automatic CI to one Quality job and moves PostgreSQL/Redis integration verification to a manual workflow."
 ```
 
-Expected: the new workflow exposes one automatic `Quality` job. Do not dispatch the Integration workflow before it exists on the default branch.
+Expected: GitHub creates a new pull request with the exact requested title.
 
-- [ ] **Step 7: Close superseded Dependabot pull requests only after merge**
+- [ ] **Step 7: Verify the new pull request Quality check**
 
-First verify the replacement state:
+Run:
 
 ```bash
-gh pr view 38 --repo zoe606/gobase --json state,mergedAt,url
+pr_number="$(gh pr view ci/simplify-workflows --repo zoe606/gobase --json number --jq .number)"
+gh pr checks "$pr_number" --repo zoe606/gobase
 ```
 
-Expected before cleanup: `state` is `MERGED` and `mergedAt` is non-null. If either condition is false, stop and leave #26 and #32 open.
+Expected: the new workflow exposes one automatic `Quality` job. Repeat with `--watch` if approval requires waiting for its terminal result. Do not dispatch the Integration workflow before it exists on the default branch.
 
-After the merge condition is satisfied, run:
+## Completed Historical Publication Cleanup
 
-```bash
-gh pr close 26 --repo zoe606/gobase --comment "Superseded by #38, which includes github.com/goccy/go-json v0.10.6."
-gh pr close 32 --repo zoe606/gobase --comment "Superseded by #38, which includes codecov/codecov-action v7."
-```
-
-Expected: #26 and #32 close with links back to the merged consolidated pull request.
+- Pull request #38 merged at `2026-07-14T17:11:16Z` with merge commit `8534c014`.
+- The resulting `origin/master` contains `github.com/goccy/go-json` v0.10.6 and `codecov/codecov-action@v7`.
+- Dependabot pull requests #26 and #32 were closed as superseded after those contents were verified.
+- These are completed historical actions. This plan must not reopen, close, comment on, or otherwise mutate #38, #26, or #32.

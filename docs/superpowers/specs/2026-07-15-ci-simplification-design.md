@@ -63,9 +63,9 @@ The workflow will not run automatically for pushes or pull requests. Once merged
 - A readiness timeout fails before integration tests run, avoiding misleading HTTP failures against an unavailable app.
 - Cleanup runs whether integration setup or tests pass or fail.
 
-## Verification
+## Verification and Publication
 
-Before updating pull request #38:
+Before publishing the new `ci/simplify-workflows` branch from the current `origin/master`:
 
 - Validate both workflow files as YAML.
 - Run `gofmt -l .` and confirm no files are reported.
@@ -74,14 +74,14 @@ Before updating pull request #38:
 - Run `make test`.
 - Run `COVERAGE_THRESHOLD=85 make coverage-check`.
 - Run `go tool govulncheck ./...`.
-- Confirm the diff contains only the approved design/plan documentation and the two workflow files.
+- Confirm the diff relative to `origin/master` contains only the approved design/plan documentation and the two workflow files.
 
-After pushing, confirm the pull request reports a single automatic `Quality` job. The manual Integration workflow is verified from GitHub Actions after the workflow exists on the default branch.
+After local verification, request explicit user approval. Only after approval, push `ci/simplify-workflows`, create a new pull request titled `ci: simplify quality and integration workflows`, and confirm that new pull request reports a single automatic `Quality` job. Do not dispatch the manual Integration workflow before it exists on the default branch; after merge, maintainers can verify it from GitHub Actions.
 
 ## Trade-offs
 
 The automatic steps will run sequentially, so the Quality job can take longer than the current parallel required jobs. In exchange, it uses one runner, performs one Go setup, shares one module cache, removes duplicated test logic, and produces one clear result. Manual integration reduces pull-request time and runner usage while preserving an on-demand end-to-end check.
 
-## Post-merge Cleanup
+## Completed Historical Cleanup
 
-Dependabot pull requests #26 and #32 are already fully represented by pull request #38. They remain open while #38 is under review and are closed with a superseded-by-#38 comment only after #38 reaches the merged state.
+Pull request #38 merged on 2026-07-14 at `2026-07-14T17:11:16Z` with merge commit `8534c014`. The resulting `origin/master` contains `github.com/goccy/go-json` v0.10.6 and `codecov/codecov-action@v7`. Dependabot pull requests #26 and #32 were then closed as superseded. This cleanup is complete historical context and is not part of the new CI pull request publication path.
