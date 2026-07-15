@@ -1,0 +1,115 @@
+name: Integration
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: '1.26.5'
+
+jobs:
+  integration:
+    name: Integration Tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    services:
+      postgres:
+        image: postgres:18-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+
+      - name: Run migrations
+        env:
+          POSTGRES_URL: postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable
+        run: |
+          go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 \
+            -path migrations \
+            -database "$POSTGRES_URL" \
+            up
+
+      - name: Build and start app
+        env:
+          APP_ENV: development
+          HTTP_PORT: '8080'
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DBNAME: test_db
+          POSTGRES_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: '6379'
+          JWT_SECRET_KEY: integration-test-secret-key
+          STORAGE_DRIVER: local
+          STORAGE_LOCAL_PATH: /tmp/uploads
+          STORAGE_LOCAL_URL: http://localhost:8080/uploads
+        run: |
+          CGO_ENABLED=0 go build -o ./bin/app ./cmd/app
+          mkdir -p /tmp/uploads
+          ./bin/app > /tmp/app.log 2>&1 &
+          echo $! > /tmp/app.pid
+
+          ready=false
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/healthz > /dev/null; then
+              ready=true
+              break
+            fi
+            if ! kill -0 "$(cat /tmp/app.pid)" 2>/dev/null; then
+              echo "Application exited before becoming ready"
+              cat /tmp/app.log
+              exit 1
+            fi
+            echo "Waiting for app... ($attempt/30)"
+            sleep 1
+          done
+
+          if [ "$ready" != true ]; then
+            echo "Application did not become ready within 30 seconds"
+            cat /tmp/app.log
+            exit 1
+          fi
+
+      - name: Run integration tests
+        env:
+          APP_HOST: localhost
+          APP_PORT: '8080'
+        run: go test -count=1 -v ./integration-test/...
+
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f /tmp/app.pid ]; then
+            kill "$(cat /tmp/app.pid)" 2>/dev/null || true
+          fi
+          if [ -f /tmp/app.log ]; then
+            cat /tmp/app.log
+          fi
