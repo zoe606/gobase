@@ -60,4 +60,4 @@ The shared HTTP contract suite runs against real HTTP servers. It covers JSON pa
 
 ## Next Phases
 
-The [roadmap](roadmap.md) tracks release readiness, followed by application hardening in separate slices. The [release readiness report](release-readiness.md) records local Docker and worker checks and the pending GitHub Actions verification.
+The [roadmap](roadmap.md) tracks completed release readiness checks, followed by proposed application hardening in separate slices. The [release readiness report](release-readiness.md) records local Docker and worker checks, the tested implementation revision, and passing GitHub Actions results for all three engines.

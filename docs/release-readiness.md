@@ -2,9 +2,9 @@
 
 Date: October 5, 2026.
 
-Status: Local Phase 1 checks passed. GitHub Actions verification is pending.
+Status: Phase 1 checks passed locally and in GitHub Actions.
 
-The working branch is `feat/selectable-http-engines`, based on `75af22a`. Remote workflow results and the tested revision will be recorded after the draft pull request runs.
+The working branch is `feat/selectable-http-engines`, based on `75af22a`. The implementation revision verified by GitHub Actions is `b01619495e95bb7109c374cddd445c4ef0e15181`. [Pull request #46](https://github.com/zoe606/gobase/pull/46) remains a draft.
 
 ## Implemented Changes
 
@@ -44,7 +44,20 @@ Worker email checks used the existing noop email sender. They verify queue proce
 
 The checkout passed `go test -count=1 ./...` against a running application. `make check-all` passed with 93% coverage under the configured coverage exclusions. The Fiber integration suite also passed twice in one invocation with `-count=2` on the same database.
 
-The Docker build and runtime results above cover Linux arm64. Linux amd64 Docker runtime verification remains part of the pending GitHub Actions run. The earlier [engine verification report](http-engines-verification.md) records the separate Linux amd64 binary builds.
+The local Docker build and runtime results above cover Linux arm64. GitHub Actions also passed Linux amd64 Docker runtime checks for all three engines. The earlier [engine verification report](http-engines-verification.md) records the separate Linux amd64 binary builds.
+
+## GitHub Actions Verification
+
+The following results passed on implementation revision `b01619495e95bb7109c374cddd445c4ef0e15181` on October 5, 2026. No remote-only code fixes were needed.
+
+| Workflow | Result | Evidence |
+|----------|--------|----------|
+| CI / Quality | Passed | [Workflow run](https://github.com/zoe606/gobase/actions/runs/37278362473) |
+| Engines / Gin | Passed | [Engine job](https://github.com/zoe606/gobase/actions/runs/37278362455/job/111660394210) |
+| Engines / stdlib | Passed | [Engine job](https://github.com/zoe606/gobase/actions/runs/37278362455/job/111660394534) |
+| Engines / Fiber | Passed | [Engine job](https://github.com/zoe606/gobase/actions/runs/37278362455/job/111660394557) |
+
+Each engine job passed project generation, builds, race tests, CRUD generation and wiring, Swagger checks, lint, vulnerability scanning, and eight HTTP integration tests with PostgreSQL 17 and Redis 7. Each job also built and ran Linux amd64 app and worker images, checked readiness and Swagger, processed a welcome email task with the noop sender, and checked exit code 0 after shutdown. The broader ten-test HTTP suite was verified locally for each engine.
 
 ## Compatibility Notes
 
@@ -73,11 +86,8 @@ APP_HOST=localhost APP_PORT=8080 make test-integration
 make docker-stop
 ```
 
-## Remaining Before Phase 1 Closes
+## Release Preparation
 
-- Publish a tested revision to a branch and run the Engines workflow through a pull request.
-- Inspect the Quality result and all three Engine results on the exact revision.
-- Record the revision, workflow links, and any remote-only fixes here.
-- Use the verified revision for release notes when preparing a release.
+Phase 1 verification is complete. The branch is published and all four verification jobs passed on the implementation revision above. Preparing a release still requires PR review, merge, and release notes for the revision selected for that release.
 
 Phase 2 application hardening has not started. See the [roadmap](roadmap.md).

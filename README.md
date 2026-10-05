@@ -244,7 +244,7 @@ make generate            # Regenerate mocks after interface changes
 |----------|-------------|
 | [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
 | [Roadmap](docs/roadmap.md) | Current baseline, release readiness, and proposed application hardening |
-| [Release Readiness](docs/release-readiness.md) | Phase 1 implementation, local runtime results, and pending CI verification |
+| [Release Readiness](docs/release-readiness.md) | Phase 1 implementation, local runtime results, and passing CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |
 

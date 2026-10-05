@@ -6,26 +6,26 @@ This document plans work on the gobase template. Generated applications can adop
 
 ## Current Baseline
 
-The HTTP engine refactor is implemented and locally verified. Project creation supports Gin, standard `net/http`, and Fiber. Each engine has independent endpoint and CRUD generator templates. Use cases, DTOs, entities, repositories, migrations, and workers remain shared.
+The HTTP engine refactor is implemented and verified locally and in GitHub Actions. Project creation supports Gin, standard `net/http`, and Fiber. Each engine has independent endpoint and CRUD generator templates. Use cases, DTOs, entities, repositories, migrations, and workers remain shared.
 
 The engine is selected during project creation. `.gobase.json` records that choice for code generation. Changing this file does not migrate an existing application. The runnable template checkout retains Fiber for compatibility.
 
-All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. See [verification results](http-engines-verification.md) for the environment and limits of these results. Work is on `feat/selectable-http-engines`. The GitHub Actions engine matrix is pending.
+All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. GitHub Actions Quality and all three engine jobs passed on implementation revision `b01619495e95bb7109c374cddd445c4ef0e15181`, including Linux amd64 Docker app and worker runtime checks. See the [release readiness report](release-readiness.md) for workflow links and the [local verification results](http-engines-verification.md) for environment details. Work is published in [draft PR #46](https://github.com/zoe606/gobase/pull/46).
 
 ## Phase Order
 
 | Phase | Outcome | Status |
 |-------|---------|--------|
-| HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local verification passed |
-| 1. Template release readiness | Reproducible setup and CI evidence for all engines | Local checks passed; GitHub CI pending |
+| HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
+| 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete; PR remains a draft |
 | 2. Application hardening | Complete auth flows, metrics export, and resource lifecycle | Proposed; implement in separate slices |
 | Later: starter profiles | Optional smaller outputs for different project needs | Deferred; design not selected |
 
 ## Phase 1: Template Release Readiness
 
-Finish the release and maintenance work for the current implementation before adding template options.
+Release readiness and maintenance checks for the current implementation are complete. PR review, merge, and release publication remain separate steps.
 
-See the [release readiness report](release-readiness.md) for implemented changes, completed local checks, compatibility notes, and remaining remote verification.
+See the [release readiness report](release-readiness.md) for implemented changes, completed local and GitHub checks, and compatibility notes.
 
 ### Work
 
