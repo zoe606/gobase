@@ -2,7 +2,7 @@
 
 Updated: October 5, 2026.
 
-This document plans work on the gobase template. Generated applications can adopt phases according to their needs. Phase 2 and later work remain proposals.
+This document plans work on the gobase template. Phase 1 is merged. Phase 2 and later work remain proposals. Generated applications can adopt later changes according to their needs.
 
 ## Current Baseline
 
@@ -10,20 +10,20 @@ The HTTP engine refactor is implemented and verified locally and in GitHub Actio
 
 The engine is selected during project creation. `.gobase.json` records that choice for code generation. Changing this file does not migrate an existing application. The runnable template checkout retains Fiber for compatibility.
 
-All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. GitHub Actions Quality and all three engine jobs passed on implementation revision `b01619495e95bb7109c374cddd445c4ef0e15181`, including Linux amd64 Docker app and worker runtime checks. See the [release readiness report](release-readiness.md) for workflow links and the [local verification results](http-engines-verification.md) for environment details. Work is published in [draft PR #46](https://github.com/zoe606/gobase/pull/46).
+All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. [PR #46](https://github.com/zoe606/gobase/pull/46) merged on October 5, 2026 as `66270fb626b7b6b5df208ce94b0d17f52fca8890`. GitHub Actions Quality and all three engine jobs passed on that `master` revision, including Linux amd64 Docker app and worker runtime checks. See the [release readiness report](release-readiness.md) for workflow links and the [local verification results](http-engines-verification.md) for environment details.
 
 ## Phase Order
 
 | Phase | Outcome | Status |
 |-------|---------|--------|
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
-| 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete; PR remains a draft |
-| 2. Application hardening | Complete auth flows, metrics export, and resource lifecycle | Proposed; implement in separate slices |
+| 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
+| 2. Application hardening | Complete auth flows, metrics export, and resource lifecycle | Proposed; start with 2.1 after agreeing its response contract |
 | Later: starter profiles | Optional smaller outputs for different project needs | Deferred; design not selected |
 
 ## Phase 1: Template Release Readiness
 
-Release readiness and maintenance checks for the current implementation are complete. PR review, merge, and release publication remain separate steps.
+Release readiness and maintenance checks are complete and merged. Release publication remains a separate step.
 
 See the [release readiness report](release-readiness.md) for implemented changes, completed local and GitHub checks, and compatibility notes.
 
@@ -54,6 +54,22 @@ Reuse `make check-all`, `go run ./pkg/tools/verifyengines -lint`, and the existi
 ## Phase 2: Application Hardening
 
 Complete the remaining application work in small changes. This continues the backlog listed in the [Phase 4a design](superpowers/specs/2026-03-15-phase4a-critical-fixes-design.md#out-of-scope). Recheck each item against the current implementation before starting it.
+
+### Proposed Execution Order
+
+Implement one slice at a time on a new branch from `master`. Keep the existing order below. Each slice needs its own scope, verification, and PR before the next slice starts. Phase 2 implementation has not started.
+
+Update the template README and `pkg/scaffold/application/README.md.tmpl` when a slice changes feature availability or setup instructions.
+
+| Order | Proposed issue | Completion evidence |
+|-------|----------------|---------------------|
+| 2.1 | Validate article list filters across HTTP engines | Agreed invalid-filter response, preserved valid requests, and passing shared HTTP contracts |
+| 2.2 | Connect email verification and password reset through HTTP and workers | HTTP, queue, worker, persistence, and token consumption checks for every engine |
+| 2.3 | Configure OpenTelemetry metrics export and shutdown | Exported measurements when enabled, working disabled mode, and provider shutdown |
+| 2.4 | Define Redis client ownership and shutdown | Cache and rate limiter lifecycle checks, including disabled and memory configurations |
+| 2.5 | Run Docker app and worker as a non-root user | Startup, upload, worker processing, and shutdown under the configured UID and GID |
+
+The recommended first slice is 2.1. Before implementing it, agree which invalid filter values return HTTP 400 and the error code returned in the existing response envelope. Pagination normalization must retain its current behavior unless a separate change is agreed.
 
 ### 2.1 Article List Validation
 
@@ -105,6 +121,14 @@ The final Docker image uses `scratch` without a `USER` instruction.
 - Enabled telemetry exports measurements, and owned Redis clients close during shutdown.
 - Docker app and worker images operate as the configured non-root user.
 - Existing valid API requests, engine selection, code generation, and worker behavior remain covered by regression checks.
+
+### GitHub Issue Tracking
+
+No GitHub issues are open as of October 5, 2026. The proposed issues above have not been created.
+
+Create one issue for each Phase 2 slice. Each issue should link to its section in this document and state the current problem, implementation scope, unresolved decisions, completion criteria, and required verification. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs.
+
+Link each implementation PR to its issue. Use `Closes #<issue-number>` only when the PR completes all acceptance criteria. Close the issue after the PR is merged and the relevant checks pass. If a PR completes only part of an issue, keep it open and list the remaining work. Record deferred work explicitly instead of marking it complete.
 
 ## Deferred Decisions
 

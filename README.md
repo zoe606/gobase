@@ -1,6 +1,6 @@
-# Go Clean Architecture Boilerplate
+# gobase
 
-Production-ready REST API boilerplate with Clean Architecture, JWT authentication, media uploads, and background workers.
+Go REST API template with Clean Architecture, JWT authentication, media uploads, and background workers. Select Gin, standard `net/http`, or Fiber when creating a project.
 
 [![Go Version](https://img.shields.io/badge/Go-1.27.1-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
@@ -10,13 +10,20 @@ Production-ready REST API boilerplate with Clean Architecture, JWT authenticatio
 
 ## Features
 
-- **Authentication** — JWT access/refresh tokens, email verification, password reset, roles & permissions
+- **Authentication** — Register, login, JWT access/refresh tokens, logout, and current user endpoints
+- **Authorization** — JWT role and permission middleware
 - **Media Management** — S3/Local storage, polymorphic attachments, image processing, presigned URLs
 - **Articles** — Full CRUD with draft/publish workflow, cover images, SEO slugs
 - **Translation** — Google Translate API integration with history
 - **Background Jobs** — Asynq workers for emails, image processing
 - **Code Generation** — Scaffold all layers from a single migration file
 - **HTTP Engine Selection** — Create a project with Gin, standard `net/http`, or Fiber
+
+## Project Status
+
+The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
+
+Phase 2 application hardening is planned. Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. Other planned work covers article filter validation, OpenTelemetry metrics export, Redis shutdown, and non-root Docker execution. See the [roadmap](docs/roadmap.md#phase-2-application-hardening) for scope, order, and completion criteria.
 
 ## Create a Project
 
@@ -93,7 +100,7 @@ flowchart TB
     subgraph "Infrastructure"
         PG[(PostgreSQL)]
         Redis[(Redis)]
-        S3[(MinIO/S3)]
+        Storage[(Local files / S3)]
     end
 
     subgraph "Background"
@@ -107,11 +114,11 @@ flowchart TB
     UseCases --> Repos
     Repos --> PG
     UseCases --> Redis
-    UseCases --> S3
+    UseCases --> Storage
     UseCases --> Queue
     Queue --> Worker
     Worker --> PG
-    Worker --> S3
+    Worker --> Storage
 ```
 
 ### Layer Flow
@@ -122,10 +129,12 @@ Handler → UseCase → Repository → Entity/External API
 
 - **Handlers** — Parse requests, validate input, return JSON responses
 - **Use Cases** — Business logic, orchestrate repositories, return domain errors
-- **Repositories** — Data access (PostgreSQL, S3, external APIs)
+- **Repositories** — Data access (PostgreSQL, file storage, external APIs)
 - **Entities** — GORM domain models
 
 ## Project Structure
+
+The application directories below are shared with generated projects. Generated HTTP handlers use the selected engine. The template checkout runs Fiber; engine sources are maintained under `pkg/scaffold/templates`, and CRUD templates are under `pkg/codegen/generator/templates/handler`.
 
 ```
 ├── cmd/
@@ -136,7 +145,7 @@ Handler → UseCase → Repository → Entity/External API
 │   ├── app/                    # DI container & bootstrap
 │   ├── dto/                    # Request/Response DTOs
 │   ├── entity/                 # GORM domain models
-│   ├── handlers/http/          # HTTP handlers for the selected engine
+│   ├── handlers/http/          # Native HTTP handlers
 │   │   ├── middleware/
 │   │   └── v1/
 │   ├── repo/                   # Repository implementations
@@ -147,7 +156,7 @@ Handler → UseCase → Repository → Entity/External API
 │   └── worker/                 # Asynq task handlers
 ├── pkg/                        # Reusable packages
 ├── migrations/                 # SQL migration files
-├── docs/                       # Swagger documentation
+├── docs/                       # Swagger and project documentation
 └── deployment/docker/          # Docker configuration
 ```
 
@@ -166,9 +175,11 @@ internal/usecase/auth/
 
 ## Configuration
 
-Copy `.env.example` and configure the required variables. See [Deployment](docs/deployment.md) for the full environment variable reference and production checklist.
+Copy both example files as shown in [Run a Project](#run-a-project). Docker Compose reads `.env`. Local Go commands read `config/config.yaml` and exported environment variables. See [Deployment](docs/deployment.md) for storage options, environment variables, and production configuration.
 
 ## Commands
+
+Run application commands from the generated project's directory. Project creation and `make test-engines` run from the template checkout.
 
 ### Development
 
@@ -188,6 +199,7 @@ Copy `.env.example` and configure the required variables. See [Deployment](docs/
 | `make lint` | Run linter |
 | `make vuln` | Check vulnerabilities |
 | `make test` | Run unit tests |
+| `make test-engines` | Verify generated Gin, stdlib, and Fiber projects from the template checkout |
 
 ### Database
 

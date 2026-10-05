@@ -10,6 +10,12 @@ Go application generated from gobase.
 
 The engine is recorded in `.gobase.json` for code generation. Editing this file does not migrate the application to another engine.
 
+## Included Functionality
+
+The application includes HTTP routes for register, login, refresh, logout, and the current user. It also includes article CRUD, profile management, media storage, translation, and background workers.
+
+Email verification and password reset have use cases and token persistence. Their HTTP routes and queued email tasks still need to be connected. OpenTelemetry initializes tracing; metrics export configuration and non-root Docker execution remain planned template work.
+
 ## Run Locally
 
 Install Go and Docker with Docker Compose. From this application's directory:

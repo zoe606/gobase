@@ -2,9 +2,9 @@
 
 Date: October 5, 2026.
 
-Status: Phase 1 checks passed locally and in GitHub Actions.
+Status: Phase 1 is merged. Local checks and GitHub Actions checks passed.
 
-The working branch is `feat/selectable-http-engines`, based on `75af22a`. The implementation revision verified by GitHub Actions is `b01619495e95bb7109c374cddd445c4ef0e15181`. [Pull request #46](https://github.com/zoe606/gobase/pull/46) remains a draft.
+[Pull request #46](https://github.com/zoe606/gobase/pull/46) merged into `master` on October 5, 2026 as `66270fb626b7b6b5df208ce94b0d17f52fca8890`. The original implementation revision verified by GitHub Actions was `b01619495e95bb7109c374cddd445c4ef0e15181` on `feat/selectable-http-engines`, based on `75af22a`.
 
 ## Implemented Changes
 
@@ -59,6 +59,15 @@ The following results passed on implementation revision `b01619495e95bb7109c374c
 
 Each engine job passed project generation, builds, race tests, CRUD generation and wiring, Swagger checks, lint, vulnerability scanning, and eight HTTP integration tests with PostgreSQL 17 and Redis 7. Each job also built and ran Linux amd64 app and worker images, checked readiness and Swagger, processed a welcome email task with the noop sender, and checked exit code 0 after shutdown. The broader ten-test HTTP suite was verified locally for each engine.
 
+### Verification After Merge
+
+GitHub Actions also passed on `master` revision `66270fb626b7b6b5df208ce94b0d17f52fca8890` after PR #46 merged.
+
+| Workflow | Result | Evidence |
+|----------|--------|----------|
+| CI / Quality | Passed | [Workflow run](https://github.com/zoe606/gobase/actions/runs/37294989410) |
+| Engines / Gin, stdlib, and Fiber | All passed | [Workflow run](https://github.com/zoe606/gobase/actions/runs/37294989373) |
+
 ## Compatibility Notes
 
 Engine selection still occurs only during project creation. Existing projects without `.gobase.json` retain Fiber code generation. No runtime engine switch or existing-project conversion is added.
@@ -88,6 +97,6 @@ make docker-stop
 
 ## Release Preparation
 
-Phase 1 verification is complete. The branch is published and all four verification jobs passed on the implementation revision above. Preparing a release still requires PR review, merge, and release notes for the revision selected for that release.
+Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. Release publication and release notes remain separate work for the revision selected for that release.
 
 Phase 2 application hardening has not started. See the [roadmap](roadmap.md).
