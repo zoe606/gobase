@@ -9,7 +9,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/gofiber/fiber/v2"
 	"github.com/golang-migrate/migrate/v4"
 	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver for golang-migrate
@@ -344,9 +343,9 @@ func initAppCache(cfg *config.Config, l *logger.Logger) pkgcache.Cache {
 }
 
 // initRateLimitStorage creates rate limiter storage based on config.
-func initRateLimitStorage(cfg *config.Config, l *logger.Logger) fiber.Storage {
+func initRateLimitStorage(cfg *config.Config, l *logger.Logger) ratelimiter.Storage {
 	if cfg.RateLimit.Store != "redis" {
-		return nil // nil = Fiber built-in memory store
+		return nil // The selected HTTP engine uses its memory store.
 	}
 
 	redisClient := goredis.NewClient(&goredis.Options{

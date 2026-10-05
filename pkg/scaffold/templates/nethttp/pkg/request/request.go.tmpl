@@ -1,0 +1,168 @@
+// Package request parses HTTP requests into the existing DTOs.
+package request
+
+import (
+	"encoding"
+	"encoding/xml"
+	"fmt"
+	"io"
+	"mime"
+	"mime/multipart"
+	"net/http"
+	"net/url"
+	"reflect"
+	"strconv"
+	"strings"
+
+	"go-boilerplate/pkg/json"
+)
+
+func Body(r *http.Request, destination any) error {
+	contentType, _, err := mime.ParseMediaType(r.Header.Get("Content-Type"))
+	if err != nil {
+		return err
+	}
+	if contentType == "application/json" || strings.HasSuffix(contentType, "+json") {
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		return json.Unmarshal(data, destination)
+	}
+	if contentType == "application/xml" || contentType == "text/xml" || strings.HasSuffix(contentType, "+xml") {
+		data, err := io.ReadAll(r.Body)
+		if err != nil {
+			return err
+		}
+		return xml.Unmarshal(data, destination)
+	}
+	if contentType == "application/x-www-form-urlencoded" || contentType == "multipart/form-data" {
+		if err := r.ParseForm(); err != nil {
+			return err
+		}
+		if contentType == "multipart/form-data" {
+			if err := parseMultipartForm(r); err != nil {
+				return err
+			}
+		}
+		return decodeValues(r.PostForm, destination)
+	}
+	return fmt.Errorf("unsupported content type %q", contentType)
+}
+
+func Query(r *http.Request, destination any) error { return decodeValues(r.URL.Query(), destination) }
+func QueryValue(r *http.Request, key string, fallback ...string) string {
+	return valueOrDefault(r.URL.Query().Get(key), fallback)
+}
+func FormValue(r *http.Request, key string, fallback ...string) string {
+	return valueOrDefault(r.FormValue(key), fallback)
+}
+func FormFile(r *http.Request, key string) (*multipart.FileHeader, error) {
+	if r.MultipartForm == nil {
+		if err := parseMultipartForm(r); err != nil {
+			return nil, err
+		}
+	}
+	file, header, err := r.FormFile(key)
+	if err != nil {
+		return nil, err
+	}
+	if err := file.Close(); err != nil {
+		return nil, err
+	}
+	return header, nil
+}
+
+func parseMultipartForm(r *http.Request) error {
+	limit := r.ContentLength
+	if limit <= 0 {
+		limit = 4 << 20
+	}
+	r.Body = http.MaxBytesReader(nil, r.Body, limit)
+	return r.ParseMultipartForm(4 << 20) //nolint:gosec // BodyLimit has already bounded and buffered the request. MaxBytesReader also bounds this parser.
+}
+func valueOrDefault(value string, fallback []string) string {
+	if value == "" && len(fallback) > 0 {
+		return fallback[0]
+	}
+	return value
+}
+
+func decodeValues(values url.Values, destination any) error {
+	value := reflect.ValueOf(destination)
+	if value.Kind() != reflect.Pointer || value.IsNil() {
+		return fmt.Errorf("destination must be a non-nil pointer")
+	}
+	return decodeStruct(values, value.Elem())
+}
+func decodeStruct(values url.Values, value reflect.Value) error {
+	if value.Kind() != reflect.Struct {
+		return fmt.Errorf("destination must point to a struct")
+	}
+	for i := 0; i < value.NumField(); i++ {
+		field := value.Type().Field(i)
+		target := value.Field(i)
+		if !target.CanSet() {
+			continue
+		}
+		if field.Anonymous && target.Kind() == reflect.Struct {
+			if err := decodeStruct(values, target); err != nil {
+				return err
+			}
+			continue
+		}
+		key := field.Tag.Get("query")
+		if key == "" {
+			key = strings.Split(field.Tag.Get("json"), ",")[0]
+		}
+		if key == "" {
+			key = field.Name
+		}
+		raw, exists := values[key]
+		if !exists || len(raw) == 0 {
+			continue
+		}
+		if err := setValue(target, raw[0]); err != nil {
+			return fmt.Errorf("invalid %s: %w", key, err)
+		}
+	}
+	return nil
+}
+func setValue(target reflect.Value, value string) error {
+	if target.Kind() == reflect.Pointer {
+		if target.IsNil() {
+			target.Set(reflect.New(target.Type().Elem()))
+		}
+		return setValue(target.Elem(), value)
+	}
+	if target.CanAddr() {
+		if parser, ok := target.Addr().Interface().(encoding.TextUnmarshaler); ok {
+			return parser.UnmarshalText([]byte(value))
+		}
+	}
+	switch target.Kind() {
+	case reflect.String:
+		target.SetString(value)
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		parsed, err := strconv.ParseInt(value, 10, target.Type().Bits())
+		if err != nil {
+			return err
+		}
+		target.SetInt(parsed)
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		parsed, err := strconv.ParseUint(value, 10, target.Type().Bits())
+		if err != nil {
+			return err
+		}
+		target.SetUint(parsed)
+	case reflect.Bool:
+		parsed, err := strconv.ParseBool(value)
+		if err != nil {
+			return err
+		}
+		target.SetBool(parsed)
+	default:
+		return fmt.Errorf("unsupported field type %s", target.Type())
+	}
+	return nil
+}

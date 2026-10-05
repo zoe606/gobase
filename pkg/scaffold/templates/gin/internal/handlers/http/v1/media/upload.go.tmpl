@@ -1,0 +1,82 @@
+package media
+
+import (
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	mediadto "go-boilerplate/internal/dto/media"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// Upload handles multipart file upload.
+// @Summary     Upload a file
+// @Description Uploads a file and attaches it to an entity
+// @Tags        media
+// @Security    BearerAuth
+// @Accept      multipart/form-data
+// @Produce     json
+// @Param       file            formData file   true  "File to upload"
+// @Param       attachable_type formData string true  "Entity type (e.g., users, posts)"
+// @Param       attachable_id   formData int    true  "Entity ID"
+// @Param       collection      formData string false "Collection name (e.g., avatar, gallery)"
+// @Success     201 {object} response.Response[mediadto.MediaResponse]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Router      /media/upload [post]
+func (h *Handler) Upload(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	file, err := request.FormFile(r, "file")
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_FILE", "No file provided")
+		return
+	}
+
+	if file.Size > h.maxSize {
+		response.BadRequest(w, r, "FILE_TOO_LARGE", "File exceeds maximum size")
+		return
+	}
+
+	// Open file.
+	src, err := file.Open()
+	if err != nil {
+		h.l.Error(err, "Failed to open uploaded file")
+		response.InternalError(w, r)
+		return
+	}
+	defer src.Close()
+
+	// Parse form values.
+	attachableType := request.FormValue(r, "attachable_type")
+	if attachableType == "" {
+		response.BadRequest(w, r, "MISSING_FIELD", "attachable_type is required")
+		return
+	}
+
+	attachableIDStr := request.FormValue(r, "attachable_id")
+	attachableID, err := strconv.ParseUint(attachableIDStr, 10, 64)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_FIELD", "attachable_id must be a valid number")
+		return
+	}
+
+	collection := request.FormValue(r, "collection", "default")
+
+	result, err := h.mediaUC.Upload(r.Context(), mediadto.UploadRequest{
+		File:           src,
+		Filename:       file.Filename,
+		Size:           file.Size,
+		MimeType:       file.Header.Get("Content-Type"),
+		AttachableType: attachableType,
+		AttachableID:   uint(attachableID),
+		Collection:     collection,
+	})
+	if err != nil {
+		h.l.Error(err, "Upload failed")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.Created(w, r, result)
+}

@@ -1,0 +1,39 @@
+package httphandler
+
+import (
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"go-boilerplate/config"
+	"go-boilerplate/internal/handlers/http/routing"
+	articlehandler "go-boilerplate/internal/handlers/http/v1/article"
+	"go-boilerplate/internal/handlers/http/v1/auth"
+	confighandler "go-boilerplate/internal/handlers/http/v1/config"
+	mediahandler "go-boilerplate/internal/handlers/http/v1/media"
+	profilehandler "go-boilerplate/internal/handlers/http/v1/profile"
+	"go-boilerplate/internal/handlers/http/v1/translation"
+	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/cache"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+)
+
+func contractHandler(t *testing.T, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, service jwt.Service, checker HealthChecker, appCache cache.Cache) http.Handler {
+	t.Helper()
+	app := routing.New()
+	l := logger.New("error")
+	setupMiddleware(app, cfg, l, nil, appCache, service)
+	setupOptionalFeatures(app, cfg)
+	setupHealthEndpoints(app, checker)
+	group := app.Group("/v1")
+	translation.New(translationUC, l).RegisterRoutes(group)
+	auth.New(authUC, service, l).RegisterRoutes(group)
+	confighandler.New(cfg, service, l).RegisterRoutes(group)
+	mediahandler.New(mediaUC, service, l, cfg.Storage.MaxSize).RegisterRoutes(group)
+	profilehandler.New(profileUC, service, l).RegisterRoutes(group)
+	articlehandler.New(articleUC, service, l).RegisterRoutes(group)
+	server := httptest.NewServer(app)
+	t.Cleanup(server.Close)
+	return contractProxy(t, server.URL)
+}

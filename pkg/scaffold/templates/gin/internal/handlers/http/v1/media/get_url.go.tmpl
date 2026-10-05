@@ -1,0 +1,47 @@
+package media
+
+import (
+	"github.com/gin-gonic/gin"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// GetURL returns a URL to access the media.
+// @Summary     Get media URL
+// @Description Returns a signed URL to access the media file
+// @Tags        media
+// @Security    BearerAuth
+// @Produce     json
+// @Param       id      path  int    true  "Media ID"
+// @Param       variant query string false "Variant name (e.g., thumb, medium, large)"
+// @Success     200 {object} response.Response[map[string]string]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Router      /media/{id}/url [get]
+func (h *Handler) GetURL(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	id, err := parseUint(c.Param("id"))
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid media ID")
+		return
+	}
+
+	variant := request.QueryValue(r, "variant", "")
+
+	media, err := h.mediaUC.GetByID(r.Context(), id)
+	if err != nil {
+		response.NotFound(w, r, "Media not found")
+		return
+	}
+
+	url, err := h.mediaUC.GetURL(r.Context(), media, variant)
+	if err != nil {
+		h.l.Error(err, "Failed to get media URL")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, map[string]any{"url": url})
+}

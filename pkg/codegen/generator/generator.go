@@ -8,10 +8,12 @@ import (
 	"strings"
 
 	"go-boilerplate/pkg/codegen/parser"
+	"go-boilerplate/pkg/project"
 )
 
 // Config holds configuration for code generation.
 type Config struct {
+	Engine     project.Engine
 	ModuleName string   // Go module name (e.g., "go-boilerplate")
 	OutputDir  string   // Output directory (project root)
 	Layers     []string // Layers to generate: entity, dto, repo, usecase, handler
@@ -27,6 +29,9 @@ type Generator struct {
 
 // New creates a new Generator.
 func New(config Config, result *parser.ParseResult) *Generator {
+	if config.Engine == "" {
+		config.Engine = project.Fiber
+	}
 	return &Generator{
 		config: config,
 		result: result,
@@ -35,6 +40,9 @@ func New(config Config, result *parser.ParseResult) *Generator {
 
 // Generate generates code for all configured layers.
 func (g *Generator) Generate() error {
+	if err := g.config.Engine.Validate(); err != nil {
+		return err
+	}
 	for _, layer := range g.config.Layers {
 		var err error
 		switch strings.ToLower(layer) {
@@ -132,6 +140,10 @@ func (g *Generator) appendToFile(relPath, content, marker string) error {
 
 	// Insert content
 	newContent := existingStr[:insertPos] + "\n" + content + existingStr[insertPos:]
+	newContent, err = g.addContractImport(newContent, relPath)
+	if err != nil {
+		return err
+	}
 
 	if err := os.WriteFile(fullPath, []byte(newContent), 0o600); err != nil { //nolint:gosec // trusted local path from codegen
 		return fmt.Errorf("writing file %s: %w", fullPath, err)

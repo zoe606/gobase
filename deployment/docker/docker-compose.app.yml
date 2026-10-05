@@ -12,9 +12,17 @@ services:
       - ../../.env
     environment:
       # Override hosts to use Docker network names
+      HTTP_PORT: "8080"
       POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DBNAME: ${POSTGRES_DBNAME:-app}
       REDIS_HOST: redis
-      STORAGE_S3_ENDPOINT: minio:9000
+      REDIS_PORT: "6379"
+      REDIS_DB: ${REDIS_DB:-0}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_DOCKER_ENDPOINT:-minio:9000}
+      STORAGE_LOCAL_PATH: /uploads
     ports:
       - "${HTTP_PORT:-8080}:8080"
     depends_on:
@@ -22,12 +30,11 @@ services:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
     networks:
       - app_network
     volumes:
       - ../../config:/config:ro
+      - upload_data:/uploads
 
   worker:
     container_name: ${APP_NAME:-go-boilerplate}-worker
@@ -40,19 +47,25 @@ services:
       - ../../.env
     environment:
       POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DBNAME: ${POSTGRES_DBNAME:-app}
       REDIS_HOST: redis
-      STORAGE_S3_ENDPOINT: minio:9000
+      REDIS_PORT: "6379"
+      REDIS_DB: ${REDIS_DB:-0}
+      STORAGE_S3_ENDPOINT: ${STORAGE_S3_DOCKER_ENDPOINT:-minio:9000}
+      STORAGE_LOCAL_PATH: /uploads
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-      minio:
-        condition: service_healthy
     networks:
       - app_network
     volumes:
       - ../../config:/config:ro
+      - upload_data:/uploads
     restart: unless-stopped
 
 networks:
@@ -61,3 +74,4 @@ networks:
 volumes:
   db_data:
   redis_data:
+  upload_data:

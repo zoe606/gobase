@@ -1,0 +1,77 @@
+package middleware
+
+import (
+	"bytes"
+	"io"
+	"net/http"
+	"strings"
+	"time"
+
+	"go-boilerplate/config"
+	"go-boilerplate/pkg/json"
+	"go.uber.org/zap"
+)
+
+func ParseRedactFields(value string) []string {
+	var fields []string
+	for _, field := range strings.Split(value, ",") {
+		if field = strings.TrimSpace(field); field != "" {
+			fields = append(fields, field)
+		}
+	}
+	return fields
+}
+func RedactJSON(body string, fields []string) string {
+	if body == "" || len(fields) == 0 {
+		return body
+	}
+	var value map[string]any
+	if err := json.Unmarshal([]byte(body), &value); err != nil {
+		return body
+	}
+	for key := range value {
+		for _, field := range fields {
+			if strings.EqualFold(key, field) {
+				value[key] = "[REDACTED]"
+			}
+		}
+	}
+	data, err := json.Marshal(value)
+	if err != nil {
+		return body
+	}
+	return string(data)
+}
+func StructuredLogger(l *zap.Logger, cfg config.Log) func(http.Handler) http.Handler {
+	fields := ParseRedactFields(cfg.RedactFields)
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			var body []byte
+			if cfg.LogRequestBody && r.Body != nil {
+				body, _ = io.ReadAll(r.Body)
+				r.Body = io.NopCloser(bytes.NewReader(body))
+			}
+			capture := &captureWriter{ResponseWriter: w, capture: cfg.LogResponseBody}
+			next.ServeHTTP(capture, r)
+			values := []zap.Field{zap.String("method", r.Method), zap.String("path", r.URL.RequestURI()), zap.Int("status", capture.Status()), zap.Float64("latency_ms", float64(time.Since(start).Nanoseconds())/1e6), zap.String("request_id", w.Header().Get("X-Request-ID")), zap.String("ip", r.RemoteAddr), zap.String("user_agent", r.UserAgent()), zap.Int("bytes_out", capture.bytes)}
+			if user := GetUserID(r); user > 0 {
+				values = append(values, zap.Uint64("user_id", uint64(user)))
+			}
+			if cfg.LogRequestBody && len(body) > 0 {
+				values = append(values, zap.String("request_body", RedactJSON(string(body), fields)))
+			}
+			if cfg.LogResponseBody {
+				values = append(values, zap.String("response_body", capture.body.String()))
+			}
+			switch {
+			case capture.Status() >= 500:
+				l.Error("HTTP request", values...)
+			case capture.Status() >= 400:
+				l.Warn("HTTP request", values...)
+			default:
+				l.Info("HTTP request", values...)
+			}
+		})
+	}
+}

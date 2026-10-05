@@ -1,0 +1,23 @@
+package routing
+
+import (
+	"net/http"
+	"strings"
+)
+
+func New() *Router {
+	mux := http.NewServeMux()
+	register := func(method, path string, handler http.Handler) {
+		parts := strings.Split(path, "/")
+		for i, part := range parts {
+			if strings.HasPrefix(part, ":") {
+				parts[i] = "{" + strings.TrimPrefix(part, ":") + "}"
+			}
+			if part == "*" {
+				parts[i] = "{wildcard...}"
+			}
+		}
+		mux.Handle(method+" "+strings.Join(parts, "/"), handler)
+	}
+	return &Router{registry: &registry{handler: mux, register: register}, root: true}
+}

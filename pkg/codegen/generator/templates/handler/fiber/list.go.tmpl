@@ -1,0 +1,36 @@
+package {{.Package}}
+
+import (
+	"github.com/gofiber/fiber/v2"
+
+	{{.Package}}dto "{{.Module}}/internal/dto/{{.Package}}"
+	"{{.Module}}/pkg/response"
+)
+
+// List godoc
+// @Summary     List {{.Package}}s
+// @Description Get a paginated list of {{.Package}}s
+// @ID          {{.Package}}-list
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       page query int false "Page number" default(1)
+// @Param       page_size query int false "Page size" default(20)
+// @Success     200 {object} response.Response[{{.Package}}dto.ListResponse]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s [get]
+func (h *Handler) List(ctx *fiber.Ctx) error {
+	var req {{.Package}}dto.ListRequest
+	if err := ctx.QueryParser(&req); err != nil {
+		return response.BadRequest(ctx, "INVALID_QUERY", "Invalid query parameters")
+	}
+
+	result, err := h.{{.Variable}}UC.List(ctx.UserContext(), req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - List")
+		return response.InternalError(ctx)
+	}
+
+	return response.OK(ctx, result)
+}

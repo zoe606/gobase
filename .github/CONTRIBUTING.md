@@ -7,21 +7,40 @@ Thank you for your interest in contributing to this project!
 1. **Fork and clone** the repository
 2. **Install dependencies**: `make deps`
 3. **Install development tools**: `make tools`
-4. **Install git hooks**: `make install-hooks`
+4. **Activate git hooks**: `git config core.hooksPath .githooks`
 5. **Start services**: `make docker-services`
 
 ## Development Workflow
 
+### Maintaining HTTP Engines
+
+The runnable checkout uses Fiber. Generated projects use independent endpoint templates. Editing only a checkout handler does not update generated projects.
+
+| Change | Source |
+|--------|--------|
+| Built-in endpoints | `pkg/scaffold/templates/gin`, `pkg/scaffold/templates/stdlib`, `pkg/scaffold/templates/fiber` |
+| Shared Gin and stdlib HTTP helpers | `pkg/scaffold/templates/nethttp` |
+| Generated CRUD handlers | `pkg/codegen/generator/templates/handler/{gin,stdlib,fiber}` |
+| Shared application behavior | `internal/usecase`, `internal/dto`, `internal/entity`, `internal/repo`, `internal/worker` |
+| Generated application documentation | `pkg/scaffold/application` |
+| Cross-engine HTTP behavior | `internal/handlers/http/engine_contract_test.go` |
+
+For a shared endpoint change, update the affected engine templates and the runnable checkout. Keep each engine's native handler signature. Put business rules in shared use cases. Extend the shared contract tests when the HTTP behavior changes.
+
+Run `make check-all` in the checkout and `go run ./pkg/tools/verifyengines -lint` to generate and verify all three outputs. The engine verifier also generates and wires a CRUD feature, regenerates Swagger with the module's pinned tool, and checks its routes and response codes. Run the integration suite when changing persistence or HTTP contracts.
+
+Generated applications omit template maintenance tools and historical plans. Their README and contribution guide describe the selected engine and application commands.
+
 ### Before You Code
 
-1. Create a feature branch from `main`:
+1. Create a feature branch from `master`:
    ```bash
    git checkout -b feature/your-feature-name
    ```
 
 2. Ensure git hooks are installed:
    ```bash
-   make install-hooks
+   git config core.hooksPath .githooks
    ```
 
 ### While Coding
@@ -61,7 +80,7 @@ make ci          # Full CI pipeline locally
 
 1. Ensure all checks pass locally
 2. Push your branch
-3. Open a PR against `main`
+3. Open a PR against `master`
 4. Fill out the PR template
 5. Wait for CI checks to pass
 6. Request review
@@ -140,7 +159,4 @@ Use sequential numbering:
 
 ## Branch Protection
 
-The `main` branch is protected:
-- All CI checks must pass
-- At least one approval required
-- No direct pushes allowed
+Before merging into `master`, check the CI Quality job and all three Engine jobs for the proposed revision. Local verification does not establish the GitHub Actions result.

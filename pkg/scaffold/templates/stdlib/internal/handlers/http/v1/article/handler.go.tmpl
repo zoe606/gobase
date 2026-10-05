@@ -1,0 +1,46 @@
+package article
+
+import (
+	"net/http"
+
+	"github.com/go-playground/validator/v10"
+
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+)
+
+// Handler handles article endpoints.
+type Handler struct {
+	articleUC  usecase.Article
+	jwtService jwt.Service
+	l          logger.Interface
+	v          *validator.Validate
+}
+
+// New creates a new article handler.
+func New(articleUC usecase.Article, jwtService jwt.Service, l logger.Interface) *Handler {
+	return &Handler{
+		articleUC:  articleUC,
+		jwtService: jwtService,
+		l:          l,
+		v:          validator.New(validator.WithRequiredStructEnabled()),
+	}
+}
+
+// RegisterRoutes sets up routes.
+func (h *Handler) RegisterRoutes(router *routing.Router) {
+	articles := router.Group("/articles")
+
+	// Public routes (no auth required)
+	articles.Handle("GET", "/", http.HandlerFunc(h.List))
+	articles.Handle("GET", "/:id", http.HandlerFunc(h.GetByID))
+
+	// Protected routes (JWT auth required)
+	protected := articles.Group("", middleware.JWTAuth(h.jwtService, h.l))
+	protected.Handle("POST", "/", http.HandlerFunc(h.Create))
+	protected.Handle("PUT", "/:id", http.HandlerFunc(h.Update))
+	protected.Handle("DELETE", "/:id", http.HandlerFunc(h.Delete))
+}

@@ -1,0 +1,61 @@
+package {{.Package}}
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	{{.Package}}dto "{{.Module}}/internal/dto/{{.Package}}"
+	v1 "{{.Module}}/internal/handlers/http/v1"
+	{{.Package}}uc "{{.Module}}/internal/usecase/{{.Package}}"
+	"{{.Module}}/pkg/request"
+	"{{.Module}}/pkg/response"
+)
+
+// Update godoc
+// @Summary     Update {{.Package}}
+// @Description Update an existing {{.Package}}
+// @ID          {{.Package}}-update
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "{{.Entity}} ID"
+// @Param       request body {{.Package}}dto.UpdateRequest true "Update {{.Entity}} request"
+// @Success     200 {object} response.Response[{{.Package}}dto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s/{id} [put]
+func (h *Handler) Update(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid {{.Package}} ID")
+		return
+	}
+
+	var req {{.Package}}dto.UpdateRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+
+	result, err := h.{{.Variable}}UC.Update(r.Context(), uint(id), req)
+	if err != nil {
+		if errors.Is(err, {{.Package}}uc.ErrNotFound) {
+			response.NotFound(w, r, "{{.Entity}} not found")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - Update")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}
