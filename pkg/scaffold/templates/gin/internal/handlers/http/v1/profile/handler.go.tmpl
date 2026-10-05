@@ -1,0 +1,39 @@
+package profile
+
+import (
+	"github.com/go-playground/validator/v10"
+
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+)
+
+// Handler handles profile endpoints.
+type Handler struct {
+	profileUC  usecase.Profile
+	jwtService jwt.Service
+	l          logger.Interface
+	v          *validator.Validate
+}
+
+// New creates a new profile handler.
+func New(profileUC usecase.Profile, jwtService jwt.Service, l logger.Interface) *Handler {
+	return &Handler{
+		profileUC:  profileUC,
+		jwtService: jwtService,
+		l:          l,
+		v:          validator.New(validator.WithRequiredStructEnabled()),
+	}
+}
+
+// RegisterRoutes sets up profile routes.
+func (h *Handler) RegisterRoutes(router *routing.Router) {
+	profile := router.Group("/profile")
+	profile.Use(middleware.JWTAuth(h.jwtService, h.l))
+	{
+		profile.Handle("GET", "", routing.HandlerFunc(h.GetProfile))
+		profile.Handle("PATCH", "", routing.HandlerFunc(h.UpdateProfile))
+	}
+}

@@ -45,13 +45,7 @@ lint: ## Run linter
 
 .PHONY: vuln
 vuln: ## Run vulnerability check on dependencies
-	@if command -v govulncheck > /dev/null; then \
-		govulncheck ./...; \
-	else \
-		echo "Installing govulncheck..."; \
-		go install golang.org/x/vuln/cmd/govulncheck@latest; \
-		govulncheck ./...; \
-	fi
+	go tool govulncheck ./...
 
 # Packages excluded from coverage: infra bootstrap, connection wrappers, telemetry, codegen CLI, tools, logger, storage providers, worker bootstrap, email sender, audit postgres
 COV_EXCLUDE := internal/app$$|pkg/postgres$$|pkg/redis$$|pkg/asynq|pkg/telemetry|pkg/codegen/cmd|pkg/tools|pkg/logger$$|storage/|internal/handlers/http$$|internal/worker$$|webapi/email$$|pkg/audit$$
@@ -174,8 +168,12 @@ migrate-prod-down: ## Rollback 1 migration on production (requires confirmation)
 ##@ Docker (Local Development)
 
 .PHONY: docker-services
-docker-services: ## Start DB and Redis (for air users)
-	docker compose -f deployment/docker/docker-compose.yml --env-file .env up -d
+docker-services: ## Start PostgreSQL and Redis
+	docker compose -f deployment/docker/docker-compose.yml --env-file .env up -d --wait
+
+.PHONY: docker-services-s3
+docker-services-s3: ## Start services with optional MinIO (set MINIO_IMAGE in .env)
+	docker compose -f deployment/docker/docker-compose.yml --profile s3 --env-file .env up -d --wait
 
 .PHONY: docker-dev
 docker-dev: ## Start full stack in Docker (DB + Redis + App + Worker)
@@ -215,11 +213,7 @@ build-worker: ## Build worker binary
 
 .PHONY: swag
 swag: ## Generate Swagger documentation
-	@if command -v swag > /dev/null; then \
-		swag init -g internal/handlers/http/router.go --parseDependency --parseInternal; \
-	else \
-		echo "swag not installed. Install with: go install github.com/swaggo/swag/cmd/swag@latest"; \
-	fi
+	go tool swag init -g internal/handlers/http/router.go --parseDependency --parseInternal
 
 ##@ Dependencies
 
@@ -238,7 +232,7 @@ deps-update: ## Update all dependencies
 tools: ## Install development tools
 	go install github.com/air-verse/air@latest
 	go install github.com/swaggo/swag/cmd/swag@latest
-	go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+	go install github.com/golangci/golangci-lint/v2/cmd/golangci-lint@v2.14.0
 	go install golang.org/x/vuln/cmd/govulncheck@latest
 	go install go.uber.org/mock/mockgen@latest
 	go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest
@@ -284,6 +278,16 @@ wire: ## Auto-wire DI, routes, and contracts for generated features
 	go run ./pkg/codegen/cmd/wire
 
 ##@ Project Setup
+
+ENGINE ?= gin
+
+.PHONY: init
+init: ## Create a project (MODULE=github.com/org/app APP_NAME=app OUTPUT=../app ENGINE=gin|stdlib|fiber)
+	go run ./pkg/tools/init -engine="$(ENGINE)" -module="$(MODULE)" -app-name="$(APP_NAME)" -output="$(OUTPUT)"
+
+.PHONY: test-engines
+test-engines: ## Build and test generated Gin, stdlib, and Fiber projects
+	go run ./pkg/tools/verifyengines
 
 .PHONY: rename
 rename: ## Rename project module and app name (usage: make rename MODULE=github.com/org/name APP_NAME=myapp)

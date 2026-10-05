@@ -1,0 +1,154 @@
+package httphandler
+
+import (
+	"bufio"
+	"net"
+	"net/http"
+	"strconv"
+	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+	"go-boilerplate/config"
+	_ "go-boilerplate/docs" // Swagger docs.
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/internal/handlers/http/routing"
+	articlehandler "go-boilerplate/internal/handlers/http/v1/article"
+	"go-boilerplate/internal/handlers/http/v1/auth"
+	confighandler "go-boilerplate/internal/handlers/http/v1/config"
+	mediahandler "go-boilerplate/internal/handlers/http/v1/media"
+	profilehandler "go-boilerplate/internal/handlers/http/v1/profile"
+	"go-boilerplate/internal/handlers/http/v1/translation"
+	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/cache"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/ratelimiter"
+)
+
+type HealthChecker interface{ Ping() error }
+
+// SetupRoutes sets up all routes and middleware.
+// @title       Go Clean Template API
+// @description Using a translation service as an example
+// @version     1.0
+// @host        localhost:8080
+// @BasePath    /v1
+func SetupRoutes(app *routing.Router, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker, rateLimitStore ratelimiter.Storage, appCache cache.Cache) {
+	setupMiddleware(app, cfg, l, rateLimitStore, appCache, jwtService)
+	setupOptionalFeatures(app, cfg)
+	setupHealthEndpoints(app, healthChecker)
+	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, jwtService, l)
+}
+
+func setupMiddleware(app *routing.Router, cfg *config.Config, l logger.Interface, store ratelimiter.Storage, appCache cache.Cache, jwtService jwt.Service) {
+	if cfg.Telemetry.Enabled {
+		app.Use(middleware.Tracing())
+	}
+	app.Use(middleware.Recovery(l), middleware.RequestID, middleware.CORS(cfg.CORS), middleware.SecurityHeaders, middleware.Compress, middleware.BodyLimit(cfg.HTTP.BodyLimit), middleware.RateLimit(cfg.RateLimit, store))
+	if cfg.Idempotency.Enabled && appCache != nil {
+		app.Use(middleware.Idempotency(appCache, cfg.Idempotency, jwtService))
+	}
+	if cfg.HTTP.RequestTimeout > 0 {
+		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
+	}
+	app.Use(middleware.StructuredLogger(l.GetZapLogger(), cfg.Log))
+}
+
+func setupOptionalFeatures(app *routing.Router, cfg *config.Config) {
+	if cfg.Swagger.Enabled {
+		app.Handle(http.MethodGet, "/swagger/*", swaggerHandler())
+	}
+	if cfg.Metrics.Enabled {
+		setupMetrics(app, cfg.App.Name)
+	}
+}
+
+func setupMetrics(app *routing.Router, name string) {
+	registry := prometheus.NewRegistry()
+	requests := prometheus.NewCounterVec(prometheus.CounterOpts{Name: "http_requests_total", Help: "Count all HTTP requests.", ConstLabels: prometheus.Labels{"service": name}}, []string{"status_code", "method", "path"})
+	duration := prometheus.NewHistogramVec(prometheus.HistogramOpts{Name: "http_request_duration_seconds", Help: "Duration of HTTP requests.", ConstLabels: prometheus.Labels{"service": name}}, []string{"status_code", "method", "path"})
+	inProgress := prometheus.NewGaugeVec(prometheus.GaugeOpts{Name: "http_requests_in_progress_total", Help: "Requests currently being handled.", ConstLabels: prometheus.Labels{"service": name}}, []string{"method"})
+	registry.MustRegister(requests, duration, inProgress)
+	app.Handle(http.MethodGet, "/metrics", promhttp.HandlerFor(registry, promhttp.HandlerOpts{}))
+	app.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			start := time.Now()
+			capture := &metricWriter{ResponseWriter: w}
+			inProgress.WithLabelValues(r.Method).Inc()
+			defer inProgress.WithLabelValues(r.Method).Dec()
+			next.ServeHTTP(capture, r)
+			status := capture.status
+			if status == 0 {
+				status = http.StatusOK
+			}
+			requests.WithLabelValues(strconv.Itoa(status), r.Method, r.Pattern).Inc()
+			duration.WithLabelValues(strconv.Itoa(status), r.Method, r.Pattern).Observe(time.Since(start).Seconds())
+		})
+	})
+}
+
+type metricWriter struct {
+	http.ResponseWriter
+	status int
+}
+
+func (w *metricWriter) WriteHeader(status int) {
+	if w.status != 0 {
+		return
+	}
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *metricWriter) Write(data []byte) (int, error) {
+	if w.status == 0 {
+		w.WriteHeader(http.StatusOK)
+	}
+	return w.ResponseWriter.Write(data)
+}
+func (w *metricWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+func (w *metricWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return http.NewResponseController(w.ResponseWriter).Hijack()
+}
+func (w *metricWriter) CloseNotify() <-chan bool {
+	if notifier, ok := w.ResponseWriter.(interface{ CloseNotify() <-chan bool }); ok {
+		return notifier.CloseNotify()
+	}
+	return nil
+}
+func (w *metricWriter) Flush() { _ = http.NewResponseController(w.ResponseWriter).Flush() }
+
+func setupHealthEndpoints(app *routing.Router, checker HealthChecker) {
+	app.Handle(http.MethodGet, "/healthz", http.HandlerFunc(healthOK))
+	app.Handle(http.MethodGet, "/readyz", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if err := checker.Ping(); err != nil {
+			healthError(w, r, err)
+			return
+		}
+		healthOK(w, r)
+	}))
+}
+
+func healthOK(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	if r.Method != http.MethodHead {
+		_, _ = w.Write([]byte("OK"))
+	}
+}
+
+func setupAPIRoutes(app *routing.Router, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface) {
+	apiV1Group := app.Group("/v1")
+	translationHandler := translation.New(translationUC, l)
+	translationHandler.RegisterRoutes(apiV1Group)
+	authHandler := auth.New(authUC, jwtService, l)
+	authHandler.RegisterRoutes(apiV1Group)
+	cfgHandler := confighandler.New(cfg, jwtService, l)
+	cfgHandler.RegisterRoutes(apiV1Group)
+	mediaHandler := mediahandler.New(mediaUC, jwtService, l, cfg.Storage.MaxSize)
+	mediaHandler.RegisterRoutes(apiV1Group)
+	profHandler := profilehandler.New(profileUC, jwtService, l)
+	profHandler.RegisterRoutes(apiV1Group)
+	artHandler := articlehandler.New(articleUC, jwtService, l)
+	artHandler.RegisterRoutes(apiV1Group)
+}

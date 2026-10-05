@@ -1,0 +1,66 @@
+package routing
+
+import (
+	"bufio"
+	"context"
+	"io"
+	"net"
+	"net/http"
+	"strings"
+
+	"github.com/gin-gonic/gin"
+)
+
+func New() *Router {
+	engine := gin.New()
+	engine.RedirectTrailingSlash = false
+	register := func(method, path string, handler http.Handler) {
+		path = strings.ReplaceAll(path, "/*", "/*wildcard")
+		wrapped := func(c *gin.Context) {
+			*c.Request = *c.Request.WithContext(context.WithValue(c.Request.Context(), contextKey{}, c))
+			for _, param := range c.Params {
+				c.Request.SetPathValue(param.Key, param.Value)
+			}
+			handler.ServeHTTP(c.Writer, c.Request)
+		}
+		engine.Handle(method, path, wrapped)
+		if method == http.MethodGet {
+			engine.Handle(http.MethodHead, path, wrapped)
+		}
+	}
+	return &Router{registry: &registry{handler: engine, register: register}, root: true}
+}
+
+type contextKey struct{}
+
+// HandlerFunc registers a native Gin handler while preserving standard HTTP middleware.
+func HandlerFunc(handler gin.HandlerFunc) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		c, ok := r.Context().Value(contextKey{}).(*gin.Context)
+		if !ok {
+			panic("Gin handler called outside the Gin router")
+		}
+		original := c.Writer
+		c.Request = r
+		c.Writer = &handlerWriter{ResponseWriter: original, delegate: w}
+		defer func() { c.Writer = original }()
+		handler(c)
+	})
+}
+
+type handlerWriter struct {
+	gin.ResponseWriter
+	delegate http.ResponseWriter
+}
+
+func (w *handlerWriter) Header() http.Header            { return w.delegate.Header() }
+func (w *handlerWriter) WriteHeader(status int)         { w.delegate.WriteHeader(status) }
+func (w *handlerWriter) Write(data []byte) (int, error) { return w.delegate.Write(data) }
+func (w *handlerWriter) WriteString(value string) (int, error) {
+	return io.WriteString(w.delegate, value)
+}
+func (w *handlerWriter) Flush()                      { _ = http.NewResponseController(w.delegate).Flush() }
+func (w *handlerWriter) Unwrap() http.ResponseWriter { return w.delegate }
+func (w *handlerWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return http.NewResponseController(w.delegate).Hijack()
+}

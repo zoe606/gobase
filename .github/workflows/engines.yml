@@ -1,0 +1,141 @@
+name: Engines
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GO_VERSION: '1.27.1'
+
+jobs:
+  engines:
+    name: Engine (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [gin, stdlib, fiber]
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v6
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Generate, build, test, and verify code generation
+        run: go run ./pkg/tools/verifyengines -engine=${{ matrix.engine }} -output="$RUNNER_TEMP/gobase-engines"
+      - name: Lint generated project
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.14.0
+          working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+      - name: Scan generated project
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        run: go tool govulncheck ./...
+      - name: Build and start app
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        env:
+          APP_ENV: development
+          HTTP_PORT: '8080'
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DBNAME: test_db
+          POSTGRES_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: '6379'
+          JWT_SECRET_KEY: integration-test-secret-key
+          STORAGE_DRIVER: local
+          STORAGE_LOCAL_PATH: /tmp/uploads
+          STORAGE_LOCAL_URL: http://localhost:8080/uploads
+        run: |
+          go build -o ./bin/app ./cmd/app
+          mkdir -p /tmp/uploads
+          ./bin/app > "$RUNNER_TEMP/app.log" 2>&1 &
+          echo $! > "$RUNNER_TEMP/app.pid"
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:8080/readyz > /dev/null; then
+              exit 0
+            fi
+            if ! kill -0 "$(cat "$RUNNER_TEMP/app.pid")" 2>/dev/null; then
+              cat "$RUNNER_TEMP/app.log"
+              exit 1
+            fi
+            sleep 1
+          done
+          cat "$RUNNER_TEMP/app.log"
+          exit 1
+      - name: Run integration tests
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        env:
+          APP_HOST: localhost
+          APP_PORT: '8080'
+        run: go test -count=1 -v ./integration-test/... -run 'TestHTTP(Register|Login|GetCurrentUser|RefreshToken|Logout|Unauthorized|CRUD|GeneratedCRUD)V1'
+      - name: Build and verify Docker app and worker
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        run: |
+          app_name="gobase-${{ matrix.engine }}-smoke-app"
+          worker_name="gobase-${{ matrix.engine }}-smoke-worker"
+          trap 'docker logs "$app_name" 2>&1 || true; docker logs "$worker_name" 2>&1 || true; docker rm -f "$app_name" "$worker_name" > /dev/null 2>&1 || true' EXIT
+          docker build -f deployment/docker/Dockerfile --build-arg TARGET=app -t gobase-smoke:app .
+          docker build -f deployment/docker/Dockerfile --build-arg TARGET=worker -t gobase-smoke:worker .
+          runtime_env=(--network host -e APP_ENV=development -e HTTP_PORT=18080 -e POSTGRES_HOST=localhost -e POSTGRES_DBNAME=test_db -e POSTGRES_SSLMODE=disable -e REDIS_HOST=localhost -e REDIS_DB=1 -e JWT_SECRET_KEY=integration-test-secret-key -e STORAGE_DRIVER=local)
+          docker run -d --name "$app_name" "${runtime_env[@]}" gobase-smoke:app
+          ready=false
+          for attempt in $(seq 1 60); do
+            if curl -fsS http://localhost:18080/readyz > /dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
+          curl -fsS http://localhost:18080/healthz
+          curl -fsS http://localhost:18080/swagger/doc.json | jq -e '.paths["/widgets"].post.responses["201"]'
+          docker run -d --name "$worker_name" "${runtime_env[@]}" gobase-smoke:worker
+          email="phase1-${{ matrix.engine }}@example.com"
+          curl -fsS -H 'Content-Type: application/json' -d "{\"email\":\"$email\",\"password\":\"SmokeTest123!\",\"name\":\"Docker smoke\"}" http://localhost:18080/v1/auth/register | jq -e '.success == true'
+          processed=false
+          for attempt in $(seq 1 60); do
+            if docker logs "$worker_name" 2>&1 | grep 'Email sent' | grep -q "$email"; then processed=true; break; fi
+            sleep 1
+          done
+          test "$processed" = true
+          docker stop --time 25 "$app_name" "$worker_name"
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$app_name")" = 0
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$worker_name")" = 0
+      - name: Stop app
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/app.pid" ]; then
+            kill "$(cat "$RUNNER_TEMP/app.pid")" 2>/dev/null || true
+          fi
+          if [ -f "$RUNNER_TEMP/app.log" ]; then
+            cat "$RUNNER_TEMP/app.log"
+          fi

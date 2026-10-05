@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: '1.26.5'
+  GO_VERSION: '1.27.1'
   COVERAGE_THRESHOLD: '85'
 
 jobs:
@@ -36,7 +36,7 @@ jobs:
       - name: Run golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.11.2
+          version: v2.14.0
 
       - name: Build
         run: go build ./...

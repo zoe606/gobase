@@ -1,0 +1,40 @@
+package article
+
+import (
+	"github.com/gin-gonic/gin"
+	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// List godoc
+// @Summary     List articles
+// @Description Get a paginated list of articles
+// @ID          article-list
+// @Tags        articles
+// @Accept      json
+// @Produce     json
+// @Param       page query int false "Page number" default(1)
+// @Param       page_size query int false "Page size" default(20)
+// @Success     200 {object} response.Response[articledto.ListResponse]
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /articles [get]
+func (h *Handler) List(c *gin.Context) {
+	w,
+		r := c.Writer, c.Request
+
+	var req articledto.ListRequest
+	if err := request.Query(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_QUERY", "Invalid query parameters")
+		return
+	}
+
+	result, err := h.articleUC.List(r.Context(), req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - article - List")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

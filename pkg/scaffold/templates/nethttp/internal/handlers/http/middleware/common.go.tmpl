@@ -1,0 +1,234 @@
+package middleware
+
+import (
+	"bufio"
+	"bytes"
+	"compress/gzip"
+	"context"
+	"io"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/google/uuid"
+	"go-boilerplate/config"
+	"go-boilerplate/pkg/logger"
+)
+
+func RequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get("X-Request-ID")
+		if id == "" {
+			id = uuid.NewString()
+		}
+		w.Header().Set("X-Request-ID", id)
+		next.ServeHTTP(w, r)
+	})
+}
+func Recovery(l logger.Interface) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			defer func() {
+				if recovered := recover(); recovered != nil {
+					l.Error("HTTP panic: %v", recovered)
+					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+func Timeout(timeout time.Duration) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			ctx, cancel := context.WithTimeout(r.Context(), timeout)
+			defer cancel()
+			*r = *r.WithContext(ctx)
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+func BodyLimit(limit int) func(http.Handler) http.Handler {
+	if limit <= 0 {
+		limit = 4 << 20
+	}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			if r.Body != nil {
+				original := r.Body
+				defer func() { _ = original.Close() }()
+				body, err := io.ReadAll(http.MaxBytesReader(w, r.Body, int64(limit)))
+				if err != nil {
+					http.Error(w, "Request Entity Too Large", http.StatusRequestEntityTooLarge)
+					return
+				}
+				r.Body = io.NopCloser(bytes.NewReader(body))
+				r.ContentLength = int64(len(body))
+			}
+			defer func() {
+				if r.MultipartForm != nil {
+					_ = r.MultipartForm.RemoveAll()
+				}
+			}()
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+func SecurityHeaders(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		for key, value := range map[string]string{"X-Content-Type-Options": "nosniff", "X-Frame-Options": "SAMEORIGIN", "X-XSS-Protection": "0", "X-DNS-Prefetch-Control": "off", "X-Download-Options": "noopen", "X-Permitted-Cross-Domain-Policies": "none", "Referrer-Policy": "no-referrer", "Cross-Origin-Opener-Policy": "same-origin", "Cross-Origin-Resource-Policy": "same-origin", "Origin-Agent-Cluster": "?1"} {
+			w.Header().Set(key, value)
+		}
+		next.ServeHTTP(w, r)
+	})
+}
+func CORS(cfg config.CORS) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			origin := r.Header.Get("Origin")
+			if origin != "" {
+				w.Header().Add("Vary", "Origin")
+				setAllowedOrigin(w, origin, cfg)
+			}
+			if r.Method == http.MethodOptions && origin != "" && r.Header.Get("Access-Control-Request-Method") != "" {
+				w.Header().Set("Access-Control-Allow-Methods", cfg.AllowMethods)
+				w.Header().Set("Access-Control-Allow-Headers", cfg.AllowHeaders)
+				w.Header().Set("Access-Control-Max-Age", strconv.Itoa(cfg.MaxAge))
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func setAllowedOrigin(w http.ResponseWriter, origin string, cfg config.CORS) {
+	for _, allowed := range strings.Split(cfg.AllowOrigins, ",") {
+		allowed = strings.TrimSpace(allowed)
+		if allowed != "*" && allowed != origin {
+			continue
+		}
+		if allowed == "*" && !cfg.AllowCredentials {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+		} else {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		}
+		if cfg.AllowCredentials {
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+		return
+	}
+}
+
+type captureWriter struct {
+	http.ResponseWriter
+	status  int
+	bytes   int
+	body    bytes.Buffer
+	capture bool
+}
+
+func (w *captureWriter) WriteHeader(status int) {
+	if w.status != 0 {
+		return
+	}
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *captureWriter) Write(data []byte) (int, error) {
+	if w.status == 0 {
+		w.WriteHeader(http.StatusOK)
+	}
+	w.bytes += len(data)
+	if w.capture {
+		_, _ = w.body.Write(data)
+	}
+	return w.ResponseWriter.Write(data)
+}
+func (w *captureWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+func (w *captureWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return http.NewResponseController(w.ResponseWriter).Hijack()
+}
+func (w *captureWriter) CloseNotify() <-chan bool { return closeNotify(w.ResponseWriter) }
+func (w *captureWriter) Flush()                   { _ = http.NewResponseController(w.ResponseWriter).Flush() }
+func (w *captureWriter) Status() int {
+	if w.status == 0 {
+		return http.StatusOK
+	}
+	return w.status
+}
+
+type gzipWriter struct {
+	http.ResponseWriter
+	writer *gzip.Writer
+}
+
+func (w *gzipWriter) WriteHeader(status int) {
+	if status == http.StatusNoContent || status == http.StatusNotModified {
+		w.Header().Del("Content-Encoding")
+	}
+	w.Header().Del("Content-Length")
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *gzipWriter) Write(data []byte) (int, error) {
+	w.Header().Del("Content-Length")
+	return w.writer.Write(data)
+}
+func (w *gzipWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
+func (w *gzipWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
+	return http.NewResponseController(w.ResponseWriter).Hijack()
+}
+func (w *gzipWriter) CloseNotify() <-chan bool { return closeNotify(w.ResponseWriter) }
+func (w *gzipWriter) Flush() {
+	_ = w.writer.Flush()
+	_ = http.NewResponseController(w.ResponseWriter).Flush()
+}
+func Compress(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if !acceptsGzip(r.Header.Get("Accept-Encoding")) || r.Method == http.MethodHead || r.Header.Get("Upgrade") != "" {
+			next.ServeHTTP(w, r)
+			return
+		}
+		w.Header().Set("Content-Encoding", "gzip")
+		w.Header().Add("Vary", "Accept-Encoding")
+		writer := gzip.NewWriter(w)
+		defer func() { _ = writer.Close() }()
+		next.ServeHTTP(&gzipWriter{ResponseWriter: w, writer: writer}, r)
+	})
+}
+
+// Gin streaming handlers use CloseNotify directly instead of ResponseController.
+func closeNotify(w http.ResponseWriter) <-chan bool {
+	for {
+		if notifier, ok := w.(interface{ CloseNotify() <-chan bool }); ok {
+			return notifier.CloseNotify()
+		}
+		wrapped, ok := w.(interface{ Unwrap() http.ResponseWriter })
+		if !ok {
+			return nil
+		}
+		w = wrapped.Unwrap()
+	}
+}
+
+func acceptsGzip(header string) bool {
+	for _, part := range strings.Split(header, ",") {
+		pieces := strings.Split(strings.TrimSpace(part), ";")
+		if pieces[0] != "gzip" {
+			continue
+		}
+		for _, parameter := range pieces[1:] {
+			parameter = strings.TrimSpace(parameter)
+			if strings.HasPrefix(parameter, "q=") {
+				quality, err := strconv.ParseFloat(strings.TrimPrefix(parameter, "q="), 64)
+				if err != nil || quality <= 0 {
+					return false
+				}
+			}
+		}
+		return true
+	}
+	return false
+}

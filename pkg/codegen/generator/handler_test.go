@@ -15,7 +15,7 @@ func TestBuildHandlerMainContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerMainContent()
+	content := handlerText(t, gen, "handler")
 
 	// Check package declaration
 	if !strings.Contains(content, "package article") {
@@ -69,7 +69,7 @@ func TestHandlerRegisterRoutes(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerMainContent()
+	content := handlerText(t, gen, "handler")
 
 	// Check route group
 	if !strings.Contains(content, `router.Group("/articles")`) {
@@ -108,7 +108,7 @@ func TestBuildHandlerCreateContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerCreateContent()
+	content := handlerText(t, gen, "create")
 
 	// Check package
 	if !strings.Contains(content, "package article") {
@@ -175,7 +175,7 @@ func TestBuildHandlerGetByIDContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerGetByIDContent()
+	content := handlerText(t, gen, "get_by_id")
 
 	// Check blank DTO import for swagger type resolution
 	if !strings.Contains(content, `_ "go-boilerplate/internal/dto/article" // swagger type resolution`) {
@@ -220,7 +220,7 @@ func TestBuildHandlerListContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerListContent()
+	content := handlerText(t, gen, "list")
 
 	// Check Swagger
 	if !strings.Contains(content, "// @Summary     List articles") {
@@ -257,7 +257,7 @@ func TestBuildHandlerUpdateContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerUpdateContent()
+	content := handlerText(t, gen, "update")
 
 	// Check Swagger
 	if !strings.Contains(content, "// @Summary     Update article") {
@@ -304,7 +304,7 @@ func TestBuildHandlerDeleteContent(t *testing.T) {
 	}
 
 	gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-	content := gen.buildHandlerDeleteContent()
+	content := handlerText(t, gen, "delete")
 
 	// Check Swagger
 	if !strings.Contains(content, "// @Summary     Delete article") {
@@ -344,7 +344,7 @@ func TestSwaggerAnnotations(t *testing.T) {
 	}{
 		{
 			name:    "Create",
-			content: gen.buildHandlerCreateContent(),
+			content: handlerText(t, gen, "create"),
 			expected: []string{
 				"// @Summary",
 				"// @Description",
@@ -360,7 +360,7 @@ func TestSwaggerAnnotations(t *testing.T) {
 		},
 		{
 			name:    "GetByID",
-			content: gen.buildHandlerGetByIDContent(),
+			content: handlerText(t, gen, "get_by_id"),
 			expected: []string{
 				"// @Summary",
 				"// @Description",
@@ -372,7 +372,7 @@ func TestSwaggerAnnotations(t *testing.T) {
 		},
 		{
 			name:    "List",
-			content: gen.buildHandlerListContent(),
+			content: handlerText(t, gen, "list"),
 			expected: []string{
 				"// @Summary",
 				"// @Param       page query",
@@ -382,7 +382,7 @@ func TestSwaggerAnnotations(t *testing.T) {
 		},
 		{
 			name:    "Update",
-			content: gen.buildHandlerUpdateContent(),
+			content: handlerText(t, gen, "update"),
 			expected: []string{
 				"// @Summary",
 				"// @Param       id path",
@@ -392,7 +392,7 @@ func TestSwaggerAnnotations(t *testing.T) {
 		},
 		{
 			name:    "Delete",
-			content: gen.buildHandlerDeleteContent(),
+			content: handlerText(t, gen, "delete"),
 			expected: []string{
 				"// @Summary",
 				"// @Param       id path",
@@ -453,7 +453,7 @@ func TestHandlerWithDifferentTableNames(t *testing.T) {
 			}
 
 			gen := New(Config{ModuleName: "go-boilerplate"}, parseResult)
-			content := gen.buildHandlerMainContent()
+			content := handlerText(t, gen, "handler")
 
 			if !strings.Contains(content, tt.expectedPkg) {
 				t.Errorf("expected package %s", tt.expectedPkg)
@@ -466,4 +466,13 @@ func TestHandlerWithDifferentTableNames(t *testing.T) {
 			}
 		})
 	}
+}
+
+func handlerText(t *testing.T, gen *Generator, name string) string {
+	t.Helper()
+	content, err := gen.handlerContent(name)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return content
 }

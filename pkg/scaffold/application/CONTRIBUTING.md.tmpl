@@ -1,0 +1,15 @@
+# Contributing to {{APP_NAME}}
+
+This application uses the `{{ENGINE}}` HTTP engine. Its Go module is `{{MODULE}}`.
+
+## Development
+
+Follow the [README](../README.md) for local configuration and services. Change native HTTP handlers in `internal/handlers/http`. Business logic belongs in `internal/usecase`, and persistence belongs in `internal/repo`.
+
+Use the existing handler API and response helpers. Add focused tests for changed behavior. Run `make check-all` and `make build` before submitting a change. Run integration tests against a separate development database when the HTTP or persistence contract changes.
+
+## Generated Features
+
+`make gen-full` reads the engine from `.gobase.json`. `make wire` registers generated features with the dependency container and router. Run `make swag` after changing handlers or request and response schemas.
+
+The initializer is omitted from this application. To create another project with a different engine, use the gobase template checkout.

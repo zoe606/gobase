@@ -1,0 +1,111 @@
+# {{APP_NAME}}
+
+Go application generated from gobase.
+
+- Go: 1.27.1 or newer
+- HTTP engine: `{{ENGINE}}`
+- Go module: `{{MODULE}}`
+- Database: PostgreSQL 17
+- Queue: Redis 7 and Asynq
+
+The engine is recorded in `.gobase.json` for code generation. Editing this file does not migrate the application to another engine.
+
+## Run Locally
+
+Install Go and Docker with Docker Compose. From this application's directory:
+
+```bash
+cp .env.example .env
+cp config/config.example.yaml config/config.yaml
+make docker-services
+make run
+```
+
+The application applies migrations automatically in development. Start it before starting the worker in another terminal:
+
+```bash
+make run-worker
+```
+
+The `.env` file supplies Docker Compose variables. Local Go commands read `config/config.yaml` and exported environment variables. Update both configurations when changing database or Redis ports.
+
+New projects use local storage. MinIO is optional. See [deployment](docs/deployment.md) to configure an S3 endpoint or enable the MinIO profile.
+
+```bash
+curl http://localhost:8080/healthz
+curl http://localhost:8080/readyz
+```
+
+Swagger UI is available at `http://localhost:8080/swagger/`. Stop local Go processes with Ctrl+C. Stop the Docker services with `make docker-stop`.
+
+## Run in Docker
+
+After copying the configuration files, build and start the app, worker, and infrastructure:
+
+```bash
+make docker-dev-build
+make docker-logs
+make docker-stop
+```
+
+Docker Compose uses service names for database and Redis connections. Runtime ports inside the containers remain 5432, 6379, and 8080. Environment variables in `.env` select the host ports.
+
+The app and worker share the `upload_data` Docker volume for local storage.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    HTTP[Selected HTTP engine] --> Handler[Native handlers]
+    Handler --> UseCase[Use cases]
+    Worker[Asynq worker] --> Repo
+    UseCase --> Repo[Repository interfaces]
+    Repo --> Database[(PostgreSQL)]
+    UseCase --> Queue[(Redis)]
+    Queue --> Worker
+```
+
+Use cases, DTOs, entities, repositories, and workers contain the shared application behavior. HTTP handlers under `internal/handlers/http` use the selected engine's API. See [code patterns](docs/code-patterns.md) for handler signatures and response helpers.
+
+## Add a Feature
+
+Install the migration CLI if needed:
+
+```bash
+go install -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+make migrate-create name=create_orders
+```
+
+Edit the SQL migration, then generate its layers using the actual filename:
+
+```bash
+make gen-full MIGRATION=000012_create_orders.up.sql
+make wire
+make swag
+make build
+make check-all
+```
+
+Restarting the development app applies new migrations. Production deployments run migrations explicitly. See [deployment](docs/deployment.md).
+
+## Verify
+
+```bash
+make test
+make check-all
+```
+
+Install golangci-lint v2.14.0 or a newer version compatible with Go 1.27 for the full lint check. Integration tests need a running application, PostgreSQL, and Redis:
+
+```bash
+APP_HOST=localhost APP_PORT=8080 make test-integration
+```
+
+Integration tests create application records. Use a separate development database when running them.
+
+## Documentation
+
+- [Code patterns](docs/code-patterns.md)
+- [Deployment](docs/deployment.md)
+- [Contributing](.github/CONTRIBUTING.md)
+- [License](LICENSE)

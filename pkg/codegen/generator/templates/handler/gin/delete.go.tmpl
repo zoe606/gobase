@@ -1,0 +1,45 @@
+package {{.Package}}
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	{{.Package}}uc "{{.Module}}/internal/usecase/{{.Package}}"
+	"{{.Module}}/pkg/response"
+)
+
+// Delete godoc
+// @Summary     Delete {{.Package}}
+// @Description Delete a {{.Package}} by ID
+// @ID          {{.Package}}-delete
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "{{.Entity}} ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid {{.Package}} ID")
+		return
+	}
+
+	if err := h.{{.Variable}}UC.Delete(r.Context(), uint(id)); err != nil {
+		if errors.Is(err, {{.Package}}uc.ErrNotFound) {
+			response.NotFound(w, r, "{{.Entity}} not found")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - Delete")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.NoContent(w, r)
+}

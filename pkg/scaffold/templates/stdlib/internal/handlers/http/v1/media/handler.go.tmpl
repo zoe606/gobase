@@ -1,0 +1,57 @@
+package media
+
+import (
+	"net/http"
+	"strconv"
+
+	"github.com/go-playground/validator/v10"
+
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+)
+
+// Handler handles media endpoints.
+type Handler struct {
+	mediaUC    usecase.Media
+	jwtService jwt.Service
+	l          logger.Interface
+	v          *validator.Validate
+	maxSize    int64
+}
+
+// New creates a new media handler.
+func New(mediaUC usecase.Media, jwtService jwt.Service, l logger.Interface, maxSize int64) *Handler {
+	return &Handler{
+		mediaUC:    mediaUC,
+		jwtService: jwtService,
+		l:          l,
+		v:          validator.New(validator.WithRequiredStructEnabled()),
+		maxSize:    maxSize,
+	}
+}
+
+// RegisterRoutes sets up media routes.
+func (h *Handler) RegisterRoutes(router *routing.Router) {
+	media := router.Group("/media")
+	media.Use(middleware.JWTAuth(h.jwtService, h.l))
+	{
+		media.Handle("POST", "/upload", http.HandlerFunc(h.Upload))
+		media.Handle("POST", "/presigned-url", http.HandlerFunc(h.GetPresignedURL))
+		media.Handle("GET", "/:id", http.HandlerFunc(h.GetByID))
+		media.Handle("GET", "/:id/url", http.HandlerFunc(h.GetURL))
+		media.Handle("DELETE", "/:id", http.HandlerFunc(h.Delete))
+		media.Handle("GET", "", http.HandlerFunc(h.GetByAttachable))
+	}
+}
+
+// parseUint parses a string to uint.
+func parseUint(s string) (uint, error) {
+	id, err := strconv.ParseUint(s, 10, 64)
+	if err != nil {
+		return 0, err
+	}
+	return uint(id), nil
+}

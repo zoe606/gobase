@@ -1,0 +1,51 @@
+package article
+
+import (
+	"github.com/gin-gonic/gin"
+	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/handlers/http/middleware"
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// Create godoc
+// @Summary     Create article
+// @Description Create a new article
+// @ID          article-create
+// @Tags        articles
+// @Accept      json
+// @Produce     json
+// @Security    BearerAuth
+// @Param       request body articledto.CreateRequest true "Create Article request"
+// @Success     201 {object} response.Response[articledto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /articles [post]
+func (h *Handler) Create(c *gin.Context) {
+	w,
+		r := c.Writer, c.Request
+
+	var req articledto.CreateRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	result, err := h.articleUC.Create(r.Context(), userID, req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - article - Create")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.Created(w, r, result)
+}

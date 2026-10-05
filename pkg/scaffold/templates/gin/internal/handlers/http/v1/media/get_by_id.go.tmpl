@@ -1,0 +1,37 @@
+package media
+
+import (
+	"github.com/gin-gonic/gin"
+	mediadto "go-boilerplate/internal/dto/media"
+	"go-boilerplate/pkg/response"
+)
+
+// GetByID returns a media item by ID.
+// @Summary     Get media by ID
+// @Description Returns a media item by its ID
+// @Tags        media
+// @Security    BearerAuth
+// @Produce     json
+// @Param       id path int true "Media ID"
+// @Success     200 {object} response.Response[mediadto.MediaResponse]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Router      /media/{id} [get]
+func (h *Handler) GetByID(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	id, err := parseUint(c.Param("id"))
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid media ID")
+		return
+	}
+
+	media, err := h.mediaUC.GetByID(r.Context(), id)
+	if err != nil {
+		response.NotFound(w, r, "Media not found")
+		return
+	}
+
+	response.OK(w, r, mediadto.FromEntity(media))
+}

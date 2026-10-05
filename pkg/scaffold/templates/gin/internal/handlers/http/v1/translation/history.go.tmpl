@@ -1,0 +1,47 @@
+package translation
+
+import (
+	"github.com/gin-gonic/gin"
+	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// History godoc
+// @Summary     Show history
+// @Description Show all translation history with pagination
+// @ID          history
+// @Tags  	    translation
+// @Accept      json
+// @Produce     json
+// @Param       page  query int false "Page number" default(1)
+// @Param       limit query int false "Items per page" default(20)
+// @Param       sort  query string false "Sort field" Enums(created_at, id)
+// @Param       order query string false "Sort order" Enums(asc, desc) default(desc)
+// @Success     200 {object} response.Response[[]translationdto.TranslationResponse]
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /translation/history [get]
+func (h *Handler) History(c *gin.Context) {
+	w, r :=
+		c.Writer, c.Request
+
+	var req translationdto.HistoryRequest
+	if err := request.Query(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_PARAMS", "invalid pagination parameters")
+		return
+	}
+
+	result, err := h.translationUC.History(r.Context(), req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - translation - History")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OKWithMeta(w, r, result.Items, &response.Meta{
+		Page:       result.Meta.Page,
+		Limit:      result.Meta.Limit,
+		Total:      result.Meta.Total,
+		TotalPages: result.Meta.TotalPages,
+	})
+}

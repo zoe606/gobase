@@ -230,7 +230,7 @@ func TestBuildUseCaseListContent(t *testing.T) {
 	}
 
 	// Check Normalize call
-	if !strings.Contains(content, "req.Params.Normalize()") {
+	if !strings.Contains(content, "req.Normalize()") {
 		t.Error("expected Normalize() call")
 	}
 
@@ -239,9 +239,9 @@ func TestBuildUseCaseListContent(t *testing.T) {
 		t.Error("expected articleRepo.List call with req.Params")
 	}
 
-	// Check response with req.Params
-	if !strings.Contains(content, "articledto.NewListResponse(articles, total, req.Params)") {
-		t.Error("expected NewListResponse call with req.Params")
+	// Check pagination values in the response.
+	if !strings.Contains(content, "articledto.NewListResponse(articles, total, req.Page, req.Limit)") {
+		t.Error("expected NewListResponse call with page and limit")
 	}
 }
 

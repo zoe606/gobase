@@ -1,0 +1,47 @@
+package {{.Package}}
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	_ "{{.Module}}/internal/dto/{{.Package}}" // swagger type resolution
+	{{.Package}}uc "{{.Module}}/internal/usecase/{{.Package}}"
+	"{{.Module}}/pkg/response"
+)
+
+// GetByID godoc
+// @Summary     Get {{.Package}} by ID
+// @Description Get a {{.Package}} by its ID
+// @ID          {{.Package}}-get-by-id
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "{{.Entity}} ID"
+// @Success     200 {object} response.Response[{{.Package}}dto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s/{id} [get]
+func (h *Handler) GetByID(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid {{.Package}} ID")
+		return
+	}
+
+	result, err := h.{{.Variable}}UC.GetByID(r.Context(), uint(id))
+	if err != nil {
+		if errors.Is(err, {{.Package}}uc.ErrNotFound) {
+			response.NotFound(w, r, "{{.Entity}} not found")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - GetByID")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

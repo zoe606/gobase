@@ -1,0 +1,81 @@
+package middleware
+
+import (
+	"bytes"
+	"errors"
+	"io"
+	"net/http"
+	"strings"
+
+	"go-boilerplate/config"
+	"go-boilerplate/pkg/cache"
+	"go-boilerplate/pkg/jwt"
+)
+
+type idempotencyResponse struct {
+	Status      int    `json:"status"`
+	ContentType string `json:"content_type"`
+	Body        []byte `json:"body"`
+}
+
+type idempotencyMiddleware struct {
+	appCache cache.Cache
+	cfg      config.Idempotency
+	services []jwt.Service
+}
+
+func Idempotency(appCache cache.Cache, cfg config.Idempotency, services ...jwt.Service) func(http.Handler) http.Handler {
+	implementation := idempotencyMiddleware{appCache: appCache, cfg: cfg, services: services}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { implementation.serveHTTP(w, r, next) })
+	}
+}
+
+func (m idempotencyMiddleware) serveHTTP(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	if r.Method == http.MethodGet || r.Method == http.MethodDelete || r.Method == http.MethodOptions || r.Method == http.MethodHead {
+		next.ServeHTTP(w, r)
+		return
+	}
+	key := strings.TrimSpace(r.Header.Get("Idempotency-Key"))
+	if key == "" {
+		if m.cfg.RequiredForPost && r.Method == http.MethodPost {
+			w.Header().Set("Content-Type", "application/json")
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"success":false,"error":{"code":"MISSING_IDEMPOTENCY_KEY","message":"Idempotency-Key header is required for POST requests"}}`))
+			return
+		}
+		next.ServeHTTP(w, r)
+		return
+	}
+	body, readErr := io.ReadAll(r.Body)
+	if readErr != nil {
+		next.ServeHTTP(w, r)
+		return
+	}
+	r.Body = io.NopCloser(bytes.NewReader(body))
+	user, valid := idempotencyScope(GetUserID(r), r.Header.Get("Authorization"), body, m.services)
+	if !valid {
+		next.ServeHTTP(w, r)
+		return
+	}
+	cacheKey := "idempotency:" + user + ":" + r.Method + ":" + r.URL.Path + ":" + key
+	var cached idempotencyResponse
+	err := m.appCache.Get(r.Context(), cacheKey, &cached)
+	if err == nil {
+		w.Header().Set("Content-Type", cached.ContentType)
+		w.Header().Set("X-Idempotent-Replay", "true")
+		w.WriteHeader(cached.Status)
+		_, _ = w.Write(cached.Body)
+		return
+	}
+	if !errors.Is(err, cache.ErrNotFound) {
+		next.ServeHTTP(w, r)
+		return
+	}
+	capture := &captureWriter{ResponseWriter: w, capture: true}
+	next.ServeHTTP(capture, r)
+	if capture.Status() >= 400 {
+		return
+	}
+	_ = m.appCache.Set(r.Context(), cacheKey, idempotencyResponse{Status: capture.Status(), ContentType: w.Header().Get("Content-Type"), Body: capture.body.Bytes()}, m.cfg.TTL)
+}

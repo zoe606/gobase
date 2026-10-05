@@ -1,0 +1,46 @@
+package auth
+
+import (
+	"net/http"
+
+	"github.com/go-playground/validator/v10"
+
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/internal/usecase"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+)
+
+// Handler handles authentication endpoints.
+type Handler struct {
+	authUC     usecase.Auth
+	jwtService jwt.Service
+	l          logger.Interface
+	v          *validator.Validate
+}
+
+// New creates a new auth handler.
+func New(authUC usecase.Auth, jwtService jwt.Service, l logger.Interface) *Handler {
+	return &Handler{
+		authUC:     authUC,
+		jwtService: jwtService,
+		l:          l,
+		v:          validator.New(validator.WithRequiredStructEnabled()),
+	}
+}
+
+// RegisterRoutes sets up auth routes.
+func (h *Handler) RegisterRoutes(router *routing.Router) {
+	auth := router.Group("/auth")
+	{
+		// Public routes
+		auth.Handle("POST", "/register", http.HandlerFunc(h.Register))
+		auth.Handle("POST", "/login", http.HandlerFunc(h.Login))
+		auth.Handle("POST", "/refresh", http.HandlerFunc(h.Refresh))
+
+		// Protected routes
+		auth.Handle("POST", "/logout", middleware.JWTAuth(h.jwtService, h.l)(http.HandlerFunc(h.Logout)))
+		auth.Handle("GET", "/me", middleware.JWTAuth(h.jwtService, h.l)(http.HandlerFunc(h.Me)))
+	}
+}
