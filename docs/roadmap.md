@@ -1,8 +1,8 @@
 # Gobase Roadmap
 
-Updated: October 5, 2026.
+Updated: October 6, 2026.
 
-This document plans work on the gobase template. Phase 1 is merged. Phase 2 and later work remain proposals. Generated applications can adopt later changes according to their needs.
+This document plans work on the gobase template. Phase 1 is merged. Phase 2.1 is approved and in progress. Phase 2.2 and later work remain proposals. Generated applications can adopt later changes according to their needs.
 
 ## Current Baseline
 
@@ -18,7 +18,7 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 |-------|---------|--------|
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
-| 2. Application hardening | Complete auth flows, metrics export, and resource lifecycle | Proposed; start with 2.1 after agreeing its response contract |
+| 2. Application hardening | Complete auth flows, metrics export, and resource lifecycle | 2.1 in progress; remaining slices proposed |
 | Later: starter profiles | Optional smaller outputs for different project needs | Deferred; design not selected |
 
 ## Phase 1: Template Release Readiness
@@ -57,25 +57,25 @@ Complete the remaining application work in small changes. This continues the bac
 
 ### Proposed Execution Order
 
-Implement one slice at a time on a new branch from `master`. Keep the existing order below. Each slice needs its own scope, verification, and PR before the next slice starts. Phase 2 implementation has not started.
+Implement one slice at a time on a new branch from `master`. Keep the existing order below. Each slice needs its own scope, verification, and PR before the next slice starts. Phase 2.1 is in progress on `fix/article-list-validation`.
 
 Update the template README and `pkg/scaffold/application/README.md.tmpl` when a slice changes feature availability or setup instructions.
 
-| Order | Proposed issue | Completion evidence |
+| Order | Issue | Completion evidence |
 |-------|----------------|---------------------|
-| 2.1 | Validate article list filters across HTTP engines | Agreed invalid-filter response, preserved valid requests, and passing shared HTTP contracts |
-| 2.2 | Connect email verification and password reset through HTTP and workers | HTTP, queue, worker, persistence, and token consumption checks for every engine |
-| 2.3 | Configure OpenTelemetry metrics export and shutdown | Exported measurements when enabled, working disabled mode, and provider shutdown |
-| 2.4 | Define Redis client ownership and shutdown | Cache and rate limiter lifecycle checks, including disabled and memory configurations |
-| 2.5 | Run Docker app and worker as a non-root user | Startup, upload, worker processing, and shutdown under the configured UID and GID |
+| 2.1 | [#48: Validate article list filters](https://github.com/zoe606/gobase/issues/48) | Agreed invalid-filter response, preserved valid requests, and passing shared HTTP contracts |
+| 2.2 | [#49: Connect email verification and password reset](https://github.com/zoe606/gobase/issues/49) | HTTP, queue, worker, persistence, and token consumption checks for every engine |
+| 2.3 | [#50: Configure OpenTelemetry metrics](https://github.com/zoe606/gobase/issues/50) | Exported measurements when enabled, working disabled mode, and provider shutdown |
+| 2.4 | [#51: Define Redis client ownership and shutdown](https://github.com/zoe606/gobase/issues/51) | Cache and rate limiter lifecycle checks, including disabled and memory configurations |
+| 2.5 | [#52: Run Docker as a non-root user](https://github.com/zoe606/gobase/issues/52) | Startup, upload, worker processing, and shutdown under the configured UID and GID |
 
-The recommended first slice is 2.1. Before implementing it, agree which invalid filter values return HTTP 400 and the error code returned in the existing response envelope. Pagination normalization must retain its current behavior unless a separate change is agreed.
+The first slice is 2.1. Its response contract was agreed on October 6, 2026: accept omitted or empty status and the exact values `draft` and `published`; reject other values with HTTP 400, `VALIDATION_ERROR`, and the existing field validation response. Malformed queries retain `INVALID_QUERY`. Pagination normalization retains its current behavior.
 
 ### 2.1 Article List Validation
 
 `ListRequest.Status` declares allowed values, but the current article list handlers do not call the validator. The use case normalizes pagination.
 
-- Define the response contract for invalid filter values before changing it. Rejecting a value that was previously accepted is an observable behavior change.
+- Implement the agreed response contract above. Rejecting a previously accepted invalid status is an intentional API behavior change.
 - Apply the agreed validation consistently in the runnable checkout and all engine templates.
 - Extend the shared HTTP contract suite for the changed cases. Existing valid requests must retain their behavior.
 
@@ -124,9 +124,9 @@ The final Docker image uses `scratch` without a `USER` instruction.
 
 ### GitHub Issue Tracking
 
-No GitHub issues are open as of October 5, 2026. The proposed issues above have not been created.
+Five Phase 2 issues were created on October 6, 2026. Their links are listed above. Issue #48 is in progress; #49 through #52 remain planned.
 
-Create one issue for each Phase 2 slice. Each issue should link to its section in this document and state the current problem, implementation scope, unresolved decisions, completion criteria, and required verification. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs.
+Use one issue for each Phase 2 slice. Each issue links to its section in this document and states the current problem, implementation scope, unresolved decisions, completion criteria, and required verification. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs.
 
 Link each implementation PR to its issue. Use `Closes #<issue-number>` only when the PR completes all acceptance criteria. Close the issue after the PR is merged and the relevant checks pass. If a PR completes only part of an issue, keep it open and list the remaining work. Record deferred work explicitly instead of marking it complete.
 

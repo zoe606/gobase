@@ -99,4 +99,4 @@ make docker-stop
 
 Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. Release publication and release notes remain separate work for the revision selected for that release.
 
-Phase 2 application hardening has not started. See the [roadmap](roadmap.md).
+Phase 2.1 article filter validation is in progress in [issue #48](https://github.com/zoe606/gobase/issues/48). The remaining Phase 2 work is planned. See the [roadmap](roadmap.md).

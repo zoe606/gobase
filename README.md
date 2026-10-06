@@ -23,7 +23,7 @@ Go REST API template with Clean Architecture, JWT authentication, media uploads,
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
-Phase 2 application hardening is planned. Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. Other planned work covers article filter validation, OpenTelemetry metrics export, Redis shutdown, and non-root Docker execution. See the [roadmap](docs/roadmap.md#phase-2-application-hardening) for scope, order, and completion criteria.
+Phase 2.1 article filter validation is in progress in [issue #48](https://github.com/zoe606/gobase/issues/48). The remaining application hardening work is planned. Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. Other planned work covers OpenTelemetry metrics export, Redis shutdown, and non-root Docker execution. See the [roadmap](docs/roadmap.md#phase-2-application-hardening) for scope, order, and completion criteria.
 
 ## Create a Project
 
