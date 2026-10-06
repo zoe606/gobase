@@ -13,7 +13,7 @@ tool (
 require (
 	github.com/Conight/go-googletrans v0.3.0
 	github.com/DATA-DOG/go-sqlmock v1.5.2
-	github.com/alicebob/miniredis/v2 v2.37.0
+	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/ansrivas/fiberprometheus/v2 v2.17.0
 	github.com/disintegration/imaging v1.6.2
 	github.com/go-playground/validator/v10 v10.30.1
