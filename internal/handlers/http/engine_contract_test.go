@@ -24,11 +24,15 @@ import (
 	mediadto "go-boilerplate/internal/dto/media"
 	profiledto "go-boilerplate/internal/dto/profile"
 	translationdto "go-boilerplate/internal/dto/translation"
+	"go-boilerplate/internal/entity"
+	"go-boilerplate/internal/repo"
 	"go-boilerplate/internal/usecase"
 	articleuc "go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/cache"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/pagination"
+	"go-boilerplate/pkg/response"
 )
 
 type contractHealth struct{ err error }
@@ -92,6 +96,79 @@ func (u contractArticle) Delete(_ context.Context, userID, id uint) error {
 	require.Equal(u.t, uint(7), userID)
 	require.Equal(u.t, uint(9), id)
 	return nil
+}
+
+type contractArticleListRepo struct {
+	repo.ArticleRepo
+	requests chan repo.ArticleListParams
+}
+
+func (r contractArticleListRepo) List(_ context.Context, params repo.ArticleListParams) ([]*entity.Article, int64, error) {
+	r.requests <- params
+	return []*entity.Article{}, 0, nil
+}
+
+func TestEngineArticleListValidation(t *testing.T) {
+	tests := []struct {
+		name, query string
+		status      int
+		code        string
+		params      repo.ArticleListParams
+	}{
+		{name: "omitted status", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.NewParams()}},
+		{name: "empty status", query: "?status=", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.NewParams()}},
+		{name: "draft status", query: "?status=draft", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.NewParams(), Status: "draft"}},
+		{name: "published status", query: "?status=published", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.NewParams(), Status: "published"}},
+		{name: "valid filters", query: "?status=published&user_id=7&search=hello%20world&page=3&limit=5&sort=title&order=asc", status: http.StatusOK,
+			params: repo.ArticleListParams{Params: pagination.Params{Page: 3, Limit: 5, Sort: "title", Order: "asc"}, Status: "published", UserID: 7, Search: "hello world"}},
+		{name: "zero pagination", query: "?page=0&limit=0", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.NewParams()}},
+		{name: "negative pagination", query: "?page=-3&limit=-2", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.NewParams()}},
+		{name: "pagination limit and order", query: "?page=-3&limit=999&order=other", status: http.StatusOK, params: repo.ArticleListParams{Params: pagination.Params{Page: 1, Limit: 100, Order: "desc"}}},
+		{name: "unknown status", query: "?status=archived", status: http.StatusBadRequest, code: "VALIDATION_ERROR"},
+		{name: "wrong status case", query: "?status=Draft", status: http.StatusBadRequest, code: "VALIDATION_ERROR"},
+		{name: "status whitespace", query: "?status=draft%20", status: http.StatusBadRequest, code: "VALIDATION_ERROR"},
+		{name: "malformed query", query: "?user_id=bad", status: http.StatusBadRequest, code: "INVALID_QUERY"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			requests := make(chan repo.ArticleListParams, 1)
+			article := articleuc.New(contractArticleListRepo{requests: requests}, audit.NewNoop(), cache.NewNoop())
+			service := jwt.New("contract-secret", time.Hour, time.Hour)
+			handler := contractHandler(t, contractConfig(), contractTranslation{}, contractAuth{t: t}, contractMedia{t: t}, contractProfile{t: t}, article, service, contractHealth{}, nil)
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/articles"+tt.query, http.NoBody))
+			require.Equal(t, tt.status, recorder.Code, recorder.Body.String())
+
+			if tt.code != "" {
+				var result response.ErrorResponse
+				require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &result))
+				require.False(t, result.Success)
+				require.Equal(t, tt.code, result.Error.Code)
+				if tt.code == "VALIDATION_ERROR" {
+					require.Equal(t, "Validation failed", result.Error.Message)
+					require.Equal(t, map[string]string{"Status": "Must be one of: draft published"}, result.Error.Details)
+				}
+				select {
+				case <-requests:
+					t.Fatal("invalid filters reached the article repository")
+				default:
+				}
+				return
+			}
+
+			select {
+			case params := <-requests:
+				require.Equal(t, tt.params, params)
+			default:
+				t.Fatal("valid filters did not reach the article repository")
+			}
+			var result response.Response[articledto.ListResponse]
+			require.NoError(t, json.Unmarshal(recorder.Body.Bytes(), &result))
+			require.True(t, result.Success)
+			require.Equal(t, tt.params.Page, result.Data.Meta.Page)
+			require.Equal(t, tt.params.Limit, result.Data.Meta.Limit)
+		})
+	}
 }
 
 type contractProfile struct {

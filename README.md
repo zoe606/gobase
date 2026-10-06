@@ -66,6 +66,8 @@ http://localhost:8080/swagger/
 
 All endpoints, request/response schemas, and authentication requirements are documented there.
 
+`GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination continues to use `page` and `limit` with the existing defaults and normalization.
+
 ## Architecture
 
 ```mermaid
