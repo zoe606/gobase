@@ -99,4 +99,4 @@ make docker-stop
 
 Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. Release publication and release notes remain separate work for the revision selected for that release.
 
-Phase 2.1 article filter validation is in progress in [issue #48](https://github.com/zoe606/gobase/issues/48). The remaining Phase 2 work is planned. See the [roadmap](roadmap.md).
+Phase 2.1 article filter validation is implemented and verified in [PR #53](https://github.com/zoe606/gobase/pull/53), pending merge. The remaining foundation work covers Redis shutdown and non-root Docker execution. Later phases plan minimal service output, monorepo generation, and a two-service HTTP communication example. Email verification, password reset, and OpenTelemetry metrics export remain deferred. See the [roadmap](roadmap.md).

@@ -60,4 +60,6 @@ The shared HTTP contract suite runs against real HTTP servers. It covers JSON pa
 
 ## Next Phases
 
-The [roadmap](roadmap.md) tracks completed release readiness checks, followed by proposed application hardening in separate slices. The [release readiness report](release-readiness.md) records local Docker and worker checks, the tested implementation revision, and passing GitHub Actions results for all three engines.
+The [roadmap](roadmap.md) tracks engine foundation, minimal service output, monorepo generation, and a two-service HTTP communication example. A future generated workspace selects one engine per service and keeps each service's module and business implementation independent. Minimal output and workspace generation are planned capabilities. The current initializer still creates one full application.
+
+Email verification, password reset, and OpenTelemetry metrics export remain deferred application features. The [release readiness report](release-readiness.md) records completed local Docker and worker checks, the tested implementation revision, and passing GitHub Actions results for all three engines.
