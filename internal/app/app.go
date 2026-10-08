@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 
 	"github.com/golang-migrate/migrate/v4"
@@ -114,12 +115,13 @@ func Run(cfg *config.Config) {
 		auditLogger = audit.NewNoop()
 	}
 
-	appCache := initAppCache(cfg, l)
+	appCache, rateLimitStore, closeRedis := initRedisStores(cfg, l)
+	defer closeRedis()
 
 	jwtService := initJWT(cfg)
 	repos := initRepositories(pg.DB)
 	uc := initUseCases(cfg, repos, jwtService, asynqClient, storageProvider, l, auditLogger, appCache)
-	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg, appCache)
+	httpServer := initHTTPServer(cfg, l, uc, jwtService, pg, appCache, rateLimitStore)
 
 	l.Info("Server started on port %s", cfg.HTTP.Port)
 
@@ -307,7 +309,7 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 }
 
 // initHTTPServer creates and starts HTTP server with routes.
-func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, pg *postgres.Postgres, appCache pkgcache.Cache) *httpserver.Server {
+func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, pg *postgres.Postgres, appCache pkgcache.Cache, rateLimitStore ratelimiter.Storage) *httpserver.Server {
 	httpServer := httpserver.New(
 		l,
 		httpserver.Port(cfg.HTTP.Port),
@@ -317,18 +319,36 @@ func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtServi
 		httpserver.ShutdownTimeout(cfg.HTTP.ShutdownTimeout),
 	)
 
-	rateLimitStore := initRateLimitStorage(cfg, l)
-
 	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg, rateLimitStore, appCache)
 	httpServer.Start()
 
 	return httpServer
 }
 
-// initAppCache creates the application cache based on config.
-func initAppCache(cfg *config.Config, l *logger.Logger) pkgcache.Cache {
+func initRedisStores(cfg *config.Config, l *logger.Logger) (pkgcache.Cache, ratelimiter.Storage, func()) {
+	appCache, cacheClient := initAppCache(cfg, l)
+	rateLimitStore := initRateLimitStorage(cfg, l)
+
+	closeRedis := sync.OnceFunc(func() {
+		if rateLimitStore != nil {
+			if err := rateLimitStore.Close(); err != nil && !errors.Is(err, goredis.ErrClosed) {
+				l.Error(fmt.Errorf("app - Run - rate limiter Redis close: %w", err))
+			}
+		}
+		if cacheClient != nil {
+			if err := cacheClient.Close(); err != nil && !errors.Is(err, goredis.ErrClosed) {
+				l.Error(fmt.Errorf("app - Run - cache Redis close: %w", err))
+			}
+		}
+	})
+
+	return appCache, rateLimitStore, closeRedis
+}
+
+// The caller owns the returned Redis client; the cache only uses it.
+func initAppCache(cfg *config.Config, l *logger.Logger) (pkgcache.Cache, *goredis.Client) {
 	if !cfg.Cache.Enabled {
-		return pkgcache.NewNoop()
+		return pkgcache.NewNoop(), nil
 	}
 
 	redisClient := goredis.NewClient(&goredis.Options{
@@ -339,7 +359,7 @@ func initAppCache(cfg *config.Config, l *logger.Logger) pkgcache.Cache {
 
 	l.Info("Cache using Redis backend at %s", cfg.Redis.Addr())
 
-	return pkgcache.NewRedis(redisClient, cfg.Cache.Prefix)
+	return pkgcache.NewRedis(redisClient, cfg.Cache.Prefix), redisClient
 }
 
 // initRateLimitStorage creates rate limiter storage based on config.

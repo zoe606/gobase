@@ -78,6 +78,18 @@ See `.env.example` for the complete list with defaults.
 
 ## Health Endpoints
 
+### Redis Ownership and Shutdown
+
+The application bootstrap creates separate Redis clients for the enabled application cache and Redis rate limiter. It closes both after HTTP shutdown. Cleanup is safe to call more than once and still closes the remaining client if one client is already closed.
+
+The cache uses its client without owning its lifecycle. The rate limiter storage closes its own client when the bootstrap calls `Close`. Separate clients preserve that ownership and keep closing one store from closing the other. Both use the existing Redis address, password, and database settings.
+
+Disabled cache creates no Redis cache client. Memory rate limiting uses the selected engine's memory store and creates no rate limiter Redis client. The Asynq queue client has its own existing shutdown path.
+
+Readiness checks PostgreSQL. Cache and rate limiting retain their existing Redis error handling.
+
+### Probes
+
 | Endpoint | Purpose |
 |----------|---------|
 | `GET /healthz` | Liveness probe; returns `OK` with status 200 |
