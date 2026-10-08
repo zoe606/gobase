@@ -1,0 +1,56 @@
+# {{APP_NAME}}
+
+Minimal Go HTTP service generated from gobase.
+
+- Go: 1.27.1 or newer
+- HTTP engine: `{{ENGINE}}`
+- Profile: `minimal`
+- Module: `{{MODULE}}`
+
+The service includes configuration, Zap logging, request and response helpers, request IDs, panic recovery, health probes, and graceful shutdown. It starts without a database, Redis, storage, email delivery, or a worker. The selected engine and profile are recorded in `.gobase.json`. Editing that file does not convert the application.
+
+## Run
+
+```bash
+make run
+curl http://localhost:8080/healthz
+curl http://localhost:8080/readyz
+```
+
+Both probes return `OK`. Readiness confirms that the HTTP service is running. There are no external dependency probes. Stop the process with Ctrl+C.
+
+Configuration is optional. Copy `config/config.example.yaml` to `config/config.yaml` to change defaults. Export `APP_NAME`, `APP_ENV`, `HTTP_PORT`, `HTTP_TIMEOUT`, `HTTP_SHUTDOWN_TIMEOUT`, `HTTP_BODY_LIMIT`, or `LOG_LEVEL` to override configuration. `.env` is used by Compose; direct Go commands read configuration and exported environment variables.
+
+## Add an Endpoint
+
+Add native routes in `internal/handlers/http/router.go` or register a separate native handler package there. The server exposes the selected router through `srv.App`. Gin uses `*gin.Engine`, stdlib uses `*http.ServeMux`, and Fiber uses `*fiber.App`.
+
+Gin handlers accept `*gin.Context` and use `response.OK(c.Writer, c.Request, result)`. Stdlib handlers accept `http.ResponseWriter` and `*http.Request` and use `response.OK(w, r, result)`. Fiber handlers accept `*fiber.Ctx` and use `return response.OK(c, result)`. The generic success envelope remains `response.Response[T]`.
+
+SQL CRUD generation and persistence wiring are omitted. `make gen`, `make gen-entity`, `make gen-full`, `make wire`, and the corresponding Go command paths return an error explaining that they require the full profile. Add native HTTP endpoints manually. These commands do not convert this service to a full application.
+
+## Docker
+
+Compose starts only the app. To use the local example configuration:
+
+```bash
+cp .env.example .env
+cp config/config.example.yaml config/config.yaml
+chmod 755 config
+chmod 644 config/config.yaml
+make docker-dev-build
+make docker-logs
+make docker-stop
+```
+
+The image runs as UID and GID `65532`. Copied configuration belongs to that user. `/tmp` is writable, and system CA certificates are readable. Host bind mounts retain their host permissions. The commands above make the local example configuration readable. For secret files, configure owner `65532` and mode `600`, or group `65532` and mode `640`, with suitable parent directory permissions on the Docker host.
+
+## Verify
+
+```bash
+make build
+make test
+make check-all
+```
+
+Install golangci-lint v2.14.0 or a newer version compatible with Go 1.27. No infrastructure is needed for tests. The HTTP contract tests register a temporary test endpoint; the running service includes only health routes.

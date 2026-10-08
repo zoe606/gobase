@@ -1,0 +1,37 @@
+package http
+
+import (
+	"net/http"
+	"net/http/httptest"
+
+	"github.com/gin-gonic/gin"
+
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	"go-boilerplate/pkg/httpserver"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
+)
+
+func newTestClient() *http.Client {
+	l := logger.New("error")
+	srv := httpserver.New(l)
+	NewRouter(srv, l)
+	srv.App.POST("/echo", func(c *gin.Context) {
+		var input echoInput
+		if err := c.ShouldBindJSON(&input); err != nil {
+			if details := v1.ParseValidationErrors(err); len(details) > 0 {
+				response.ValidationError(c.Writer, c.Request, details)
+			} else {
+				response.BadRequest(c.Writer, c.Request, "INVALID_BODY", "Invalid JSON body")
+			}
+			return
+		}
+		response.OK(c.Writer, c.Request, input)
+	})
+	srv.App.GET("/panic", func(_ *gin.Context) { panic("private-panic") })
+	return &http.Client{Transport: testTransport(func(req *http.Request) (*http.Response, error) {
+		recorder := httptest.NewRecorder()
+		srv.Handler.ServeHTTP(recorder, req)
+		return recorder.Result(), nil
+	})}
+}

@@ -24,12 +24,16 @@ The runnable checkout uses Fiber. Generated projects use independent endpoint te
 | Shared application behavior | `internal/usecase`, `internal/dto`, `internal/entity`, `internal/repo`, `internal/worker` |
 | Generated application documentation | `pkg/scaffold/application` |
 | Cross-engine HTTP behavior | `internal/handlers/http/engine_contract_test.go` |
+| Minimal service file set and dependencies | `pkg/scaffold/minimal.go` |
+| Minimal bootstrap, native routers, contracts, and documentation | `pkg/scaffold/templates/minimal` |
 
 For a shared endpoint change, update the affected engine templates and the runnable checkout. Keep each engine's native handler signature. Put business rules in shared use cases. Extend the shared contract tests when the HTTP behavior changes.
 
 Run `make check-all` in the checkout and `go run ./pkg/tools/verifyengines -lint` to generate and verify all three outputs. The engine verifier also generates and wires a CRUD feature, regenerates Swagger with the module's pinned tool, and checks its routes and response codes. Run the integration suite when changing persistence or HTTP contracts.
 
 Generated applications omit template maintenance tools and historical plans. Their README and contribution guide describe the selected engine and application commands.
+
+For minimal-profile changes, also run `go run ./pkg/tools/verifyengines -profile=minimal -lint`. It verifies all three engines without infrastructure, including process startup, health, unsupported generation errors, and shutdown. Minimal Docker CI jobs have no database or Redis services. Keep `full` as the default and preserve legacy metadata without a profile.
 
 ### Before You Code
 
@@ -159,4 +163,4 @@ Use sequential numbering:
 
 ## Branch Protection
 
-Before merging into `master`, check the CI Quality job and all three Engine jobs for the proposed revision. Local verification does not establish the GitHub Actions result.
+Before merging into `master`, check Quality, all three Engine jobs, and all three Minimal jobs for the proposed revision. Local verification does not establish the GitHub Actions result.

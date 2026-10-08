@@ -99,7 +99,7 @@ make docker-stop
 
 Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. Release publication and release notes remain separate work for the revision selected for that release.
 
-Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). This source implements non-root Docker execution for app and worker images. See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. The Phase 1 results above remain evidence for their recorded revisions. Later phases plan minimal service output, monorepo generation, and a two-service HTTP communication example. Email verification, password reset, and OpenTelemetry metrics export remain deferred. See the [roadmap](roadmap.md).
+Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Non-root Docker execution merged through [PR #58](https://github.com/zoe606/gobase/pull/58). See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. The Phase 1 results above remain evidence for their recorded revisions. This source adds minimal service output under issue #54. Monorepo generation and a two-service HTTP communication example remain planned. Email verification, password reset, and OpenTelemetry metrics export remain deferred. See the [roadmap](roadmap.md).
 
 ### Phase 2.3 Local Verification
 
@@ -109,4 +109,33 @@ The generated Gin quick start also passed with Compose's host configuration moun
 
 ### Phase 2.3 GitHub Actions Verification
 
-On October 8, 2026, [Quality](https://github.com/zoe606/gobase/actions/runs/37784776610) and [all three engine jobs](https://github.com/zoe606/gobase/actions/runs/37784776557) passed on implementation revision `8af33a54e20837a734c306fd0f373d14a76d63df` in [PR #58](https://github.com/zoe606/gobase/pull/58). Each engine job passed generation, builds, race tests, code generation, Swagger, lint, vulnerability scanning, and HTTP integration. Linux amd64 Docker checks also passed for actual app and worker identities, filesystem access, shared uploads, image variants, welcome email processing, and graceful shutdown. The PR remains open until reviewed and merged.
+On October 8, 2026, [Quality](https://github.com/zoe606/gobase/actions/runs/37784776610) and [all three engine jobs](https://github.com/zoe606/gobase/actions/runs/37784776557) passed on implementation revision `8af33a54e20837a734c306fd0f373d14a76d63df` in [PR #58](https://github.com/zoe606/gobase/pull/58). Each engine job passed generation, builds, race tests, code generation, Swagger, lint, vulnerability scanning, and HTTP integration. Linux amd64 Docker checks also passed for actual app and worker identities, filesystem access, shared uploads, image variants, welcome email processing, and graceful shutdown. Final revision `11e6151e066bf38017a78c2ad0ab2ded4933ce24` passed [Quality](https://github.com/zoe606/gobase/actions/runs/37785534960) and [all engine jobs](https://github.com/zoe606/gobase/actions/runs/37785534931) before PR #58 merged as `619162fddc412a32c2b4344171d083f0dac4dbf8`.
+
+### Phase 3 Local Verification
+
+On October 8, 2026, `feat/minimal-service-output`, based on merged revision `619162fddc412a32c2b4344171d083f0dac4dbf8`, passed the following checks for fresh minimal output in all three engines:
+
+| Check | Gin | stdlib | Fiber |
+|-------|-----|--------|-------|
+| Module resolution, verification, and excluded dependency checks | Passed | Passed | Passed |
+| Builds, race tests, and lint | Passed | Passed | Passed |
+| Parsing, validation, response envelope, request IDs, 404, and recovery contracts | Passed | Passed | Passed |
+| Startup without configuration files or external infrastructure | Passed | Passed | Passed |
+| Occupied-port startup failure and SIGTERM shutdown | Passed | Passed | Passed |
+| Clear unsupported CRUD and wiring errors without persistence output | Passed | Passed | Passed |
+| App-only Compose quick start with host configuration mount | Passed | Passed | Passed |
+| Linux arm64 non-root identity, configuration, CA certificates, and temporary writes | Passed | Passed | Passed |
+| Docker health, error response, and exit code 0 after shutdown | Passed | Passed | Passed |
+| Reachable vulnerabilities reported by govulncheck | 0 | 0 | 0 |
+
+Full-profile output also passed generation, module verification, builds, race tests, CRUD generation and wiring, Swagger checks, and lint for all three engines. Generated Gin integration tests passed with dedicated PostgreSQL 17 and Redis 7 fixtures and a running worker. The checkout passed `go test -count=1 ./...` against that app and `make check-all` with 93% coverage, no lint issues, and no reachable vulnerabilities. The fixture processes stopped cleanly, and their containers and volumes were removed.
+
+Minimal checks use Go 1.27.1 and golangci-lint 2.14.0 on macOS arm64. Compose runtime checks use Docker 29.4.0 and Linux arm64. Vulnerability scans report no reachable vulnerabilities; findings in unused package or module paths remain separate results. The Engines workflow adds three infrastructure-free Minimal jobs with Linux amd64 Docker checks. Remote results must be inspected for the implementing PR before merge.
+
+Repeat minimal verification from the template checkout:
+
+```bash
+go run ./pkg/tools/verifyengines -profile=minimal -lint -output=/tmp/gobase-minimal-check
+```
+
+Use a new output directory. Follow each generated README for its app-only Compose commands. The [minimal service guide](minimal-services.md) records the file set and omitted dependencies.

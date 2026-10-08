@@ -14,6 +14,7 @@ import (
 
 func main() {
 	engine := flag.String("engine", "gin", "HTTP engine: gin, stdlib, or fiber")
+	profile := flag.String("profile", "full", "project profile: full or minimal")
 	output := flag.String("output", "", "new project directory")
 	module := flag.String("module", "", "new Go module name")
 	name := flag.String("app-name", "", "application name")
@@ -24,7 +25,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, "-output is required")
 		os.Exit(1)
 	}
-	if err := scaffold.Generate(scaffold.Config{Source: *source, Output: *output, Module: *module, Name: *name, Engine: project.Engine(*engine)}); err != nil {
+	if err := scaffold.Generate(scaffold.Config{Source: *source, Output: *output, Module: *module, Name: *name, Engine: project.Engine(*engine), Profile: project.Profile(*profile)}); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
@@ -38,5 +39,5 @@ func main() {
 			os.Exit(1)
 		}
 	}
-	fmt.Printf("Created %s using %s.\n", *output, *engine)
+	fmt.Printf("Created %s using %s (%s profile).\n", *output, *engine, *profile)
 }

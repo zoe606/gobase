@@ -1,0 +1,31 @@
+package http
+
+import (
+	"crypto/rand"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	"go-boilerplate/pkg/httpserver"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
+)
+
+func NewRouter(srv *httpserver.Server, l logger.Interface) {
+	srv.App.Use(func(c *gin.Context) {
+		id := c.GetHeader("X-Request-ID")
+		if id == "" {
+			id = rand.Text()
+		}
+		c.Header("X-Request-ID", id)
+		l.Info("%s %s", c.Request.Method, c.Request.URL.Path)
+		c.Next()
+	}, gin.CustomRecovery(func(c *gin.Context, value any) {
+		l.Error("HTTP handler panic: %v", value)
+		response.InternalError(c.Writer, c.Request)
+		c.Abort()
+	}))
+	srv.App.GET("/healthz", func(c *gin.Context) { c.String(http.StatusOK, "OK") })
+	srv.App.GET("/readyz", func(c *gin.Context) { c.String(http.StatusOK, "OK") })
+	srv.App.NoRoute(func(c *gin.Context) { response.NotFound(c.Writer, c.Request, "Not found") })
+}

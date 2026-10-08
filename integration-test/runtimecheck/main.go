@@ -3,25 +3,39 @@ package main
 
 import (
 	"crypto/x509"
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"go-boilerplate/pkg/project"
 )
 
 func main() {
-	if err := check(); err != nil {
+	profile := flag.String("profile", string(project.Full), "runtime profile: full or minimal")
+	flag.Parse()
+	if err := check(project.Profile(*profile)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
-	fmt.Println("Non-root identity, configuration, migrations, certificates, uploads, and temporary files verified")
+	fmt.Println("Non-root identity, included runtime files, certificates, and writable paths verified")
 }
 
-func check() error {
+func check(profile project.Profile) error {
+	if err := profile.Validate(); err != nil {
+		return err
+	}
 	if err := checkIdentity(); err != nil {
 		return err
 	}
-	for _, pattern := range []string{"/config/*.yaml", "/migrations/*.sql"} {
+	patterns := []string{"/config/*.yaml"}
+	directories := []string{os.TempDir()}
+	if profile == project.Full {
+		patterns = append(patterns, "/migrations/*.sql")
+		directories = append(directories, "/uploads")
+	}
+	for _, pattern := range patterns {
 		if err := checkReadable(pattern); err != nil {
 			return err
 		}
@@ -29,7 +43,7 @@ func check() error {
 	if err := checkCertificates(); err != nil {
 		return err
 	}
-	for _, dir := range []string{"/uploads", os.TempDir()} {
+	for _, dir := range directories {
 		if err := checkWritable(dir); err != nil {
 			return err
 		}

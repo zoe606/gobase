@@ -1,0 +1,21 @@
+package main
+
+import (
+	"flag"
+	"log"
+
+	"go-boilerplate/config"
+	"go-boilerplate/internal/app"
+)
+
+func main() {
+	path := flag.String("config", "", "path to config file")
+	flag.Parse()
+	cfg, err := config.NewConfig(*path)
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err := app.Run(cfg); err != nil {
+		log.Fatal(err)
+	}
+}

@@ -1,4 +1,4 @@
-// Package project stores the HTTP engine selected when creating a project.
+// Package project stores the engine and profile selected when creating a project.
 package project
 
 import (
@@ -21,7 +21,8 @@ const (
 
 // Settings are used by code generation, not application runtime configuration.
 type Settings struct {
-	Engine Engine `json:"engine"`
+	Engine  Engine  `json:"engine"`
+	Profile Profile `json:"profile,omitempty"`
 }
 
 // Validate rejects engines without a supported integration.
@@ -38,7 +39,7 @@ func (e Engine) Validate() error {
 func Read(root string) (Settings, error) {
 	data, err := os.ReadFile(filepath.Join(root, ConfigFile))
 	if errors.Is(err, os.ErrNotExist) {
-		return Settings{Engine: Fiber}, nil
+		return Settings{Engine: Fiber, Profile: Full}, nil
 	}
 	if err != nil {
 		return Settings{}, fmt.Errorf("read project settings: %w", err)
@@ -47,5 +48,11 @@ func Read(root string) (Settings, error) {
 	if err := json.Unmarshal(data, &settings); err != nil {
 		return settings, fmt.Errorf("parse project settings: %w", err)
 	}
-	return settings, settings.Engine.Validate()
+	if settings.Profile == "" {
+		settings.Profile = Full
+	}
+	if err := settings.Engine.Validate(); err != nil {
+		return settings, err
+	}
+	return settings, settings.Profile.Validate()
 }

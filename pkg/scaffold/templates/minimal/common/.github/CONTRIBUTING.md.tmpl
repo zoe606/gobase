@@ -1,0 +1,7 @@
+# Contributing
+
+This service uses the `{{ENGINE}}` HTTP engine and the `minimal` profile. Keep native HTTP handlers in `internal/handlers/http`. Keep application startup and shutdown in `internal/app`.
+
+Run `make check-all` before committing. Tests do not require external infrastructure. Add tests for changed request parsing, validation, response behavior, and dependency lifecycle when adding dependencies.
+
+Persistence, bundled application features, workers, and automatic SQL CRUD wiring are omitted. Add the dependencies and lifecycle required by your service explicitly. Editing `.gobase.json` does not install features or convert the output.

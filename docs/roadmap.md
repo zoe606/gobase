@@ -2,13 +2,15 @@
 
 Updated: October 8, 2026.
 
-This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phase 1 and Phase 2.1 are merged. Phase 2.2 Redis lifecycle merged through PR #57. Phase 2.3 Docker non-root runtime is implemented in PR #58 and awaits merge. Later stages remain planned. GitHub issues record review and merge status.
+This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phases 1 and 2 are merged. Phase 3 is implemented and verified locally. Issue #54 tracks its GitHub verification and merge. Phases 4 and 5 remain planned. GitHub issues record review and merge status.
 
 ## Current Baseline
 
 The HTTP engine refactor is implemented and verified locally and in GitHub Actions. Project creation supports Gin, standard `net/http`, and Fiber. Each engine has independent endpoint and CRUD generator templates. Use cases, DTOs, entities, repositories, migrations, and workers remain shared.
 
 The engine is selected during project creation. `.gobase.json` records that choice for code generation. Changing this file does not migrate an existing application. The runnable template checkout retains Fiber for compatibility.
+
+Project creation also selects `PROFILE=full|minimal`. Full remains the default. Minimal output uses the selected native engine and starts without PostgreSQL, Redis, storage, email, or a worker. See [minimal services](minimal-services.md) for its file set, dependency policy, commands, and compatibility.
 
 All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. [PR #46](https://github.com/zoe606/gobase/pull/46) merged on October 5, 2026 as `66270fb626b7b6b5df208ce94b0d17f52fca8890`. GitHub Actions Quality and all three engine jobs passed on that `master` revision, including Linux amd64 Docker app and worker runtime checks. See the [release readiness report](release-readiness.md) for workflow links and the [local verification results](http-engines-verification.md) for environment details.
 
@@ -20,8 +22,8 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 |-------|---------|--------|
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
-| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | 2.1 and 2.2 merged; 2.3 implemented in PR #58, awaiting merge |
-| 3. Minimal service output | A service without bundled application features or required infrastructure | Planned; [#54](https://github.com/zoe606/gobase/issues/54) |
+| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | Complete; PRs #53, #57, and #58 merged |
+| 3. Minimal service output | A service without bundled application features or required infrastructure | Implemented; local verification passed; GitHub verification and merge tracked by [#54](https://github.com/zoe606/gobase/issues/54) |
 | 4. Monorepo generation | Independent service modules with root development commands | Planned; [#55](https://github.com/zoe606/gobase/issues/55) |
 | 5. Service communication example | Two independently running services with tested HTTP communication | Planned; [#56](https://github.com/zoe606/gobase/issues/56) |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
@@ -71,7 +73,7 @@ Finish the existing engine and runtime foundation before adding workspace genera
 
 ### Execution Order
 
-Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47, article list validation in PR #53, and Redis ownership in PR #57 are merged. Phase 2.3 implements Docker non-root runtime in this source. Minimal service output is next after Phase 2.3 merges.
+Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47, article list validation in PR #53, Redis ownership in PR #57, and Docker non-root runtime in PR #58 are merged. Phase 3 started from the merged Phase 2 baseline.
 
 Update the template README and `pkg/scaffold/application/README.md.tmpl` when a slice changes feature availability or setup instructions.
 
@@ -110,7 +112,7 @@ The final app and worker images use `scratch` with `USER 65532:65532`. The image
 - Host configuration bind mounts retain host permissions. The template and generated application README link to [runtime permissions](deployment.md#runtime-permissions) for local configuration, secret files, custom mounts, and volume upgrades.
 - The Engines workflow verifies actual process identity, filesystem access, upload, three image variants written by the worker, welcome email processing, and exit code `0` after shutdown for all three engines.
 
-Issue #52 stays open until [PR #58](https://github.com/zoe606/gobase/pull/58) merges. Start Phase 3 with the minimal file and dependency set required by issue #54 after that merge.
+[PR #58](https://github.com/zoe606/gobase/pull/58) merged on October 8, 2026 as `619162fddc412a32c2b4344171d083f0dac4dbf8`. Issue #52 is closed.
 
 ### Completion Criteria
 
@@ -122,9 +124,11 @@ Issue #52 stays open until [PR #58](https://github.com/zoe606/gobase/pull/58) me
 
 ## Phase 3: Minimal Service Output
 
-Tracking: [#54](https://github.com/zoe606/gobase/issues/54). Start after Phase 2 is complete and merged.
+Tracking: [#54](https://github.com/zoe606/gobase/issues/54). Implemented in this source. The issue remains open through PR verification and merge.
 
-The initializer currently copies a complete application with auth, articles, media, translation, migrations, and workers. Copying this output into every service would add features and infrastructure that the service may not need.
+The default initializer output remains a complete application with auth, articles, media, translation, migrations, and workers. `PROFILE=minimal` selects a separate file set for services that do not need those features. [Minimal service documentation](minimal-services.md) defines the file and dependency set used by the implementation.
+
+The minimal profile includes optional configuration, logging, native routing, shared response envelopes, request IDs, recovery, health checks, and shutdown. Its generated CI and app-only Docker Compose require no infrastructure. SQL generation and wiring commands report that they require the full profile. A missing profile in existing project metadata still means full.
 
 - Define the minimal file and dependency set before changing generation. Keep configuration, logging, the selected native HTTP engine, request and response helpers, health checks, and graceful shutdown.
 - Make minimal output an explicit choice. Keep the current full application output as the default and preserve existing project creation commands.
@@ -224,7 +228,7 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issues #48 and #51 closed when PRs #53 and #57 merged. Issue #52 tracks the implemented Docker non-root runtime and stays open until its PR merges. Issues #49 and #50 remain open and deferred. Issues #54, #55, and #56 track Phases 3, 4, and 5. All three later phases remain planned.
+Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 tracks implemented minimal output through verification and merge. Issues #55 and #56 track planned Phases 4 and 5.
 
 Use one issue for each bounded outcome. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs. Update the template README and generated application documentation when implemented behavior changes.
 
@@ -232,7 +236,7 @@ Link each implementation PR to its issue. Use `Closes #<issue-number>` only when
 
 ## Scope Limits
 
-Keep existing full applications compatible while adding the new outputs. Minimal output and monorepo generation are planned capabilities, not available commands.
+Keep existing full applications compatible while adding the new outputs. This source provides standalone full and minimal generation. Monorepo generation remains planned.
 
 Additional engines, runtime engine switching, conversion of existing applications, a universal HTTP handler API, and a rewrite of the shared business layers are outside these phases. Kubernetes, a service mesh, an API gateway, and a new message broker are outside the initial workspace and communication example.
 

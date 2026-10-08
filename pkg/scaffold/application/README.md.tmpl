@@ -4,11 +4,12 @@ Go application generated from gobase.
 
 - Go: 1.27.1 or newer
 - HTTP engine: `{{ENGINE}}`
+- Profile: `full`
 - Go module: `{{MODULE}}`
 - Database: PostgreSQL 17
 - Queue: Redis 7 and Asynq
 
-The engine is recorded in `.gobase.json` for code generation. Editing this file does not migrate the application to another engine.
+The engine and profile are recorded in `.gobase.json` for code generation. Editing this file does not convert the engine or profile. This full application includes persistence and workers. Minimal services are a separate choice when creating a project from the gobase template.
 
 ## Included Functionality
 
