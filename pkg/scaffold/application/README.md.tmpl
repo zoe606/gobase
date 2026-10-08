@@ -44,6 +44,8 @@ curl http://localhost:8080/readyz
 
 Swagger UI is available at `http://localhost:8080/swagger/`. Stop local Go processes with Ctrl+C. Stop the Docker services with `make docker-stop`.
 
+`GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination uses `page` and `limit` with the existing defaults and normalization.
+
 ## Run in Docker
 
 After copying the configuration files, build and start the app, worker, and infrastructure:

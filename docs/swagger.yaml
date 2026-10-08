@@ -641,8 +641,15 @@ paths:
       - default: 20
         description: Page size
         in: query
-        name: page_size
+        name: limit
         type: integer
+      - description: Article status; omit or leave empty for all statuses
+        enum:
+        - draft
+        - published
+        in: query
+        name: status
+        type: string
       produces:
       - application/json
       responses:
@@ -650,6 +657,10 @@ paths:
           description: OK
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_ListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
         "500":
           description: Internal Server Error
           schema:

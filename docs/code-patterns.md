@@ -6,13 +6,15 @@ This document covers the coding patterns and conventions used throughout the pro
 
 Use the API for the engine recorded in `.gobase.json`.
 
+All engines use the generic envelope `response.Response[T]` for success JSON responses. `T` is the type of `data` in the response. Success helpers such as `response.OK[T]` construct and write this envelope. Error responses use `response.ErrorResponse`.
+
 | Engine | Handler arguments | Response example |
 |--------|-------------------|------------------|
 | Gin | `c *gin.Context` | `response.OK(c.Writer, c.Request, result)` |
 | stdlib | `w http.ResponseWriter, r *http.Request` | `response.OK(w, r, result)` |
 | Fiber | `c *fiber.Ctx` | `return response.OK(c, result)` |
 
-Gin and stdlib response helpers write a response and return no value. Return from the handler after an error response. Fiber helpers return an error. Request parsing and middleware must use the selected engine's API.
+The helper's Go return value is separate from the JSON response. Gin and stdlib JSON helpers write to HTTP and return no Go value. Fiber JSON helpers write the same response format and return an `error` from writing the response. Return from the handler after an error response. Request parsing and middleware must use the selected engine's API.
 
 ## Error Handling
 

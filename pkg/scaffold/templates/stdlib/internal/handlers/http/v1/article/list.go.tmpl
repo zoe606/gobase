@@ -2,6 +2,7 @@ package article
 
 import (
 	articledto "go-boilerplate/internal/dto/article"
+	v1 "go-boilerplate/internal/handlers/http/v1"
 	"go-boilerplate/pkg/request"
 	"go-boilerplate/pkg/response"
 	"net/http"
@@ -15,14 +16,20 @@ import (
 // @Accept      json
 // @Produce     json
 // @Param       page query int false "Page number" default(1)
-// @Param       page_size query int false "Page size" default(20)
+// @Param       limit query int false "Page size" default(20)
+// @Param       status query string false "Article status; omit or leave empty for all statuses" Enums(draft,published)
 // @Success     200 {object} response.Response[articledto.ListResponse]
+// @Failure     400 {object} response.ErrorResponse
 // @Failure     500 {object} response.ErrorResponse
 // @Router      /articles [get]
 func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
 	var req articledto.ListRequest
 	if err := request.Query(r, &req); err != nil {
 		response.BadRequest(w, r, "INVALID_QUERY", "Invalid query parameters")
+		return
+	}
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
 		return
 	}
 
