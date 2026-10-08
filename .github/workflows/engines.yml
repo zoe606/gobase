@@ -105,10 +105,23 @@ jobs:
         run: |
           app_name="gobase-${{ matrix.engine }}-smoke-app"
           worker_name="gobase-${{ matrix.engine }}-smoke-worker"
-          trap 'docker logs "$app_name" 2>&1 || true; docker logs "$worker_name" 2>&1 || true; docker rm -f "$app_name" "$worker_name" > /dev/null 2>&1 || true' EXIT
+          upload_volume="gobase-${{ matrix.engine }}-smoke-uploads"
+          cleanup() {
+            docker logs "$app_name" 2>&1 || true
+            docker logs "$worker_name" 2>&1 || true
+            docker rm -f "$app_name" "$worker_name" > /dev/null 2>&1 || true
+            docker volume rm "$upload_volume" > /dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          cp config/config.example.yaml config/config.yaml
+          chmod 600 config/config.yaml
+          CGO_ENABLED=0 GOOS=linux go build -o "$RUNNER_TEMP/runtime-check" ./integration-test/runtimecheck
           docker build -f deployment/docker/Dockerfile --build-arg TARGET=app -t gobase-smoke:app .
           docker build -f deployment/docker/Dockerfile --build-arg TARGET=worker -t gobase-smoke:worker .
-          runtime_env=(--network host -e APP_ENV=development -e HTTP_PORT=18080 -e POSTGRES_HOST=localhost -e POSTGRES_DBNAME=test_db -e POSTGRES_SSLMODE=disable -e REDIS_HOST=localhost -e REDIS_DB=1 -e JWT_SECRET_KEY=integration-test-secret-key -e STORAGE_DRIVER=local)
+          test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:app)" = '65532:65532'
+          test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:worker)" = '65532:65532'
+          docker volume create "$upload_volume"
+          runtime_env=(--network host --mount "source=$upload_volume,target=/uploads" -e APP_ENV=development -e HTTP_PORT=18080 -e POSTGRES_HOST=localhost -e POSTGRES_DBNAME=test_db -e POSTGRES_SSLMODE=disable -e REDIS_HOST=localhost -e REDIS_DB=1 -e JWT_SECRET_KEY=integration-test-secret-key -e STORAGE_DRIVER=local -e STORAGE_LOCAL_PATH=/uploads)
           docker run -d --name "$app_name" "${runtime_env[@]}" gobase-smoke:app
           ready=false
           for attempt in $(seq 1 60); do
@@ -119,7 +132,12 @@ jobs:
           curl -fsS http://localhost:18080/healthz
           curl -fsS http://localhost:18080/swagger/doc.json | jq -e '.paths["/widgets"].post.responses["201"]'
           docker run -d --name "$worker_name" "${runtime_env[@]}" gobase-smoke:worker
-          email="phase1-${{ matrix.engine }}@example.com"
+          for container in "$app_name" "$worker_name"; do
+            docker cp "$RUNNER_TEMP/runtime-check" "$container":/runtime-check
+            docker exec "$container" /runtime-check
+          done
+          APP_HOST=localhost APP_PORT=18080 TEST_WORKER_ENABLED=true go test -count=1 -v ./integration-test/... -run 'TestHTTP(Register|Login|GetCurrentUser|RefreshToken|Logout|Unauthorized|CRUD|GeneratedCRUD)V1'
+          email="docker-${{ matrix.engine }}@example.com"
           curl -fsS -H 'Content-Type: application/json' -d "{\"email\":\"$email\",\"password\":\"SmokeTest123!\",\"name\":\"Docker smoke\"}" http://localhost:18080/v1/auth/register | jq -e '.success == true'
           processed=false
           for attempt in $(seq 1 60); do

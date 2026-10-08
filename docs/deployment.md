@@ -25,6 +25,32 @@ The supported local and CI database version is PostgreSQL 17. Redis uses version
 
 `.env` supplies Docker Compose variables. Local `make run` and `make run-worker` commands read `config/config.yaml` and exported environment variables. Container connection ports remain 5432 for PostgreSQL and 6379 for Redis even when host ports change.
 
+### Runtime Permissions
+
+Both runtime images use `scratch` and run as UID `65532` and GID `65532`. The image provides `/uploads` for local storage and `/tmp` for temporary files. Both paths are writable by the runtime user. Configuration and migrations copied into the image belong to this user, including generated files with mode `600`. The system CA certificate bundle remains readable.
+
+Compose mounts the host `config` directory read-only. Before using the example configuration with local Compose, allow directory traversal and reading of the example settings:
+
+```bash
+chmod 755 config
+chmod 644 config/config.yaml
+```
+
+These permissions are for the local example configuration. For files containing production secrets or JWT private keys, use owner `65532` with mode `600`, or group `65532` with mode `640`. Their parent directories must allow traversal by this user or group. Bind mounts keep their host permissions and replace the permissions set in the image. Configure these permissions on the Docker host. Changing mounted configuration does not require rebuilding the image, but does require restarting the app and worker.
+
+A fresh `upload_data` named volume receives the image's directory ownership. App and worker share this volume and the same UID and GID. Custom local storage paths, bind mounts, log file paths, and temporary mounts must also be writable by `65532:65532`. Overriding the container user requires matching permissions on all these paths.
+
+Existing upload volumes may still belong to root. Stop the app and worker and back up the volume before changing ownership. Find the exact existing volume name and replace `myapp_upload_data` below:
+
+```bash
+docker compose -f deployment/docker/docker-compose.yml -f deployment/docker/docker-compose.app.yml stop app worker
+docker volume ls
+docker run --rm --user 0:0 --mount source=myapp_upload_data,target=/uploads alpine:3 chown -R 65532:65532 /uploads
+make docker-dev-build
+```
+
+The ownership command applies only to the selected upload volume. It does not require deleting the volume or changing the database and Redis volumes. S3 configuration remains optional and does not require local upload permissions.
+
 ### Optional S3 or MinIO
 
 To use an existing S3 service, set `STORAGE_DRIVER=s3` and the `STORAGE_S3_*` settings in `.env` for Docker. Set `STORAGE_S3_DOCKER_ENDPOINT` to the endpoint reachable from containers. For local Go processes, export the settings or update `config/config.yaml`. Create the configured bucket before uploading files.
@@ -52,6 +78,16 @@ docker build -f deployment/docker/Dockerfile --build-arg TARGET=worker -t myapp:
 ```
 
 The Dockerfile uses Docker's target platform arguments for cross compilation. Use `--platform=linux/amd64` or `--platform=linux/arm64` when selecting a platform explicitly. See [Docker build variables](https://docs.docker.com/build/building/variables/#multi-platform-build-arguments).
+
+### Runtime Verification
+
+The Engines workflow builds and runs both images for Gin, stdlib, and Fiber. It checks the image user and actual process UID and GID, readable configuration, migrations and system certificates, writable temporary files, and a fresh shared upload volume. HTTP integration tests with `TEST_WORKER_ENABLED=true` wait for all three image variants before deleting the uploaded media. A welcome email task uses the noop sender. Both containers must exit with code `0` after graceful shutdown.
+
+To include the image worker check when testing against a running app and worker:
+
+```bash
+APP_HOST=localhost APP_PORT=8080 TEST_WORKER_ENABLED=true make test-integration
+```
 
 ## Production Checklist
 

@@ -14,7 +14,7 @@ The engine is recorded in `.gobase.json` for code generation. Editing this file 
 
 The application includes HTTP routes for register, login, refresh, logout, and the current user. It also includes article CRUD, profile management, media storage, translation, and background workers.
 
-Email verification and password reset have use cases and token persistence. Their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export are deferred template features. OpenTelemetry initializes tracing. The application bootstrap closes cache and rate limiter Redis clients after HTTP shutdown. Non-root Docker execution remains planned foundation work.
+Email verification and password reset have use cases and token persistence. Their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export are deferred template features. OpenTelemetry initializes tracing. The application bootstrap closes cache and rate limiter Redis clients after HTTP shutdown. Docker app and worker images run as UID and GID `65532`.
 
 ## Run Locally
 
@@ -51,6 +51,8 @@ Swagger UI is available at `http://localhost:8080/swagger/`. Stop local Go proce
 After copying the configuration files, build and start the app, worker, and infrastructure:
 
 ```bash
+chmod 755 config
+chmod 644 config/config.yaml
 make docker-dev-build
 make docker-logs
 make docker-stop
@@ -58,7 +60,7 @@ make docker-stop
 
 Docker Compose uses service names for database and Redis connections. Runtime ports inside the containers remain 5432, 6379, and 8080. Environment variables in `.env` select the host ports.
 
-The app and worker share the `upload_data` Docker volume for local storage.
+The app and worker share the `upload_data` Docker volume for local storage. Fresh volumes are writable by UID and GID `65532`. The image also provides a writable `/tmp` directory. The permissions above allow reading the local example configuration mounted by Compose. See [runtime permissions](docs/deployment.md#runtime-permissions) for secret files, custom paths, and existing upload volumes owned by root.
 
 ## Architecture
 

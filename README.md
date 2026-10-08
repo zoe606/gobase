@@ -23,7 +23,7 @@ Go REST API template with Clean Architecture, JWT authentication, media uploads,
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
-Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). The application bootstrap owns and closes the cache and rate limiter Redis clients after HTTP shutdown. The remaining foundation work covers non-root Docker execution. Later phases plan minimal service output, monorepo generation, and a two-service HTTP communication example. These generation capabilities are not available yet. See the [roadmap](docs/roadmap.md) for scope, order, and completion criteria.
+Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis lifecycle cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Docker app and worker images in this source run as UID and GID `65532`. See [runtime permissions](docs/deployment.md#runtime-permissions) before using bind mounts or existing upload volumes. Later phases plan minimal service output, monorepo generation, and a two-service HTTP communication example. These generation capabilities are not available yet. See the [roadmap](docs/roadmap.md) for scope, order, and completion criteria.
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
@@ -230,8 +230,11 @@ Run application commands from the generated project's directory. Project creatio
 | `make docker-services` | Start PostgreSQL and Redis |
 | `make docker-services-s3` | Start services with optional MinIO |
 | `make docker-dev` | Start full stack |
+| `make docker-dev-build` | Rebuild and start full stack |
 | `make docker-stop` | Stop all containers |
 | `make docker-logs` | View container logs |
+
+The app and worker run as UID and GID `65532`. Follow [runtime permissions](docs/deployment.md#runtime-permissions) for the local configuration bind mount and any existing upload volume before starting the full stack.
 
 ## Adding a New Feature
 
