@@ -10,6 +10,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/textproto"
+	"os"
 	"strconv"
 	"testing"
 	"time"
@@ -73,6 +74,17 @@ func TestHTTPCRUDV1(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &media))
 	require.NotZero(t, media.Data.ID)
 	mediaPath := fmt.Sprintf("/media/%d", media.Data.ID)
+	if os.Getenv("TEST_WORKER_ENABLED") == "true" {
+		deadline := time.Now().Add(time.Minute)
+		for len(media.Data.Variants) != 3 && time.Now().Before(deadline) {
+			time.Sleep(time.Second)
+			data = engineRequest(t, "GET", mediaPath, token, "application/json", http.NoBody, 200)
+			require.NoError(t, json.Unmarshal(data, &media))
+		}
+		require.Len(t, media.Data.Variants, 3, "worker must write all three image variants")
+		require.NotNil(t, media.Data.Width)
+		require.NotNil(t, media.Data.Height)
+	}
 	engineRequest(t, "GET", mediaPath, token, "application/json", http.NoBody, 200)
 	engineRequest(t, "GET", fmt.Sprintf("/media?attachable_type=users&attachable_id=%d", auth.Data.User.ID), token, "application/json", http.NoBody, 200)
 

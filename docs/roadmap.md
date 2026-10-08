@@ -71,7 +71,7 @@ Finish the existing engine and runtime foundation before adding workspace genera
 
 ### Execution Order
 
-Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47 and article list validation in PR #53 are merged. Phase 2.2 implements Redis ownership and shutdown in this source. Docker non-root runtime is the next foundation slice after Phase 2.2 merges.
+Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47, article list validation in PR #53, and Redis ownership in PR #57 are merged. Phase 2.3 implements Docker non-root runtime in this source. Minimal service output is next after Phase 2.3 merges.
 
 Update the template README and `pkg/scaffold/application/README.md.tmpl` when a slice changes feature availability or setup instructions.
 
@@ -95,6 +95,8 @@ PR #53 merged validation in the checkout and all three engine templates. The use
 
 `initRedisStores` creates the cache and rate limiter stores with separate Redis clients and returns one cleanup function to the application bootstrap. `Run` defers this cleanup until after HTTP shutdown. Disabled cache and memory rate limiting create no Redis clients for those stores.
 
+PR #57 merged this slice. Issue #51 is closed.
+
 - Keep separate clients so each store retains its existing ownership and closing one does not close the other.
 - Close both clients, including when Redis is unavailable or one client is already closed. Repeated cleanup is safe.
 - Preserve memory rate limiting and disabled-cache configurations. Readiness still checks PostgreSQL.
@@ -102,11 +104,13 @@ PR #53 merged validation in the checkout and all three engine templates. The use
 
 ### 2.3 Docker Non-Root Runtime
 
-The final Docker image uses `scratch` without a `USER` instruction.
+The final app and worker images use `scratch` with `USER 65532:65532`. The image provides writable `/uploads` and `/tmp` directories. Configuration and migrations copied into the image belong to the runtime user, and the system CA certificate bundle is readable.
 
-- Run app and worker images with an explicit non-root UID and GID.
-- Set permissions for local uploads and any required temporary files. Keep configuration, migrations, and certificates readable.
-- Verify startup, an upload, a worker task, and graceful shutdown in the runtime images.
+- Fresh Compose upload volumes inherit the image's directory ownership. Both containers use the same UID and GID. Existing root-owned volumes require an ownership update before startup.
+- Host configuration bind mounts retain host permissions. The template and generated application README link to [runtime permissions](deployment.md#runtime-permissions) for local configuration, secret files, custom mounts, and volume upgrades.
+- The Engines workflow verifies actual process identity, filesystem access, upload, three image variants written by the worker, welcome email processing, and exit code `0` after shutdown for all three engines.
+
+Issue #52 stays open until the implementation PR merges. Start Phase 3 with the minimal file and dependency set required by issue #54 after that merge.
 
 ### Completion Criteria
 
@@ -220,7 +224,7 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issue #48 closed when PR #53 merged. Issue #51 tracks the implemented Redis lifecycle and stays open until its PR merges. Issue #52 tracks the next foundation slice. Issues #49 and #50 remain open and deferred. Issues #54, #55, and #56 track Phases 3, 4, and 5. All three later phases remain planned.
+Issues #48 and #51 closed when PRs #53 and #57 merged. Issue #52 tracks the implemented Docker non-root runtime and stays open until its PR merges. Issues #49 and #50 remain open and deferred. Issues #54, #55, and #56 track Phases 3, 4, and 5. All three later phases remain planned.
 
 Use one issue for each bounded outcome. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs. Update the template README and generated application documentation when implemented behavior changes.
 

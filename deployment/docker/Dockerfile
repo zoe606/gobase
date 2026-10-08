@@ -23,12 +23,17 @@ RUN --mount=type=cache,target=/root/.cache/go-build \
     CGO_ENABLED=0 GOOS=${TARGETOS} GOARCH=${TARGETARCH} \
     go build -ldflags="-s -w" -o /bin/app ./cmd/${TARGET}
 
+RUN mkdir -p /runtime/uploads /runtime/tmp && chmod 1777 /runtime/tmp
+
 # Step 3: Final
 FROM scratch
 
-COPY --from=builder /app/config /config
-COPY --from=builder /app/migrations /migrations
+COPY --from=builder --chown=65532:65532 /runtime/ /
+COPY --from=builder --chown=65532:65532 /app/config /config
+COPY --from=builder --chown=65532:65532 /app/migrations /migrations
 COPY --from=builder /bin/app /app
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+
+USER 65532:65532
 
 CMD ["/app"]
