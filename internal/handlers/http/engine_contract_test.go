@@ -16,6 +16,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/alicebob/miniredis/v2"
+	goredis "github.com/redis/go-redis/v9"
 	"github.com/stretchr/testify/require"
 
 	"go-boilerplate/config"
@@ -32,6 +34,7 @@ import (
 	"go-boilerplate/pkg/cache"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/pagination"
+	"go-boilerplate/pkg/ratelimiter"
 	"go-boilerplate/pkg/response"
 )
 
@@ -488,6 +491,41 @@ func TestEngineMiddlewareContract(t *testing.T) {
 				require.NotEmpty(t, recorder.Header().Get("Retry-After"))
 			}
 		}
+	})
+	t.Run("Redis cache and rate limiter", func(t *testing.T) {
+		mr := miniredis.RunT(t)
+		cacheClient := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+		t.Cleanup(func() { _ = cacheClient.Close() })
+		limiterClient := goredis.NewClient(&goredis.Options{Addr: mr.Addr()})
+		t.Cleanup(func() { _ = limiterClient.Close() })
+		appCache := cache.NewRedis(cacheClient, "cache:")
+		store := ratelimiter.NewRedisStore(ratelimiter.NewRedisAdapter(limiterClient))
+		cfg := contractConfig()
+		cfg.Cache.Enabled = true
+		cfg.RateLimit.Store = "redis"
+		cfg.RateLimit.Max = 2
+		require.NoError(t, appCache.Set(t.Context(), "value", "cached", time.Minute))
+		service := jwt.New("test-secret", time.Hour, 24*time.Hour)
+		handler := contractHandler(t, cfg, nil, nil, nil, nil, nil, service, contractHealth{}, appCache, store)
+		for _, test := range []struct {
+			path   string
+			status int
+		}{
+			{"/readyz", 200},
+			{"/healthz", 200},
+			{"/healthz", 429},
+		} {
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, httptest.NewRequestWithContext(t.Context(), "GET", test.path, http.NoBody))
+			require.Equal(t, test.status, recorder.Code, recorder.Body.String())
+			if test.status == 429 {
+				require.Contains(t, recorder.Body.String(), "RATE_LIMITED")
+			}
+		}
+		require.Greater(t, len(mr.Keys()), 1)
+		var value string
+		require.NoError(t, appCache.Get(t.Context(), "value", &value))
+		require.Equal(t, "cached", value)
 	})
 	t.Run("body limit", func(t *testing.T) {
 		cfg := contractConfig()

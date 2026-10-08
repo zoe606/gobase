@@ -1,8 +1,8 @@
 # Gobase Roadmap
 
-Updated: October 7, 2026.
+Updated: October 8, 2026.
 
-This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phase 1 is merged. Phase 2.1 is implemented and verified in an open PR. The remaining stages are planned and have not been implemented.
+This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phase 1 and Phase 2.1 are merged. Phase 2.2 Redis lifecycle is implemented in this source. Docker non-root runtime and the later stages remain planned. GitHub issues record review and merge status.
 
 ## Current Baseline
 
@@ -12,13 +12,15 @@ The engine is selected during project creation. `.gobase.json` records that choi
 
 All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. [PR #46](https://github.com/zoe606/gobase/pull/46) merged on October 5, 2026 as `66270fb626b7b6b5df208ce94b0d17f52fca8890`. GitHub Actions Quality and all three engine jobs passed on that `master` revision, including Linux amd64 Docker app and worker runtime checks. See the [release readiness report](release-readiness.md) for workflow links and the [local verification results](http-engines-verification.md) for environment details.
 
+[PR #53](https://github.com/zoe606/gobase/pull/53) merged article list validation on October 8, 2026 as `e8f433bdde4e64a52fc583e996d415f73d477191`. Quality and all three engine jobs passed on that merged revision.
+
 ## Phase Order
 
 | Phase | Outcome | Status |
 |-------|---------|--------|
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
-| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | 2.1 verified in PR #53; Redis and Docker work planned |
+| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | 2.1 merged; 2.2 implemented; Docker work planned |
 | 3. Minimal service output | A service without bundled application features or required infrastructure | Planned; [#54](https://github.com/zoe606/gobase/issues/54) |
 | 4. Monorepo generation | Independent service modules with root development commands | Planned; [#55](https://github.com/zoe606/gobase/issues/55) |
 | 5. Service communication example | Two independently running services with tested HTTP communication | Planned; [#56](https://github.com/zoe606/gobase/issues/56) |
@@ -69,7 +71,7 @@ Finish the existing engine and runtime foundation before adding workspace genera
 
 ### Execution Order
 
-Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and PR before the next slice starts. [PR #53](https://github.com/zoe606/gobase/pull/53) implements Phase 2.1 and has passed Quality and all three engine checks. Merge the documentation update and PR #53 before starting Redis ownership work.
+Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47 and article list validation in PR #53 are merged. Phase 2.2 implements Redis ownership and shutdown in this source. Docker non-root runtime is the next foundation slice after Phase 2.2 merges.
 
 Update the template README and `pkg/scaffold/application/README.md.tmpl` when a slice changes feature availability or setup instructions.
 
@@ -83,19 +85,20 @@ The first slice is 2.1. Its response contract was agreed on October 6, 2026: acc
 
 ### 2.1 Article List Validation
 
-On merged `master`, `ListRequest.Status` declares allowed values, but the article list handlers do not call the validator. PR #53 adds validation in the checkout and all three engine templates. The use case still normalizes pagination. The implementation remains pending merge.
+PR #53 merged validation in the checkout and all three engine templates. The use case still normalizes pagination.
 
-- Implement the agreed response contract above. Rejecting a previously accepted invalid status is an intentional API behavior change.
-- Apply the agreed validation consistently in the runnable checkout and all engine templates.
-- Extend the shared HTTP contract suite for the changed cases. Existing valid requests must retain their behavior.
+- The agreed response contract above is implemented. Rejecting a previously accepted invalid status is an intentional API behavior change.
+- Validation is consistent in the runnable checkout and all engine templates.
+- The shared HTTP contract suite covers the changed cases and existing valid requests.
 
 ### 2.2 Redis Ownership and Shutdown
 
-`initAppCache` and `initRateLimitStorage` currently create separate Redis clients.
+`initRedisStores` creates the cache and rate limiter stores with separate Redis clients and returns one cleanup function to the application bootstrap. `Run` defers this cleanup until after HTTP shutdown. Disabled cache and memory rate limiting create no Redis clients for those stores.
 
-- Make connection ownership and shutdown explicit for these clients. Share a client only where configuration and lifecycle are compatible.
-- Preserve memory rate limiting and disabled-cache configurations.
-- Check readiness, shutdown, and Redis failure behavior with both cache and Redis rate limiting enabled.
+- Keep separate clients so each store retains its existing ownership and closing one does not close the other.
+- Close both clients, including when Redis is unavailable or one client is already closed. Repeated cleanup is safe.
+- Preserve memory rate limiting and disabled-cache configurations. Readiness still checks PostgreSQL.
+- Cover lifecycle and Redis failure behavior with tests copied into every generated engine. The shared HTTP contracts cover cache and Redis rate limiting enabled together.
 
 ### 2.3 Docker Non-Root Runtime
 
@@ -217,7 +220,7 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issue #48 has a verified implementation in open PR #53. Issues #51 and #52 track the remaining foundation work, in that order. Issues #49 and #50 remain open and deferred. Issues #54, #55, and #56 track Phases 3, 4, and 5. All three later phases remain planned.
+Issue #48 closed when PR #53 merged. Issue #51 tracks the implemented Redis lifecycle and stays open until its PR merges. Issue #52 tracks the next foundation slice. Issues #49 and #50 remain open and deferred. Issues #54, #55, and #56 track Phases 3, 4, and 5. All three later phases remain planned.
 
 Use one issue for each bounded outcome. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs. Update the template README and generated application documentation when implemented behavior changes.
 

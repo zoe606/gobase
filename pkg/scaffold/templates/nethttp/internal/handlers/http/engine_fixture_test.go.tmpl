@@ -17,13 +17,18 @@ import (
 	"go-boilerplate/pkg/cache"
 	"go-boilerplate/pkg/jwt"
 	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/ratelimiter"
 )
 
-func contractHandler(t *testing.T, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, service jwt.Service, checker HealthChecker, appCache cache.Cache) http.Handler {
+func contractHandler(t *testing.T, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, service jwt.Service, checker HealthChecker, appCache cache.Cache, stores ...ratelimiter.Storage) http.Handler {
 	t.Helper()
 	app := routing.New()
 	l := logger.New("error")
-	setupMiddleware(app, cfg, l, nil, appCache, service)
+	var store ratelimiter.Storage
+	if len(stores) > 0 {
+		store = stores[0]
+	}
+	setupMiddleware(app, cfg, l, store, appCache, service)
 	setupOptionalFeatures(app, cfg)
 	setupHealthEndpoints(app, checker)
 	group := app.Group("/v1")
