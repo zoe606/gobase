@@ -2,7 +2,7 @@
 
 Updated: October 8, 2026.
 
-This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phase 1 and Phase 2.1 are merged. Phase 2.2 Redis lifecycle is implemented in this source. Docker non-root runtime and the later stages remain planned. GitHub issues record review and merge status.
+This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phase 1 and Phase 2.1 are merged. Phase 2.2 Redis lifecycle merged through PR #57. Phase 2.3 Docker non-root runtime is implemented in PR #58 and awaits merge. Later stages remain planned. GitHub issues record review and merge status.
 
 ## Current Baseline
 
@@ -20,7 +20,7 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 |-------|---------|--------|
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
-| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | 2.1 merged; 2.2 implemented; Docker work planned |
+| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | 2.1 and 2.2 merged; 2.3 implemented in PR #58, awaiting merge |
 | 3. Minimal service output | A service without bundled application features or required infrastructure | Planned; [#54](https://github.com/zoe606/gobase/issues/54) |
 | 4. Monorepo generation | Independent service modules with root development commands | Planned; [#55](https://github.com/zoe606/gobase/issues/55) |
 | 5. Service communication example | Two independently running services with tested HTTP communication | Planned; [#56](https://github.com/zoe606/gobase/issues/56) |
@@ -110,7 +110,7 @@ The final app and worker images use `scratch` with `USER 65532:65532`. The image
 - Host configuration bind mounts retain host permissions. The template and generated application README link to [runtime permissions](deployment.md#runtime-permissions) for local configuration, secret files, custom mounts, and volume upgrades.
 - The Engines workflow verifies actual process identity, filesystem access, upload, three image variants written by the worker, welcome email processing, and exit code `0` after shutdown for all three engines.
 
-Issue #52 stays open until the implementation PR merges. Start Phase 3 with the minimal file and dependency set required by issue #54 after that merge.
+Issue #52 stays open until [PR #58](https://github.com/zoe606/gobase/pull/58) merges. Start Phase 3 with the minimal file and dependency set required by issue #54 after that merge.
 
 ### Completion Criteria
 
