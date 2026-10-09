@@ -9,7 +9,7 @@ The initial Commerce workflow is implemented in three independent private reposi
 | Application | Engine | Repository | Verified application revision | Local selective coverage |
 |-------------|--------|------------|-------------------------------|--------------------------|
 | Order | Gin | [commerce-order](https://github.com/zoe606/commerce-order) | `45baeae241f37218d2f3f5f758b566fc174de900` | 85.6% |
-| Inventory | stdlib | [commerce-inventory](https://github.com/zoe606/commerce-inventory) | `c4bcd28d07fa4a65f8ad455f085a279f08447d80` | 85.2% |
+| Inventory | stdlib | [commerce-inventory](https://github.com/zoe606/commerce-inventory) | `1dd4467f4097216f392cae019e4687b439d12d3a` | 85.2% |
 | Billing | Fiber | [commerce-billing](https://github.com/zoe606/commerce-billing) | `2cc3899243ad7a7f2e5fe90ae2eb6a0bd625a9ca` | 87.0% |
 
 The applications were generated from gobase `2177675e4ea4409e56905f4b2f966dd4d3b755e5` and adopted the generator workflow test from `631ff36515fce259c0eda237c7716feb359cc96d`. These production changes merged in [PR #59](https://github.com/zoe606/gobase/pull/59) as `a611e8406f491bb259d8a120b89f86b1f7ebaab5`.
@@ -69,6 +69,8 @@ The environment uses Go 1.27.2 and golangci-lint 2.14.0 on macOS arm64. PostgreS
 
 Coverage excludes the original infrastructure exclusions and generated example HTTP handlers whose routes are disabled in each product. Business handlers, use cases, and repositories remain included. Dormant foundation package unit tests still run. The threshold is 85% in each Makefile and CI workflow.
 
+Inventory locks reservation operations using the canonical PostgreSQL UUID value. A regression test holds the order's lock and verifies that an uppercase UUID cannot bypass it or restore stock before the lock is released. The test failed before the correction and passed afterward. Native and Docker workflow checks passed again with the corrected Inventory revision.
+
 The ten workflow scenarios are:
 
 1. Authentication, access rules, and invalid input.
@@ -96,12 +98,12 @@ Process logs and temporary Docker environment files are retained under Order's i
 
 ## Remote CI
 
-Each application's CI applies migrations to PostgreSQL 17 and runs the native handler and repository tests. It also checks formatting, lint, all-package builds, race tests, the coverage threshold, and reachable vulnerabilities. All three initial runs passed on the application revisions recorded above:
+Each application's CI applies migrations to PostgreSQL 17 and runs the native handler and repository tests. It also checks formatting, lint, all-package builds, race tests, the coverage threshold, and reachable vulnerabilities. CI results for the business revisions recorded above are:
 
 | Application | GitHub CI | Result |
 |-------------|-----------|--------|
 | Order | [Run 37912166073](https://github.com/zoe606/commerce-order/actions/runs/37912166073) | Passed |
-| Inventory | [Run 37912293070](https://github.com/zoe606/commerce-inventory/actions/runs/37912293070) | Passed |
+| Inventory | [Run 37947971768](https://github.com/zoe606/commerce-inventory/actions/runs/37947971768) | Passed |
 | Billing | [Run 37912450130](https://github.com/zoe606/commerce-billing/actions/runs/37912450130) | Passed |
 
 Cross-repository end-to-end tests are currently local. These separate CI runs do not execute the full three-application workflow.
