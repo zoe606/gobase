@@ -14,7 +14,7 @@ The first business workflow supports one SKU per order and integer monetary amou
 
 Use the full profile to exercise generated authentication, persistence, HTTP middleware, migrations, and runtime behavior. Keep business logic in each application's use cases and repositories. Keep each engine's native handler API. Generated foundation fixes belong in gobase and must be adopted by affected applications.
 
-Local application repositories will be kept separately under the ignored `.worktrees` directory during implementation: `commerce-order`, `commerce-inventory`, and `commerce-billing`. They have independent Git metadata and no shared Go workspace. Remote publication and an external deployment target are not selected yet.
+Application repositories are kept separately under the ignored `.worktrees` directory during implementation: `commerce-order`, `commerce-inventory`, and `commerce-billing`. They have independent Git metadata and no shared Go workspace. The user approved private GitHub repositories with these names on October 9, 2026. An external deployment target is not selected yet.
 
 ## Business and HTTP Contract
 
@@ -47,6 +47,16 @@ A failed invoice request leaves an identifiable order and reservation for safe r
 
 ## Current State
 
-The product domains and engine choices are approved. Commerce application code has not been implemented yet. README, architecture, and roadmap corrections are in progress on `feat/minimal-service-output`.
+All three private repositories are published and their initial CI runs passed. They implement the initial business workflow with persistent state, native handlers, caller credentials, idempotency, bounded HTTP calls, and payment confirmation recovery. PostgreSQL repository and native handler tests pass. Ten cross-service scenarios pass with both native processes and non-root Docker containers in local production configuration. The [verification report](../commerce-verification.md) records exact revisions, CI links, and limitations.
 
-The October 9 vulnerability scan found newly reported standard-library and x/net findings in the previous Go 1.27.1 baseline. The source now uses Go 1.27.2 and x/net v0.60.0. Source `make check-all` passed with no reachable vulnerabilities. Full and minimal output passed generation, module verification, builds, race tests, and lint for all three engines. Minimal vulnerability scans found no reachable vulnerabilities. The October 8 verification remains evidence for its recorded revision and date.
+The October 9 foundation uses Go 1.27.2 and x/net v0.60.0. All seven final GitHub jobs passed before PR #59 merged as `a611e8406f491bb259d8a120b89f86b1f7ebaab5`. Source coverage is 86.8% with an unchanged 85% CI threshold. The applications adopted these production changes and the complete generator workflow test.
+
+## Next Work
+
+1. Verify database backup and restore into isolated databases. Keep the existing application data intact.
+2. Select a controlled external deployment target and verify TLS, credentials, migrations, and runtime behavior there.
+3. Agree on workload and pass criteria before running performance measurements.
+4. Define coordinated cancellation, reservation release, invoice voiding, and refunds before exposing a customer cancellation workflow.
+5. Choose a payment provider when real payment processing is required. Keep the current operator payment recording labeled as a test scenario.
+
+Keep issues #60 and #56 open until their remaining application and deployment criteria have evidence. Issue #55 remains closed as not planned. Add a message broker only for a selected asynchronous workflow.

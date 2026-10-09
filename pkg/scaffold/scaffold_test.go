@@ -56,6 +56,7 @@ func TestGenerateEngines(t *testing.T) {
 			require.FileExists(t, filepath.Join(output, ".dockerignore"))
 			require.NoFileExists(t, filepath.Join(output, "docs", "http-engines.md"))
 			require.NoFileExists(t, filepath.Join(output, "docs", "roadmap.md"))
+			require.NoFileExists(t, filepath.Join(output, "docs", "commerce-verification.md"))
 			require.NoDirExists(t, filepath.Join(output, "docs", "superpowers"))
 			readme, err := os.ReadFile(filepath.Join(output, "README.md"))
 			require.NoError(t, err)
