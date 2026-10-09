@@ -48,7 +48,7 @@ Minimal output supports handwritten native HTTP endpoints and the included parsi
 
 `make gen`, `make gen-entity`, `make gen-full`, and `make wire` fail with a message that persistence generation requires the full profile. The corresponding Go command paths return the same explanation. They do not write partial application files.
 
-Adding persistence, conversion between profiles, feature composition, workspace generation, and service communication are separate work. See the [roadmap](roadmap.md).
+Adding persistence, conversion between profiles, and feature composition are separate work. The next validation work uses standalone applications and their HTTP workflows. Use the full profile when a product needs its bundled persistence, authentication, storage, or worker features. Minimal output is optional for that validation. See the [roadmap](roadmap.md).
 
 ## Verification
 

@@ -2,7 +2,7 @@
 
 Go HTTP template with full application and minimal service profiles. Select Gin, standard `net/http`, or Fiber when creating a project. The default full profile includes Clean Architecture, JWT authentication, media uploads, and background workers.
 
-[![Go Version](https://img.shields.io/badge/Go-1.27.1-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.27.2-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![HTTP Engines](https://img.shields.io/badge/HTTP-Gin%20%7C%20net%2Fhttp%20%7C%20Fiber-00ACD7?logo=go)](docs/http-engines.md)
 [![GORM](https://img.shields.io/badge/GORM-ORM-00ADD8)](https://gorm.io/)
@@ -25,13 +25,13 @@ The following application features belong to the default `full` profile. The `mi
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
-Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Docker images run as UID and GID `65532`. This source adds explicit minimal service generation. Monorepo generation and a two-service HTTP communication example remain planned. See the [roadmap](docs/roadmap.md) for scope, order, and merge status, and [runtime permissions](docs/deployment.md#runtime-permissions) before using full-profile bind mounts or existing upload volumes.
+Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Docker images run as UID and GID `65532`. This source adds explicit minimal service generation. The next work validates three standalone applications with different business domains, one per engine, and their HTTP workflows. Each application will have its own repository. Monorepo generation is outside the current plan. Existing template and Docker checks provide foundation evidence; production readiness still requires application and deployment evidence for a defined scenario. See the [roadmap](docs/roadmap.md) for scope and [runtime permissions](docs/deployment.md#runtime-permissions) before using full-profile bind mounts or existing upload volumes.
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
 ## Create a Project
 
-Install Go 1.27.1 or newer. Select the engine when creating the project:
+Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
 git clone https://github.com/zoe606/gobase.git gobase
@@ -279,7 +279,7 @@ make generate            # Regenerate mocks after interface changes
 | Document | Description |
 |----------|-------------|
 | [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
-| [Roadmap](docs/roadmap.md) | Engine foundation, minimal service output, monorepo, and service communication plans |
+| [Roadmap](docs/roadmap.md) | Engine foundation, standalone application validation, and HTTP workflow plans |
 | [Release Readiness](docs/release-readiness.md) | Phase 1 implementation, local runtime results, and passing CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |

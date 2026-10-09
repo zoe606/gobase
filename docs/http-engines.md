@@ -5,7 +5,7 @@ Projects select an HTTP engine and a `full` or `minimal` profile during creation
 | Engine | Router | Handler API | Version |
 |--------|--------|-------------|---------|
 | `gin` (default) | Gin | `*gin.Context` | v1.12.0 |
-| `stdlib` | `http.ServeMux` | `http.ResponseWriter`, `*http.Request` | Go 1.27.1 |
+| `stdlib` | `http.ServeMux` | `http.ResponseWriter`, `*http.Request` | Go 1.27.2 |
 | `fiber` | Fiber | `*fiber.Ctx` | v2, current template dependency |
 
 ```bash
@@ -74,6 +74,8 @@ Run `make test-minimal` or `go run ./pkg/tools/verifyengines -profile=minimal -l
 
 ## Next Phases
 
-The [roadmap](roadmap.md) tracks engine foundation, minimal service output, monorepo generation, and a two-service HTTP communication example. The initializer creates one full or minimal project. Workspace generation remains planned. A future generated workspace selects one engine per service and keeps each service's module and business implementation independent.
+The [roadmap](roadmap.md) tracks standalone applications with different business domains, one using each engine, followed by real HTTP workflows between them. Each application owns its repository, module, data, and deployment. The initializer continues to create one full or minimal project. Monorepo generation is outside the current plan.
+
+Template contracts and Docker smoke checks verify the generated foundation. Production readiness requires evidence from the chosen application workflows, production configuration, deployment environment, dependency failures, recovery, and an agreed workload. Start service communication with HTTP. Define the call graph, API contracts, timeouts, caller authentication, idempotency, and partial-failure behavior before adding calls. A message broker is an optional later exercise when an asynchronous workflow is selected.
 
 Email verification, password reset, and OpenTelemetry metrics export remain deferred application features. The [release readiness report](release-readiness.md) records completed local Docker and worker checks, the tested implementation revision, and passing GitHub Actions results for all three engines.

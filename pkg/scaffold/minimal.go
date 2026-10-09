@@ -58,7 +58,7 @@ func (c *projectCopier) writeMinimalModule() error {
 	if err != nil {
 		return err
 	}
-	dependencies := []string{"github.com/spf13/viper", "go.uber.org/zap", "github.com/goccy/go-json", "github.com/go-playground/validator/v10", "github.com/stretchr/testify", "golang.org/x/vuln"}
+	dependencies := []string{"github.com/spf13/viper", "go.uber.org/zap", "github.com/goccy/go-json", "github.com/go-playground/validator/v10", "github.com/stretchr/testify", "golang.org/x/vuln", "golang.org/x/net"}
 	if c.cfg.Engine == project.Fiber {
 		dependencies = append(dependencies, "github.com/gofiber/fiber/v2", "golang.org/x/sync")
 	}

@@ -99,7 +99,9 @@ make docker-stop
 
 Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. Release publication and release notes remain separate work for the revision selected for that release.
 
-Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Non-root Docker execution merged through [PR #58](https://github.com/zoe606/gobase/pull/58). See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. The Phase 1 results above remain evidence for their recorded revisions. This source adds minimal service output under issue #54. Monorepo generation and a two-service HTTP communication example remain planned. Email verification, password reset, and OpenTelemetry metrics export remain deferred. See the [roadmap](roadmap.md).
+Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Non-root Docker execution merged through [PR #58](https://github.com/zoe606/gobase/pull/58). See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. The Phase 1 results above remain evidence for their recorded revisions. This source adds minimal service output under issue #54. The next validation work creates three independent applications with different business domains and tests their HTTP workflows. Email verification, password reset, and OpenTelemetry metrics export remain deferred unless a selected product requires them. See the [roadmap](roadmap.md).
+
+The results in this report verify the template and generated runtime for the recorded checks. Application-level production readiness is still unverified. Its report must identify the business workflow, application revisions, production environment, workload criteria, deployment, and failure and recovery results. It must also identify any substituted providers and untested behavior. Monorepo generation is outside the current plan.
 
 ### Phase 2.3 Local Verification
 
@@ -139,3 +141,11 @@ go run ./pkg/tools/verifyengines -profile=minimal -lint -output=/tmp/gobase-mini
 ```
 
 Use a new output directory. Follow each generated README for its app-only Compose commands. The [minimal service guide](minimal-services.md) records the file set and omitted dependencies.
+
+### October 9 Security Patch Verification
+
+The October 9 scan reported newly published standard-library and x/net vulnerabilities in the previous baseline. The source, generated documentation, workflows, and Docker builders now use Go 1.27.2. Full and minimal modules pin x/net v0.60.0. These versions contain the fixes recorded in [GO-2026-6617](https://pkg.go.dev/vuln/GO-2026-6617).
+
+Source `make check-all` passed with no lint issues, no reachable vulnerabilities, and 84% selective coverage. Fresh full and minimal output passed module verification, builds, race tests, and lint for Gin, stdlib, and Fiber. Full output also passed CRUD generation, wiring, and Swagger checks. Minimal output passed native startup, occupied-port failure, and SIGTERM shutdown without infrastructure. All three minimal vulnerability scans found no reachable vulnerabilities. Findings in unused package or module paths remain separate results.
+
+These local checks used Go 1.27.2 and golangci-lint 2.14.0 on macOS arm64. The October 8 Docker and CI evidence above belongs to its recorded revision. Updated Docker and GitHub Actions results must be inspected on the new PR head before merge.
