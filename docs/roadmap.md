@@ -2,7 +2,7 @@
 
 Updated: October 9, 2026.
 
-This document plans work on the gobase template and its use in real applications. The user clarified on October 8, 2026 that the next goal is three standalone applications with different business domains, one per engine, followed by HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1 and 2 are merged. Phase 3 minimal output is implemented in PR #59. Issues #60 and #56 track the planned application and HTTP validation work.
+This document plans work on the gobase template and its use in real applications. The user clarified on October 8, 2026 that the next goal is three standalone applications with different business domains, one per engine, followed by HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1, 2, and 3 are merged. The initial Commerce workflow is implemented and verified locally. Issues #60 and #56 track the remaining application and HTTP validation work.
 
 ## Current Baseline
 
@@ -23,9 +23,9 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
 | 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | Complete; PRs #53, #57, and #58 merged |
-| 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Implemented; checks passed on PR #59 implementation revision; merge tracked by [#54](https://github.com/zoe606/gobase/issues/54) |
-| 4. Standalone application validation | Three real applications with different domains, one per engine | Planned; [#60](https://github.com/zoe606/gobase/issues/60) |
-| 5. HTTP workflow validation | Tested business workflows across the independent applications | Planned; [#56](https://github.com/zoe606/gobase/issues/56) |
+| 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Complete; PR #59 merged as a611e84; [#54](https://github.com/zoe606/gobase/issues/54) closed |
+| 4. Standalone application validation | Three real applications with different domains, one per engine | Private repositories published; local checks and independent CI pass; deployment and workload pending; [#60](https://github.com/zoe606/gobase/issues/60) |
+| 5. HTTP workflow validation | Tested business workflows across the independent applications | Ten native and Docker scenarios pass locally; further production evidence pending; [#56](https://github.com/zoe606/gobase/issues/56) |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
@@ -37,7 +37,7 @@ flowchart LR
 
 Gobase remains the source template and generator. The applications are separate projects with different responsibilities. Each selects one engine during creation and owns its code, data, and deployment. Use the full profile when its bundled features are needed. Minimal output remains optional; it is not a prerequisite for application validation.
 
-The earlier monorepo plan came from an incorrect interpretation of the user's goal. Issue #55 records that superseded work. The revised plan tests real applications and their dependencies. Template and Docker checks already passed, but the business workflows, production deployment, workload, and recovery evidence below remain unverified.
+Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
 
 ## Phase 1: Template Release Readiness
 
@@ -126,7 +126,7 @@ The final app and worker images use `scratch` with `USER 65532:65532`. The image
 
 ## Phase 3: Minimal Service Output
 
-Tracking: [#54](https://github.com/zoe606/gobase/issues/54). Implemented in this source. The issue remains open through PR verification and merge.
+Tracking: [#54](https://github.com/zoe606/gobase/issues/54), now closed. PR #59 merged on October 9, 2026 as `a611e8406f491bb259d8a120b89f86b1f7ebaab5`. Quality, all three full engines, and all three minimal engines passed on final implementation revision `631ff36515fce259c0eda237c7716feb359cc96d`.
 
 The default initializer output remains a complete application with auth, articles, media, translation, migrations, and workers. `PROFILE=minimal` selects a separate file set for services that do not need those features. [Minimal service documentation](minimal-services.md) defines the file and dependency set used by the implementation.
 
@@ -148,9 +148,9 @@ The minimal profile includes optional configuration, logging, native routing, sh
 
 ## Phase 4: Standalone Application Validation
 
-Tracking: [#60](https://github.com/zoe606/gobase/issues/60). Use a recorded merged gobase revision. Use the minimal profile from PR #59 only after it merges if the selected application needs that profile.
+Tracking: [#60](https://github.com/zoe606/gobase/issues/60). The applications use the full profile and production changes merged in gobase revision `a611e8406f491bb259d8a120b89f86b1f7ebaab5`. Source provenance and application revisions are recorded in the [verification report](commerce-verification.md).
 
-The selected scenario is commerce with Order using Gin, Inventory using stdlib, and Billing using Fiber. The user selected these domains on October 8, 2026. Repository names and locations, deployment environment, workload targets, and detailed business contracts must be defined before application implementation.
+The selected scenario is commerce with Order using Gin, Inventory using stdlib, and Billing using Fiber. Private repositories are named `zoe606/commerce-order`, `zoe606/commerce-inventory`, and `zoe606/commerce-billing`. The initial contracts and local fixture are implemented. External deployment and workload targets must be selected before those verification steps.
 
 | Application | Engine | Owned data and behavior |
 |-------------|--------|-------------------------|
@@ -184,12 +184,14 @@ The three services use HTTP without a new cross-service message broker. Define c
 
 ```mermaid
 flowchart LR
-    Order[Order - Gin] -->|Reserve, release, or consume stock| Inventory[Inventory - stdlib]
+    Order[Order - Gin] -->|Reserve or consume stock| Inventory[Inventory - stdlib]
+    Inventory -->|Read order intent| Order
     Order -->|Create or query invoice| Billing[Billing - Fiber]
+    Billing -->|Read price snapshot| Order
     Billing -->|Payment confirmation as a separate operation| Order
 ```
 
-This is a proposed business call graph. Finalize the endpoint and state contracts before implementing it. A callback must not run while holding a database transaction that blocks the receiver's request. The services communicate through APIs and do not query each other's databases. Additional calls require a business purpose.
+This call graph is implemented. Snapshot reads do not start a new write workflow. Payment confirmation happens after Billing commits its payment state. No outbound call holds a database transaction. Inventory release is an operations recovery endpoint; coordinated customer cancellation and invoice voiding are not implemented. The services communicate through APIs and do not query each other's databases.
 
 - Document the business flow, data ownership, call graph, request and response schemas, status codes, caller authentication, and API version compatibility.
 - Use bounded HTTP clients with request context cancellation. Propagate request IDs and identify downstream calls in logs.
