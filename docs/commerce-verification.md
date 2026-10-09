@@ -92,7 +92,7 @@ BILLING_PROJECT=/absolute/path/to/commerce-billing \
 bash scripts/commerce-e2e.sh
 ```
 
-Add `COMMERCE_E2E_DOCKER=1` to run the same workflow with product images. The Docker harness uses `host.docker.internal` on macOS with Docker Desktop or OrbStack. Linux portability of this harness is not verified. Containers have one CPU and 512 MiB each. These limits describe the fixture; they are not measured capacity or a production sizing recommendation.
+Add `COMMERCE_E2E_DOCKER=1` to run the same workflow with product images. The Docker harness uses `host.docker.internal` on macOS with Docker Desktop or OrbStack. Linux uses host networking so loopback dependencies, peer APIs, and fault proxies remain reachable. Both modes passed in Ubuntu CI as recorded below. Containers have one CPU and 512 MiB each. These limits describe the fixture; they are not measured capacity or a production sizing recommendation.
 
 Process logs and temporary Docker environment files are retained under Order's ignored `integration-test/commerce/.runtime/evidence-<uuid>` directory. Runtime environment files have mode 600. Fixture services retain their test data. Application processes and containers stop after verification.
 
@@ -106,11 +106,33 @@ Each application's CI applies migrations to PostgreSQL 17 and runs the native ha
 | Inventory | [Run 37947971768](https://github.com/zoe606/commerce-inventory/actions/runs/37947971768) | Passed |
 | Billing | [Run 37912450130](https://github.com/zoe606/commerce-billing/actions/runs/37912450130) | Passed |
 
-Cross-repository end-to-end tests are currently local. These separate CI runs do not execute the full three-application workflow.
+These independent quality runs do not execute the full three-application workflow. Order now owns a separate cross-repository workflow, verified below.
+
+### Linux HTTP Workflow
+
+[Order PR #6](https://github.com/zoe606/commerce-order/pull/6) adds Ubuntu native and Docker jobs using the existing ten scenarios. On October 9, 2026, [Commerce E2E run 37954108670](https://github.com/zoe606/commerce-order/actions/runs/37954108670) passed both jobs. [Quality run 37954108608](https://github.com/zoe606/commerce-order/actions/runs/37954108608) also passed. The run head is `265caa41b99b2ddd64e8b9c249a5df08bc8d786a`. The PR checkout is GitHub's merge commit, recorded separately below. The workflow still awaits merge into Order's default branch.
+
+Both artifact revision records identify the same checked-out application commits:
+
+| Application | Checked-out revision |
+|-------------|----------------------|
+| Order | `658cc72c9702b5ffa1fdab410bdeff423f303df0` |
+| Inventory | `1dd4467f4097216f392cae019e4687b439d12d3a` |
+| Billing | `7e219a0fe6e9c2a31a9416c406a499e601f94a77` |
+
+The logs confirm Go 1.27.2 on Linux amd64 and ten passed scenarios in each mode. Docker runtime probes passed for all three containers. PostgreSQL TLS, explicit migrations, retained business state, recovery, and clean application shutdown passed. Local native and Docker reruns also passed on the updated harness. Order's local `make check-all` retained 85.6% coverage with the unchanged 85% gate.
+
+Inventory and Billing checkouts use separate read-only deploy keys stored as Order Actions secrets. The keys were verified as read-only. Artifacts contain revision records and runtime logs. Inspection confirmed that environment files and TLS keys are absent. The workflow runs on Order changes and accepts manual candidate peer revisions. Peer pushes run their own CI and do not automatically trigger this common workflow. Each repository remains independently owned.
 
 ## Remaining Work
 
 The initial workflow and local production configuration are verified within the limits above. This is not a complete production-readiness claim.
+
+- Merge Order PR #6 and this evidence and scope update after review. This enables the common workflow on Order's default branch.
+- Run the common workflow with candidate peer revisions before adopting them. Update the pinned revisions after verification.
+- Fix reusable foundation defects in gobase when found and adopt those fixes in affected applications.
+
+The items below are later Commerce application operations and product work. They are not boilerplate features or completion requirements for the current engine validation.
 
 - Select an external deployment environment and verify TLS, credentials, migrations, and runtime behavior there.
 - Verify backup and restore into isolated databases. Existing application data must remain intact.
@@ -119,6 +141,5 @@ The initial workflow and local production configuration are verified within the 
 - Select and test a payment provider when real charging is required. Operator payment recording is the current substitute.
 - Replace inherited example Swagger specifications with the Commerce API before enabling Swagger.
 - Verify credential rotation and database certificate identity. The local fixture uses `sslmode=require`, which encrypts transport but does not verify certificate identity.
-- Port the Docker end-to-end harness to Linux before using it in a common integration workflow.
 
-Issues [#60](https://github.com/zoe606/gobase/issues/60) and [#56](https://github.com/zoe606/gobase/issues/56) remain open for these verification criteria. [#55](https://github.com/zoe606/gobase/issues/55) is closed as not planned. The [execution plan](plans/commerce-execution.md) and [roadmap](roadmap.md) track the next work.
+Issues [#60](https://github.com/zoe606/gobase/issues/60) and [#56](https://github.com/zoe606/gobase/issues/56) remain open until the workflow and documentation changes merge. Later Commerce operations do not block these validation issues. [#55](https://github.com/zoe606/gobase/issues/55) is closed as not planned. The [execution plan](plans/commerce-execution.md) and [roadmap](roadmap.md) track the next work.
