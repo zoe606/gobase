@@ -1,0 +1,85 @@
+package http
+
+import (
+	"encoding/json"
+	"io"
+	"net/http"
+	"strings"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+type echoInput struct {
+	Message string `json:"message" validate:"required" binding:"required"`
+}
+
+type testTransport func(*http.Request) (*http.Response, error)
+
+func (transport testTransport) RoundTrip(request *http.Request) (*http.Response, error) {
+	return transport(request)
+}
+
+func TestMinimalHTTPContract(t *testing.T) {
+	client := newTestClient()
+	for _, tc := range []struct {
+		name, method, path, body, expected string
+		status                             int
+	}{
+		{"health", "GET", "/healthz", "", "OK", 200},
+		{"readiness", "GET", "/readyz", "", "OK", 200},
+		{"valid body", "POST", "/echo", `{"message":"hello"}`, "hello", 200},
+		{"invalid JSON", "POST", "/echo", `{`, "INVALID_BODY", 400},
+		{"validation", "POST", "/echo", `{}`, "VALIDATION_ERROR", 400},
+		{"not found", "GET", "/missing", "", "NOT_FOUND", 404},
+		{"recovery", "GET", "/panic", "", "INTERNAL_ERROR", 500},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			req, err := http.NewRequestWithContext(t.Context(), tc.method, "http://service"+tc.path, strings.NewReader(tc.body))
+			require.NoError(t, err)
+			req.Header.Set("Content-Type", "application/json")
+			req.Header.Set("X-Request-ID", "contract-request")
+			resp, err := client.Do(req)
+			require.NoError(t, err)
+			defer resp.Body.Close()
+			body, err := io.ReadAll(resp.Body)
+			require.NoError(t, err)
+			require.Equal(t, tc.status, resp.StatusCode, string(body))
+			require.Equal(t, "contract-request", resp.Header.Get("X-Request-ID"))
+			if tc.expected == "OK" {
+				require.Equal(t, "OK", string(body))
+				return
+			}
+			var envelope struct {
+				Success   bool      `json:"success"`
+				Data      echoInput `json:"data"`
+				RequestID string    `json:"request_id"`
+				Error     struct {
+					Code    string            `json:"code"`
+					Details map[string]string `json:"details"`
+				} `json:"error"`
+			}
+			require.NoError(t, json.Unmarshal(body, &envelope))
+			require.Equal(t, "contract-request", envelope.RequestID)
+			if tc.status == 200 {
+				require.True(t, envelope.Success)
+				require.Equal(t, tc.expected, envelope.Data.Message)
+			} else {
+				require.False(t, envelope.Success)
+				require.Equal(t, tc.expected, envelope.Error.Code)
+			}
+			if tc.expected == "VALIDATION_ERROR" {
+				require.Contains(t, envelope.Error.Details, "Message")
+			}
+			if tc.status == 500 {
+				require.NotContains(t, string(body), "private-panic")
+			}
+		})
+	}
+	request, err := http.NewRequestWithContext(t.Context(), "GET", "http://service/healthz", http.NoBody)
+	require.NoError(t, err)
+	resp, err := client.Do(request)
+	require.NoError(t, err)
+	defer resp.Body.Close()
+	require.NotEmpty(t, resp.Header.Get("X-Request-ID"))
+}

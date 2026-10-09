@@ -1,0 +1,37 @@
+.PHONY: run build fmt lint vuln test check-all docker-dev docker-dev-build docker-stop docker-logs gen gen-entity gen-full wire
+
+run:
+	go run ./cmd/app
+
+build:
+	CGO_ENABLED=0 go build -o ./bin/app ./cmd/app
+
+fmt:
+	go fmt ./...
+
+lint:
+	golangci-lint run
+
+vuln:
+	go tool govulncheck ./...
+
+test:
+	go test -race ./...
+
+check-all: fmt lint vuln test
+
+docker-dev:
+	docker compose -f deployment/docker/docker-compose.yml --env-file .env up -d
+
+docker-dev-build:
+	docker compose -f deployment/docker/docker-compose.yml --env-file .env up -d --build
+
+docker-stop:
+	docker compose -f deployment/docker/docker-compose.yml --env-file .env down
+
+docker-logs:
+	docker compose -f deployment/docker/docker-compose.yml --env-file .env logs -f app
+
+gen gen-entity gen-full wire:
+	@echo "Persistence generation requires the full project profile; minimal output has no database or migrations" >&2
+	@exit 1

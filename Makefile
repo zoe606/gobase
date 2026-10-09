@@ -280,14 +280,19 @@ wire: ## Auto-wire DI, routes, and contracts for generated features
 ##@ Project Setup
 
 ENGINE ?= gin
+PROFILE ?= full
 
 .PHONY: init
-init: ## Create a project (MODULE=github.com/org/app APP_NAME=app OUTPUT=../app ENGINE=gin|stdlib|fiber)
-	go run ./pkg/tools/init -engine="$(ENGINE)" -module="$(MODULE)" -app-name="$(APP_NAME)" -output="$(OUTPUT)"
+init: ## Create a project (MODULE=github.com/org/app APP_NAME=app OUTPUT=../app ENGINE=gin|stdlib|fiber PROFILE=full|minimal)
+	go run ./pkg/tools/init -engine="$(ENGINE)" -profile="$(PROFILE)" -module="$(MODULE)" -app-name="$(APP_NAME)" -output="$(OUTPUT)"
 
 .PHONY: test-engines
 test-engines: ## Build and test generated Gin, stdlib, and Fiber projects
 	go run ./pkg/tools/verifyengines
+
+.PHONY: test-minimal
+test-minimal: ## Build, test, and run minimal services for all HTTP engines
+	go run ./pkg/tools/verifyengines -profile=minimal
 
 .PHONY: rename
 rename: ## Rename project module and app name (usage: make rename MODULE=github.com/org/name APP_NAME=myapp)

@@ -1,5 +1,5 @@
 # Step 1: Modules caching
-FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine AS modules
+FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS modules
 
 COPY go.mod go.sum /modules/
 
@@ -8,7 +8,7 @@ WORKDIR /modules
 RUN go mod download
 
 # Step 2: Builder
-FROM --platform=$BUILDPLATFORM golang:1.27.1-alpine AS builder
+FROM --platform=$BUILDPLATFORM golang:1.27.2-alpine AS builder
 
 ARG TARGET=app
 ARG TARGETOS

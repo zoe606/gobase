@@ -1,14 +1,16 @@
 # gobase
 
-Go REST API template with Clean Architecture, JWT authentication, media uploads, and background workers. Select Gin, standard `net/http`, or Fiber when creating a project.
+Go HTTP template with full application and minimal service profiles. Select Gin, standard `net/http`, or Fiber when creating a project. The default full profile includes Clean Architecture, JWT authentication, media uploads, and background workers.
 
-[![Go Version](https://img.shields.io/badge/Go-1.27.1-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.27.2-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![HTTP Engines](https://img.shields.io/badge/HTTP-Gin%20%7C%20net%2Fhttp%20%7C%20Fiber-00ACD7?logo=go)](docs/http-engines.md)
 [![GORM](https://img.shields.io/badge/GORM-ORM-00ADD8)](https://gorm.io/)
 [![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-85EA2D?logo=swagger)](https://swagger.io/)
 
 ## Features
+
+The following application features belong to the default `full` profile. The `minimal` profile includes configuration, logging, native HTTP routing, request and response helpers, health probes, and graceful shutdown without required infrastructure.
 
 - **Authentication** — Register, login, JWT access/refresh tokens, logout, and current user endpoints
 - **Authorization** — JWT role and permission middleware
@@ -23,13 +25,13 @@ Go REST API template with Clean Architecture, JWT authentication, media uploads,
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
-Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis lifecycle cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Docker app and worker images in this source run as UID and GID `65532`. See [runtime permissions](docs/deployment.md#runtime-permissions) before using bind mounts or existing upload volumes. Later phases plan minimal service output, monorepo generation, and a two-service HTTP communication example. These generation capabilities are not available yet. See the [roadmap](docs/roadmap.md) for scope, order, and completion criteria.
+Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Docker images run as UID and GID `65532`. This source adds explicit minimal service generation. The next work validates three standalone applications with different business domains, one per engine, and their HTTP workflows. Each application will have its own repository. Monorepo generation is outside the current plan. Existing template and Docker checks provide foundation evidence; production readiness still requires application and deployment evidence for a defined scenario. See the [roadmap](docs/roadmap.md) for scope and [runtime permissions](docs/deployment.md#runtime-permissions) before using full-profile bind mounts or existing upload volumes.
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
 ## Create a Project
 
-Install Go 1.27.1 or newer. Select the engine when creating the project:
+Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
 git clone https://github.com/zoe606/gobase.git gobase
@@ -39,7 +41,19 @@ make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../m
 
 Gin v1.12.0 is the default. Use `ENGINE=stdlib` for `http.ServeMux`, or `ENGINE=fiber` for Fiber v2. Each output contains one engine. See [HTTP Engines](docs/http-engines.md) for the architecture and compatibility rules.
 
+`PROFILE=full` is the default and preserves existing creation commands. To create a service without bundled business features or infrastructure:
+
+```bash
+make init PROFILE=minimal ENGINE=stdlib MODULE=github.com/your-org/service APP_NAME=service OUTPUT=../service
+cd ../service
+make run
+```
+
+Both `/healthz` and `/readyz` return `OK`. No database, Redis, storage, email sender, or worker is required. The generated README describes its native handler API and app-only Docker setup. Configuration files are optional. Export environment variables to override defaults. SQL CRUD and persistence wiring commands return a clear error because persistence is omitted. See [minimal services](docs/minimal-services.md) for the file and dependency set.
+
 ## Run a Project
+
+These instructions apply to the `full` profile. Minimal services use the commands above and their generated README.
 
 ```bash
 # Configure the generated project
@@ -78,6 +92,8 @@ All endpoints, request/response schemas, and authentication requirements are doc
 `GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination continues to use `page` and `limit` with the existing defaults and normalization.
 
 ## Architecture
+
+The diagram below describes the full application. Minimal services keep only configuration, logging, the selected native HTTP engine, HTTP helpers, and process lifecycle. Both profiles use the generic `response.Response[T]` envelope.
 
 ```mermaid
 flowchart TB
@@ -138,7 +154,7 @@ Handler → UseCase → Repository → Entity/External API
 
 ## Project Structure
 
-The application directories below are shared with generated projects. Generated HTTP handlers use the selected engine. The template checkout runs Fiber; engine sources are maintained under `pkg/scaffold/templates`, and CRUD templates are under `pkg/codegen/generator/templates/handler`.
+The directories below describe the full profile. Generated HTTP handlers use the selected engine. The template checkout runs Fiber; full engine sources are maintained under `pkg/scaffold/templates/{gin,stdlib,fiber}`, minimal sources under `pkg/scaffold/templates/minimal`, and CRUD templates under `pkg/codegen/generator/templates/handler`.
 
 ```
 ├── cmd/
@@ -183,7 +199,7 @@ Copy both example files as shown in [Run a Project](#run-a-project). Docker Comp
 
 ## Commands
 
-Run application commands from the generated project's directory. Project creation and `make test-engines` run from the template checkout.
+The tables below describe full-profile commands. Run application commands from the generated project's directory. Project creation, `make test-engines`, and `make test-minimal` run from the template checkout. Minimal services provide their own smaller Makefile.
 
 ### Development
 
@@ -204,6 +220,7 @@ Run application commands from the generated project's directory. Project creatio
 | `make vuln` | Check vulnerabilities |
 | `make test` | Run unit tests |
 | `make test-engines` | Verify generated Gin, stdlib, and Fiber projects from the template checkout |
+| `make test-minimal` | Verify minimal output, HTTP contracts, startup, and shutdown for all three engines without infrastructure |
 
 ### Database
 
@@ -262,7 +279,7 @@ make generate            # Regenerate mocks after interface changes
 | Document | Description |
 |----------|-------------|
 | [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
-| [Roadmap](docs/roadmap.md) | Engine foundation, minimal service output, monorepo, and service communication plans |
+| [Roadmap](docs/roadmap.md) | Engine foundation, standalone application validation, and HTTP workflow plans |
 | [Release Readiness](docs/release-readiness.md) | Phase 1 implementation, local runtime results, and passing CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |

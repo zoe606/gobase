@@ -22,16 +22,20 @@ var testSources embed.FS
 
 func main() {
 	engine := flag.String("engine", "", "one engine to check; empty checks all engines")
+	profile := flag.String("profile", "full", "project profile: full or minimal")
 	output := flag.String("output", "", "directory for generated projects; empty uses a temporary directory")
 	lint := flag.Bool("lint", false, "run golangci-lint in generated projects")
 	flag.Parse()
-	if err := verify(*engine, *output, *lint); err != nil {
+	if err := verify(*engine, *output, *lint, project.Profile(*profile)); err != nil {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 }
 
-func verify(selected, output string, lint bool) error {
+func verify(selected, output string, lint bool, profile project.Profile) error {
+	if err := profile.Validate(); err != nil {
+		return err
+	}
 	engines := []project.Engine{project.Gin, project.Stdlib, project.Fiber}
 	if selected != "" {
 		engines = []project.Engine{project.Engine(selected)}
@@ -52,10 +56,10 @@ func verify(selected, output string, lint bool) error {
 		}
 		path := filepath.Join(output, string(engine))
 		fmt.Printf("Checking %s in %s\n", engine, path)
-		if err := scaffold.Generate(scaffold.Config{Source: ".", Output: path, Module: "example.com/" + string(engine) + "app", Name: string(engine) + "app", Engine: engine}); err != nil {
+		if err := scaffold.Generate(scaffold.Config{Source: ".", Output: path, Module: "example.com/" + string(engine) + "app", Name: string(engine) + "app", Engine: engine, Profile: profile}); err != nil {
 			return err
 		}
-		if err := checkProject(ctx, path, engine, lint); err != nil {
+		if err := checkProject(ctx, path, engine, lint, profile); err != nil {
 			return fmt.Errorf("%s: %w", engine, err)
 		}
 	}
@@ -70,7 +74,7 @@ func run(ctx context.Context, path, command string, args ...string) error {
 	return cmd.Run()
 }
 
-func checkProject(ctx context.Context, path string, engine project.Engine, lint bool) error {
+func checkProject(ctx context.Context, path string, engine project.Engine, lint bool, profile project.Profile) error {
 	if err := run(ctx, path, "go", "mod", "tidy"); err != nil {
 		return err
 	}
@@ -80,14 +84,20 @@ func checkProject(ctx context.Context, path string, engine project.Engine, lint 
 	if err := run(ctx, path, "go", "build", "./..."); err != nil {
 		return err
 	}
-	if err := checkDependencies(ctx, path, engine); err != nil {
+	if err := checkDependencies(ctx, path, engine, profile); err != nil {
 		return err
 	}
-	if err := run(ctx, path, "go", "test", "-race", "./internal/...", "./pkg/..."); err != nil {
-		return err
-	}
-	if err := checkCodegen(ctx, path); err != nil {
-		return err
+	if profile == project.Minimal {
+		if err := checkMinimal(ctx, path); err != nil {
+			return err
+		}
+	} else {
+		if err := run(ctx, path, "go", "test", "-race", "./internal/...", "./pkg/..."); err != nil {
+			return err
+		}
+		if err := checkCodegen(ctx, path); err != nil {
+			return err
+		}
 	}
 	if lint {
 		return run(ctx, path, "golangci-lint", "run")
@@ -95,8 +105,12 @@ func checkProject(ctx context.Context, path string, engine project.Engine, lint 
 	return nil
 }
 
-func checkDependencies(ctx context.Context, path string, engine project.Engine) error {
-	cmd := exec.CommandContext(ctx, "go", "list", "-deps", "./cmd/app", "./cmd/worker")
+func checkDependencies(ctx context.Context, path string, engine project.Engine, profile project.Profile) error {
+	args := []string{"list", "-deps", "./cmd/app"}
+	if profile == project.Full {
+		args = append(args, "./cmd/worker")
+	}
+	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Dir = path
 	data, err := cmd.Output()
 	if err != nil {
@@ -108,6 +122,9 @@ func checkDependencies(ctx context.Context, path string, engine project.Engine) 
 	}
 	if engine == project.Stdlib {
 		forbidden = append(forbidden, "github.com/gin-gonic/gin")
+	}
+	if profile == project.Minimal {
+		forbidden = append(forbidden, "gorm.io/", "github.com/redis/", "github.com/hibiken/asynq", "github.com/minio/", "github.com/resend/", "github.com/golang-jwt/", "github.com/golang-migrate/", "github.com/Conight/", "go.opentelemetry.io/")
 	}
 	for _, dependency := range forbidden {
 		if strings.Contains(string(data), dependency) {

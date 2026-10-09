@@ -1,0 +1,31 @@
+package app
+
+import (
+	"errors"
+	"os"
+	"os/signal"
+	"syscall"
+
+	"go-boilerplate/config"
+	httpcontroller "go-boilerplate/internal/handlers/http"
+	"go-boilerplate/pkg/httpserver"
+	"go-boilerplate/pkg/logger"
+)
+
+func Run(cfg *config.Config) error {
+	l := logger.New(cfg.Log.Level)
+	defer func() { _ = l.Sync() }()
+	srv := httpserver.New(l, httpserver.Port(cfg.HTTP.Port), httpserver.ReadTimeout(cfg.HTTP.Timeout), httpserver.WriteTimeout(cfg.HTTP.Timeout), httpserver.ShutdownTimeout(cfg.HTTP.ShutdownTimeout), httpserver.BodyLimit(cfg.HTTP.BodyLimit))
+	httpcontroller.NewRouter(srv, l)
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	defer signal.Stop(quit)
+	srv.Start()
+	var err error
+	select {
+	case <-quit:
+		l.Info("Shutting down HTTP server")
+	case err = <-srv.Notify():
+	}
+	return errors.Join(err, srv.Shutdown())
+}

@@ -20,16 +20,17 @@ import (
 	"go-boilerplate/pkg/project"
 )
 
-//go:embed templates application
+//go:embed templates application templates/minimal/common/.env.example.tmpl templates/minimal/common/.github
 var templates embed.FS
 
 // Config identifies the template checkout and the new project.
 type Config struct {
-	Source string
-	Output string
-	Module string
-	Name   string
-	Engine project.Engine
+	Source  string
+	Output  string
+	Module  string
+	Name    string
+	Engine  project.Engine
+	Profile project.Profile
 }
 
 // Generate writes a new project. Existing output directories are rejected.
@@ -69,6 +70,12 @@ func validateConfig(cfg Config) (Config, error) {
 		cfg.Engine = project.Gin
 	}
 	if err := cfg.Engine.Validate(); err != nil {
+		return cfg, err
+	}
+	if cfg.Profile == "" {
+		cfg.Profile = project.Full
+	}
+	if err := cfg.Profile.Validate(); err != nil {
 		return cfg, err
 	}
 	if !regexp.MustCompile(`^[a-zA-Z0-9][a-zA-Z0-9._/-]*$`).MatchString(cfg.Module) || strings.Contains(cfg.Module, "..") {
@@ -132,6 +139,9 @@ type projectCopier struct {
 }
 
 func (c *projectCopier) copyProject() error {
+	if c.cfg.Profile == project.Minimal {
+		return c.copyMinimal()
+	}
 	paths := []string{"cmd", "config", "deployment", "docs", "integration-test", "internal", "migrations", "pkg", ".github", ".githooks", "Makefile", "go.mod", "go.sum", "README.md", "LICENSE", ".gitignore", ".dockerignore", ".golangci.yml", ".air.toml", ".env.example", "AGENTS.md"}
 	for _, path := range paths {
 		if _, err := c.source.Lstat(path); os.IsNotExist(err) {
@@ -175,7 +185,7 @@ func (c *projectCopier) copyPath(root string) error {
 
 func skipPrivateFile(path string) bool {
 	name := filepath.Base(path)
-	return path == ".github/workflows/engines.yml" || path == "docs/http-engines.md" || path == "docs/http-engines-verification.md" || path == "docs/roadmap.md" || path == "docs/release-readiness.md" || path == "config/config.yaml" || strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") || (strings.HasPrefix(name, ".env") && name != ".env.example")
+	return path == ".github/workflows/engines.yml" || path == "docs/http-engines.md" || path == "docs/http-engines-verification.md" || path == "docs/roadmap.md" || path == "docs/minimal-services.md" || path == "docs/release-readiness.md" || path == "config/config.yaml" || strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") || (strings.HasPrefix(name, ".env") && name != ".env.example")
 }
 
 func (c *projectCopier) copyFile(path string, entry fs.DirEntry) error {
@@ -294,7 +304,7 @@ func (c *projectCopier) applyTemplates(engine string) error {
 }
 
 func (c *projectCopier) writeSettings() error {
-	data, err := json.MarshalIndent(project.Settings{Engine: c.cfg.Engine}, "", "  ")
+	data, err := json.MarshalIndent(project.Settings{Engine: c.cfg.Engine, Profile: c.cfg.Profile}, "", "  ")
 	if err != nil {
 		return err
 	}

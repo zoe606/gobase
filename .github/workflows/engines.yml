@@ -11,7 +11,7 @@ permissions:
   contents: read
 
 env:
-  GO_VERSION: '1.27.1'
+  GO_VERSION: '1.27.2'
 
 jobs:
   engines:
@@ -157,3 +157,55 @@ jobs:
           if [ -f "$RUNNER_TEMP/app.log" ]; then
             cat "$RUNNER_TEMP/app.log"
           fi
+
+  minimal:
+    name: Minimal (${{ matrix.engine }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [gin, stdlib, fiber]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-go@v7
+        with:
+          go-version: ${{ env.GO_VERSION }}
+      - name: Generate and verify minimal service without infrastructure
+        run: go run ./pkg/tools/verifyengines -profile=minimal -engine=${{ matrix.engine }} -output="$RUNNER_TEMP/gobase-minimal"
+      - name: Lint minimal service
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.14.0
+          working-directory: ${{ runner.temp }}/gobase-minimal/${{ matrix.engine }}
+      - name: Scan minimal service
+        working-directory: ${{ runner.temp }}/gobase-minimal/${{ matrix.engine }}
+        run: go tool govulncheck ./...
+      - name: Verify minimal Docker runtime without infrastructure
+        working-directory: ${{ runner.temp }}/gobase-minimal/${{ matrix.engine }}
+        run: |
+          container="gobase-minimal-${{ matrix.engine }}"
+          image="gobase-minimal:${{ matrix.engine }}"
+          cleanup() {
+            docker logs "$container" 2>&1 || true
+            docker rm -f "$container" > /dev/null 2>&1 || true
+          }
+          trap cleanup EXIT
+          CGO_ENABLED=0 GOOS=linux go build -o "$RUNNER_TEMP/minimal-runtime-check" ./integration-test/runtimecheck
+          docker build -f deployment/docker/Dockerfile -t "$image" .
+          test "$(docker image inspect --format '{{.Config.User}}' "$image")" = '65532:65532'
+          docker run -d --name "$container" -p 18080:8080 -e APP_ENV=production "$image"
+          ready=false
+          for attempt in $(seq 1 30); do
+            if curl -fsS http://localhost:18080/readyz > /dev/null; then ready=true; break; fi
+            sleep 1
+          done
+          test "$ready" = true
+          curl -fsS http://localhost:18080/healthz
+          code="$(curl -sS -o "$RUNNER_TEMP/minimal-error.json" -w '%{http_code}' -H 'X-Request-ID: minimal-docker' http://localhost:18080/missing)"
+          test "$code" = 404
+          jq -e '.success == false and .error.code == "NOT_FOUND" and .request_id == "minimal-docker"' "$RUNNER_TEMP/minimal-error.json"
+          docker cp "$RUNNER_TEMP/minimal-runtime-check" "$container":/runtime-check
+          docker exec "$container" /runtime-check -profile=minimal
+          docker stop --time 25 "$container"
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$container")" = 0

@@ -1,14 +1,16 @@
 # Gobase Roadmap
 
-Updated: October 8, 2026.
+Updated: October 9, 2026.
 
-This document plans work on the gobase template and generator. The agreed direction is engine foundation, minimal service output, monorepo generation, and a tested service communication example. Phase 1 and Phase 2.1 are merged. Phase 2.2 Redis lifecycle merged through PR #57. Phase 2.3 Docker non-root runtime is implemented in PR #58 and awaits merge. Later stages remain planned. GitHub issues record review and merge status.
+This document plans work on the gobase template and its use in real applications. The user clarified on October 8, 2026 that the next goal is three standalone applications with different business domains, one per engine, followed by HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1 and 2 are merged. Phase 3 minimal output is implemented in PR #59. Issues #60 and #56 track the planned application and HTTP validation work.
 
 ## Current Baseline
 
 The HTTP engine refactor is implemented and verified locally and in GitHub Actions. Project creation supports Gin, standard `net/http`, and Fiber. Each engine has independent endpoint and CRUD generator templates. Use cases, DTOs, entities, repositories, migrations, and workers remain shared.
 
 The engine is selected during project creation. `.gobase.json` records that choice for code generation. Changing this file does not migrate an existing application. The runnable template checkout retains Fiber for compatibility.
+
+Project creation also selects `PROFILE=full|minimal`. Full remains the default. Minimal output uses the selected native engine and starts without PostgreSQL, Redis, storage, email, or a worker. See [minimal services](minimal-services.md) for its file set, dependency policy, commands, and compatibility.
 
 All three generated projects passed local builds, race tests, lint, shared HTTP contracts, and integration tests with PostgreSQL and Redis. [PR #46](https://github.com/zoe606/gobase/pull/46) merged on October 5, 2026 as `66270fb626b7b6b5df208ce94b0d17f52fca8890`. GitHub Actions Quality and all three engine jobs passed on that `master` revision, including Linux amd64 Docker app and worker runtime checks. See the [release readiness report](release-readiness.md) for workflow links and the [local verification results](http-engines-verification.md) for environment details.
 
@@ -20,20 +22,22 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 |-------|---------|--------|
 | HTTP engine refactor | Three engines with native handlers and shared core | Implemented; local and GitHub verification passed |
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
-| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | 2.1 and 2.2 merged; 2.3 implemented in PR #58, awaiting merge |
-| 3. Minimal service output | A service without bundled application features or required infrastructure | Planned; [#54](https://github.com/zoe606/gobase/issues/54) |
-| 4. Monorepo generation | Independent service modules with root development commands | Planned; [#55](https://github.com/zoe606/gobase/issues/55) |
-| 5. Service communication example | Two independently running services with tested HTTP communication | Planned; [#56](https://github.com/zoe606/gobase/issues/56) |
+| 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | Complete; PRs #53, #57, and #58 merged |
+| 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Implemented; checks passed on PR #59 implementation revision; merge tracked by [#54](https://github.com/zoe606/gobase/issues/54) |
+| 4. Standalone application validation | Three real applications with different domains, one per engine | Planned; [#60](https://github.com/zoe606/gobase/issues/60) |
+| 5. HTTP workflow validation | Tested business workflows across the independent applications | Planned; [#56](https://github.com/zoe606/gobase/issues/56) |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
 flowchart LR
-    Foundation[Engine foundation] --> Minimal[Minimal service output]
-    Minimal --> Monorepo[Monorepo generation]
-    Monorepo --> Example[Service communication example]
+    Foundation[Engine foundation] --> Applications[Three standalone applications]
+    Applications --> HTTP[Cross-service HTTP workflows]
+    HTTP --> Evidence[Production verification evidence]
 ```
 
-Gobase remains the source template and generator. A monorepo is a generated workspace. Each service selects one HTTP engine when it is created. A workspace does not need to use all three engines.
+Gobase remains the source template and generator. The applications are separate projects with different responsibilities. Each selects one engine during creation and owns its code, data, and deployment. Use the full profile when its bundled features are needed. Minimal output remains optional; it is not a prerequisite for application validation.
+
+The earlier monorepo plan came from an incorrect interpretation of the user's goal. Issue #55 records that superseded work. The revised plan tests real applications and their dependencies. Template and Docker checks already passed, but the business workflows, production deployment, workload, and recovery evidence below remain unverified.
 
 ## Phase 1: Template Release Readiness
 
@@ -67,11 +71,11 @@ Reuse `make check-all`, `go run ./pkg/tools/verifyengines -lint`, and the existi
 
 ## Phase 2: Engine Foundation
 
-Finish the existing engine and runtime foundation before adding workspace generation. Request parsing, validation, response formats, middleware, health checks, graceful shutdown, builds, and code generation must remain covered for Gin, stdlib, and Fiber. The existing HTTP contracts and engine workflow provide this baseline.
+Finish the existing engine and runtime foundation before building the standalone applications. Request parsing, validation, response formats, middleware, health checks, graceful shutdown, builds, and code generation must remain covered for Gin, stdlib, and Fiber. The existing HTTP contracts and engine workflow provide this baseline.
 
 ### Execution Order
 
-Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47, article list validation in PR #53, and Redis ownership in PR #57 are merged. Phase 2.3 implements Docker non-root runtime in this source. Minimal service output is next after Phase 2.3 merges.
+Implement one slice at a time on a new branch from `master`. Each slice needs its own scope, verification, and merged PR before the next slice starts. The documentation update in PR #47, article list validation in PR #53, Redis ownership in PR #57, and Docker non-root runtime in PR #58 are merged. Phase 3 started from the merged Phase 2 baseline.
 
 Update the template README and `pkg/scaffold/application/README.md.tmpl` when a slice changes feature availability or setup instructions.
 
@@ -110,7 +114,7 @@ The final app and worker images use `scratch` with `USER 65532:65532`. The image
 - Host configuration bind mounts retain host permissions. The template and generated application README link to [runtime permissions](deployment.md#runtime-permissions) for local configuration, secret files, custom mounts, and volume upgrades.
 - The Engines workflow verifies actual process identity, filesystem access, upload, three image variants written by the worker, welcome email processing, and exit code `0` after shutdown for all three engines.
 
-Issue #52 stays open until [PR #58](https://github.com/zoe606/gobase/pull/58) merges. Start Phase 3 with the minimal file and dependency set required by issue #54 after that merge.
+[PR #58](https://github.com/zoe606/gobase/pull/58) merged on October 8, 2026 as `619162fddc412a32c2b4344171d083f0dac4dbf8`. Issue #52 is closed.
 
 ### Completion Criteria
 
@@ -122,9 +126,11 @@ Issue #52 stays open until [PR #58](https://github.com/zoe606/gobase/pull/58) me
 
 ## Phase 3: Minimal Service Output
 
-Tracking: [#54](https://github.com/zoe606/gobase/issues/54). Start after Phase 2 is complete and merged.
+Tracking: [#54](https://github.com/zoe606/gobase/issues/54). Implemented in this source. The issue remains open through PR verification and merge.
 
-The initializer currently copies a complete application with auth, articles, media, translation, migrations, and workers. Copying this output into every service would add features and infrastructure that the service may not need.
+The default initializer output remains a complete application with auth, articles, media, translation, migrations, and workers. `PROFILE=minimal` selects a separate file set for services that do not need those features. [Minimal service documentation](minimal-services.md) defines the file and dependency set used by the implementation.
+
+The minimal profile includes optional configuration, logging, native routing, shared response envelopes, request IDs, recovery, health checks, and shutdown. Its generated CI and app-only Docker Compose require no infrastructure. SQL generation and wiring commands report that they require the full profile. A missing profile in existing project metadata still means full.
 
 - Define the minimal file and dependency set before changing generation. Keep configuration, logging, the selected native HTTP engine, request and response helpers, health checks, and graceful shutdown.
 - Make minimal output an explicit choice. Keep the current full application output as the default and preserve existing project creation commands.
@@ -140,65 +146,74 @@ The initializer currently copies a complete application with auth, articles, med
 - The existing full output still passes its current generation and engine checks.
 - Output selection, supported code generation, and compatibility are documented and tested.
 
-## Phase 4: Monorepo Generation
+## Phase 4: Standalone Application Validation
 
-Tracking: [#55](https://github.com/zoe606/gobase/issues/55). Start after Phase 3 is complete and merged.
+Tracking: [#60](https://github.com/zoe606/gobase/issues/60). Use a recorded merged gobase revision. Use the minimal profile from PR #59 only after it merges if the selected application needs that profile.
 
-A monorepo contains multiple services in one repository. Separate service processes and deployments are additional properties; putting applications in subdirectories does not establish service boundaries.
+The selected scenario is commerce with Order using Gin, Inventory using stdlib, and Billing using Fiber. The user selected these domains on October 8, 2026. Repository names and locations, deployment environment, workload targets, and detailed business contracts must be defined before application implementation.
 
-```text
-workspace/
-  go.work
-  Makefile
-  services/
-    service-a/
-      go.mod
-      .gobase.json
-    service-b/
-      go.mod
-      .gobase.json
-  contracts/
-  deployment/
+| Application | Engine | Owned data and behavior |
+|-------------|--------|-------------------------|
+| Order | Gin | Order records, workflow state, and coordination of stock and invoice operations |
+| Inventory | stdlib | Products, stock balances, reservations, release, and stock consumption |
+| Billing | Fiber | Invoices, recorded payment state, and payment confirmation |
+
+The initial workflow creates an order, reserves stock, creates an invoice, records payment, and completes the order. Each service commits its own state. Define failure and recovery behavior for each step before implementation. Real payment processing is a separate integration decision; invoice and payment-state tests do not prove external payment processing.
+
+- Create three separate repositories. Each owns its Go module, engine metadata, configuration, migrations, data, tests, image, and CI. Record the source template revision.
+- Implement complete business workflows beyond generated CRUD and health routes. Add only features used by the selected product.
+- Test HTTP requests and persisted results against running applications and their actual dependencies. Cover validation, authentication, and access rules for the selected resources. Cover file and worker behavior when used.
+- Verify production configuration and deploy each app to the selected controlled environment. Record dependency versions, resources, configuration, and substituted providers.
+- Verify dependency failures, bounded operations, process shutdown, restarts, and retained data. Where persistence is used, verify production migration procedures and backup and restore.
+- Agree on workload and pass criteria before measuring latency, throughput, errors, and resource usage. Compare each result against its application's requirements.
+- Fix generated foundation defects in gobase. Apply the fix to every affected application and verify it there. Keep product rules in their owning application.
+- Record each check as passed, failed, or not tested. State the limits of the production-readiness conclusion.
+
+### Completion Criteria
+
+- Each standalone project has a real workflow, independent CI, reproducible setup, and a tested deployment.
+- Business, production configuration, failure, restart, migration, and recovery checks pass for each application's actual dependencies.
+- Workload results meet the agreed criteria and include environment details.
+- The evidence report identifies application revisions, the source template revision, upstream fixes, and remaining limitations.
+
+## Phase 5: HTTP Workflow Validation
+
+Tracking: [#56](https://github.com/zoe606/gobase/issues/56). Extend the applications from Phase 4 with their actual business dependencies. Define contracts before implementing calls.
+
+The three services use HTTP without a new cross-service message broker. Define calls from the business workflow. Every service participates, but the design does not require every service to call every other service. Avoid recursive synchronous call chains. If a service calls back to another service, define it as a separate operation with its own state and retry rules.
+
+```mermaid
+flowchart LR
+    Order[Order - Gin] -->|Reserve, release, or consume stock| Inventory[Inventory - stdlib]
+    Order -->|Create or query invoice| Billing[Billing - Fiber]
+    Billing -->|Payment confirmation as a separate operation| Order
 ```
 
-- Generate services from the minimal output. Each service selects one engine and owns its Go module, application configuration, and build artifact.
-- Use `go.work` for local development. Each service must also build and test with `GOWORK=off`.
-- Provide root commands to build and test all services, run a selected service, and start the local Compose environment. Document service names, ports, and configuration.
-- Define workspace creation and service addition commands. Reject duplicate names and existing output paths without overwriting service files. Preserve standalone project generation.
-- Keep business use cases, repositories, entities, and migrations inside their owning service. Services must not import another service's internal implementation or access its tables directly.
-- Store communication schemas and fixtures under `contracts`. Add shared Go packages only when an actual shared requirement exists.
-- Keep this phase limited to workspace generation and independent execution. The next phase demonstrates communication.
+This is a proposed business call graph. Finalize the endpoint and state contracts before implementing it. A callback must not run while holding a database transaction that blocks the receiver's request. The services communicate through APIs and do not query each other's databases. Additional calls require a business purpose.
+
+- Document the business flow, data ownership, call graph, request and response schemas, status codes, caller authentication, and API version compatibility.
+- Use bounded HTTP clients with request context cancellation. Propagate request IDs and identify downstream calls in logs.
+- Define idempotency for operations that may be repeated. Retry only when the operation is safe, with a bounded attempt and time budget.
+- Define persisted operation states and partial-failure recovery. Document how to recover when one service succeeds and a later service fails or its response is lost.
+- Test success, invalid requests, rejected callers, missing resources, unavailable and slow downstream services, duplicate requests, partial failure, restart, and graceful shutdown.
+- Start pinned images from the independent repositories for integration verification. Keep modules, databases, and deployments independently owned. A common test environment does not change repository ownership.
+- Record end-to-end workload and failure results against the agreed criteria. Feed foundation defects back into gobase and recheck affected services.
 
 ### Completion Criteria
 
-- A generated two-service workspace supports independent engine choices, root commands, and local Compose startup.
-- Each service builds and tests independently with `GOWORK=off` and produces its own Docker image.
-- Adding a service preserves existing files and each service's engine setting.
-- All three engine choices remain covered, and standalone generation keeps its current behavior.
+- All three real applications participate in the documented business workflow over HTTP.
+- Cross-service contracts and failure scenarios pass against separately running processes with their actual dependencies.
+- Requests finish within the agreed timeout budget. Repeated operations and recovery preserve the agreed business result.
+- Each application builds, tests, and deploys independently. The integration environment is reproducible from recorded revisions.
+- The verification report distinguishes tested behavior, substituted providers, and unverified production claims.
 
-## Phase 5: Service Communication Example
+### Optional Message Broker Exercise
 
-Tracking: [#56](https://github.com/zoe606/gobase/issues/56). Start after Phase 4 is complete and merged.
-
-Use one small two-service example to verify the generated workspace. The example demonstrates a business boundary and HTTP communication. It does not become a required application feature.
-
-- Define the request, response, and failure contract before adding handlers or clients.
-- Run the services as separate processes. The caller uses HTTP with a bounded timeout and request context cancellation. Define which request ID headers are propagated.
-- Keep data ownership inside each service. The caller must not import the receiver's repository or read its database.
-- Cover successful responses, invalid requests, unavailable downstream service, timeout, and graceful shutdown with integration tests.
-- Reuse the same example for representative engine pairs: Gin to stdlib, stdlib to Fiber, and Fiber to Gin. This verifies every engine as caller and receiver without requiring three services in the generated example.
-- Document local startup, the example request, service-specific builds, and how to reproduce a downstream failure.
-
-### Completion Criteria
-
-- The two services build and run independently and communicate using the documented contract.
-- Integration tests pass for the three representative engine pairs.
-- Downstream failures and timeouts return the documented response without leaving requests blocked.
-- A fresh workspace follows the documented local run procedure successfully.
+Start with the HTTP workflow. A broker exercise is separate follow-up work if the user chooses an asynchronous requirement. Select the broker and one concrete event flow then. Test duplicate delivery, retries, consumer downtime, delivery confirmation, and recovery. Existing in-process or per-service background jobs do not establish a cross-service event protocol.
 
 ## Optional Application Features
 
-These issues remain open as deferred work. They are not prerequisites for engine foundation, minimal service output, monorepo generation, or the communication example. Resume them when a generated application needs the capability.
+These issues remain open as deferred work. They are not unconditional prerequisites for application validation. Resume them when one of the selected applications requires the capability.
 
 ### Email Verification and Password Reset
 
@@ -224,7 +239,7 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issues #48 and #51 closed when PRs #53 and #57 merged. Issue #52 tracks the implemented Docker non-root runtime and stays open until its PR merges. Issues #49 and #50 remain open and deferred. Issues #54, #55, and #56 track Phases 3, 4, and 5. All three later phases remain planned.
+Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 tracks implemented minimal output through verification and merge. Issue #55 records the superseded monorepo plan and is not planned. Issue #60 tracks standalone application validation. Issue #56 tracks HTTP workflows between those real applications.
 
 Use one issue for each bounded outcome. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs. Update the template README and generated application documentation when implemented behavior changes.
 
@@ -232,9 +247,9 @@ Link each implementation PR to its issue. Use `Closes #<issue-number>` only when
 
 ## Scope Limits
 
-Keep existing full applications compatible while adding the new outputs. Minimal output and monorepo generation are planned capabilities, not available commands.
+Keep existing full applications compatible. This source provides standalone full and minimal generation. Monorepo generation and a shared Go workspace are outside the current plan. The three applications use different business domains and separate repositories.
 
-Additional engines, runtime engine switching, conversion of existing applications, a universal HTTP handler API, and a rewrite of the shared business layers are outside these phases. Kubernetes, a service mesh, an API gateway, and a new message broker are outside the initial workspace and communication example.
+Additional engines, runtime engine switching, conversion of existing applications, a universal HTTP handler API, and a rewrite of the shared business layers are outside these phases. Kubernetes, a service mesh, and an API gateway are outside the initial verification work. A message broker is optional later work and is not required for the first HTTP workflow.
 
 ## References
 

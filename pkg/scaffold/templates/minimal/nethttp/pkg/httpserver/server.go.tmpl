@@ -1,0 +1,48 @@
+package httpserver
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"time"
+
+	{{NATIVE_ROUTER_IMPORT}}
+	"go-boilerplate/pkg/logger"
+)
+
+type Server struct {
+	App {{NATIVE_ROUTER_TYPE}}
+	Handler http.Handler
+	notify chan error
+	server *http.Server
+	address string
+	prefork bool
+	readTimeout, writeTimeout, shutdownTimeout time.Duration
+	bodyLimit int
+	logger logger.Interface
+}
+
+func New(l logger.Interface, opts ...Option) *Server {
+	s := &Server{App: {{NATIVE_ROUTER_NEW}}, notify: make(chan error, 1), address: ":8080", readTimeout: 15*time.Second, writeTimeout: 15*time.Second, shutdownTimeout: 15*time.Second, bodyLimit: 4*1024*1024, logger:l}
+	for _, option := range opts { option(s) }
+	s.Handler = s.App
+	return s
+}
+
+func (s *Server) Start() {
+	s.server = &http.Server{Addr:s.address, Handler:http.MaxBytesHandler(s.Handler, int64(s.bodyLimit)), ReadTimeout:s.readTimeout, WriteTimeout:s.writeTimeout, ReadHeaderTimeout:s.readTimeout}
+	go func() {
+		err := s.server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) { s.notify <- err }
+		close(s.notify)
+	}()
+	s.logger.Info("HTTP server started")
+}
+
+func (s *Server) Notify() <-chan error { return s.notify }
+
+func (s *Server) Shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
+	defer cancel()
+	return s.server.Shutdown(ctx)
+}

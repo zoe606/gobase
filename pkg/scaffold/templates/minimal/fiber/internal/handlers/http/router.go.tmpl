@@ -1,0 +1,43 @@
+package http
+
+import (
+	"errors"
+	"fmt"
+	"net/http"
+
+	"github.com/gofiber/fiber/v2"
+	"github.com/gofiber/fiber/v2/middleware/requestid"
+
+	"go-boilerplate/pkg/apperror"
+	"go-boilerplate/pkg/httpserver"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
+)
+
+func NewRouter(srv *httpserver.Server, l logger.Interface) {
+	srv.App.Use(requestid.New())
+	srv.App.Use(func(c *fiber.Ctx) (err error) {
+		defer func() {
+			if value := recover(); value != nil {
+				l.Error(fmt.Sprintf("HTTP handler panic: %v", value))
+				err = response.InternalError(c)
+			}
+		}()
+		l.Info("%s %s", c.Method(), c.Path())
+		err = c.Next()
+		if err == nil {
+			return nil
+		}
+		var httpErr *fiber.Error
+		if errors.As(err, &httpErr) && httpErr.Code < 500 {
+			if httpErr.Code == http.StatusNotFound {
+				return response.NotFound(c, "Not found")
+			}
+			return response.Error(c, httpErr.Code, apperror.CodeBadRequest, http.StatusText(httpErr.Code))
+		}
+		l.Error(err)
+		return response.InternalError(c)
+	})
+	srv.App.Get("/healthz", func(c *fiber.Ctx) error { return c.SendString("OK") })
+	srv.App.Get("/readyz", func(c *fiber.Ctx) error { return c.SendString("OK") })
+}
