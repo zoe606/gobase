@@ -1,6 +1,6 @@
 # Commerce Verification
 
-Date: October 9, 2026.
+Updated: October 11, 2026.
 
 ## Scope and Revisions
 
@@ -110,7 +110,7 @@ These independent quality runs do not execute the full three-application workflo
 
 ### Linux HTTP Workflow
 
-[Order PR #6](https://github.com/zoe606/commerce-order/pull/6) adds Ubuntu native and Docker jobs using the existing ten scenarios. On October 9, 2026, [Commerce E2E run 37954108670](https://github.com/zoe606/commerce-order/actions/runs/37954108670) passed both jobs. [Quality run 37954108608](https://github.com/zoe606/commerce-order/actions/runs/37954108608) also passed. The run head is `265caa41b99b2ddd64e8b9c249a5df08bc8d786a`. The PR checkout is GitHub's merge commit, recorded separately below. The workflow still awaits merge into Order's default branch.
+[Order PR #6](https://github.com/zoe606/commerce-order/pull/6) adds Ubuntu native and Docker jobs using the existing ten scenarios. On October 9, 2026, [Commerce E2E run 37954108670](https://github.com/zoe606/commerce-order/actions/runs/37954108670) passed both jobs. [Quality run 37954108608](https://github.com/zoe606/commerce-order/actions/runs/37954108608) also passed. The run head is `265caa41b99b2ddd64e8b9c249a5df08bc8d786a`. The PR checkout is GitHub's merge commit, recorded separately below. The workflow merged on October 11 and is enabled on Order's default branch.
 
 Both artifact revision records identify the same checked-out application commits:
 
@@ -124,11 +124,16 @@ The logs confirm Go 1.27.2 on Linux amd64 and ten passed scenarios in each mode.
 
 Inventory and Billing checkouts use separate read-only deploy keys stored as Order Actions secrets. The keys were verified as read-only. Artifacts contain revision records and runtime logs. Inspection confirmed that environment files and TLS keys are absent. The workflow runs on Order changes and accepts manual candidate peer revisions. Peer pushes run their own CI and do not automatically trigger this common workflow. Each repository remains independently owned.
 
+### Post-Merge Verification
+
+On October 11, [Commerce E2E run 38151098408](https://github.com/zoe606/commerce-order/actions/runs/38151098408) passed all ten scenarios in each mode. [Order Quality run 38151098378](https://github.com/zoe606/commerce-order/actions/runs/38151098378) passed. Logs confirm non-root runtime probes for all three Docker containers. Both jobs record Order `d4fb7e78a1e183a11665730aa008b796d29854dd`, Inventory `1dd4467f4097216f392cae019e4687b439d12d3a`, and Billing `7e219a0fe6e9c2a31a9416c406a499e601f94a77`.
+
+[Gobase PR #62](https://github.com/zoe606/gobase/pull/62) merged as `620c8614dd4ac72fe54ce024013593d888db28a1`. Post-merge [Quality](https://github.com/zoe606/gobase/actions/runs/38150670114) and all six full/minimal [engine jobs](https://github.com/zoe606/gobase/actions/runs/38150670107) passed. Issues #60 and #56 are closed as completed.
+
 ## Remaining Work
 
 The initial workflow and local production configuration are verified within the limits above. This is not a complete production-readiness claim.
 
-- Merge Order PR #6 and this evidence and scope update after review. This enables the common workflow on Order's default branch.
 - Run the common workflow with candidate peer revisions before adopting them. Update the pinned revisions after verification.
 - Fix reusable foundation defects in gobase when found and adopt those fixes in affected applications.
 
@@ -142,4 +147,4 @@ The items below are later Commerce application operations and product work. They
 - Replace inherited example Swagger specifications with the Commerce API before enabling Swagger.
 - Verify credential rotation and database certificate identity. The local fixture uses `sslmode=require`, which encrypts transport but does not verify certificate identity.
 
-Issues [#60](https://github.com/zoe606/gobase/issues/60) and [#56](https://github.com/zoe606/gobase/issues/56) remain open until the workflow and documentation changes merge. Later Commerce operations do not block these validation issues. [#55](https://github.com/zoe606/gobase/issues/55) is closed as not planned. The [execution plan](plans/commerce-execution.md) and [roadmap](roadmap.md) track the next work.
+Issues [#60](https://github.com/zoe606/gobase/issues/60) and [#56](https://github.com/zoe606/gobase/issues/56) are closed. Later Commerce operations are separate work. [#55](https://github.com/zoe606/gobase/issues/55) is closed as not planned. The [execution plan](plans/commerce-execution.md) and [roadmap](roadmap.md) track maintenance and deferred work.

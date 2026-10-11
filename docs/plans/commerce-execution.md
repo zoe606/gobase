@@ -1,6 +1,6 @@
 # Commerce Application Verification
 
-Updated: October 9, 2026.
+Updated: October 11, 2026.
 
 ## Approved Direction
 
@@ -51,17 +51,19 @@ A failed invoice request leaves an identifiable order and reservation for safe r
 
 All three private repositories are published and their initial CI runs passed. They implement the initial business workflow with persistent state, native handlers, caller credentials, idempotency, bounded HTTP calls, and payment confirmation recovery. PostgreSQL repository and native handler tests pass. Ten cross-service scenarios pass with both native processes and non-root Docker containers in local production configuration. The [verification report](../commerce-verification.md) records exact revisions, CI links, and limitations.
 
-[Order PR #6](https://github.com/zoe606/commerce-order/pull/6) adds the same ten native and Docker scenarios to Ubuntu CI. Both jobs passed in [run 37954108670](https://github.com/zoe606/commerce-order/actions/runs/37954108670), and the independent Quality job passed. The workflow awaits merge. Inventory and Billing remain separate private repositories checked out at pinned revisions with separate read-only deploy keys.
+[Order PR #6](https://github.com/zoe606/commerce-order/pull/6) merged on October 11, 2026 as `d4fb7e78a1e183a11665730aa008b796d29854dd`. Both native and Docker jobs passed all ten scenarios after merge in [run 38151098408](https://github.com/zoe606/commerce-order/actions/runs/38151098408). The independent [Quality job](https://github.com/zoe606/commerce-order/actions/runs/38151098378) passed on the same revision. Inventory and Billing remain separate private repositories checked out at pinned revisions with separate read-only deploy keys.
+
+[Gobase PR #62](https://github.com/zoe606/gobase/pull/62) merged as `620c8614dd4ac72fe54ce024013593d888db28a1`. Post-merge [Quality](https://github.com/zoe606/gobase/actions/runs/38150670114) and all six full/minimal [engine jobs](https://github.com/zoe606/gobase/actions/runs/38150670107) passed. Issues #60 and #56 are closed. The current boilerplate validation is complete.
 
 The October 9 foundation uses Go 1.27.2 and x/net v0.60.0. All seven final GitHub jobs passed before PR #59 merged as `a611e8406f491bb259d8a120b89f86b1f7ebaab5`. Source coverage is 86.8% with an unchanged 85% CI threshold. The applications adopted these production changes and the complete generator workflow test.
 
 ## Next Work
 
-1. Merge Order PR #6 and the gobase evidence and scope update after review. This enables the verified Linux workflow on Order's default branch.
+1. Use the v0.1.0 template baseline for new projects. The common Linux workflow is enabled on Order's default branch.
 2. Run the workflow with candidate peer revisions before adopting them. Update the pins and record the three application revisions and CI results after verification. Independent application CI remains separate.
 3. Fix reusable foundation defects in gobase and adopt each fix in affected applications. Keep Commerce rules and test orchestration in the application repositories.
 
-Keep issues #60 and #56 open until the workflow and documentation changes merge. Later application operations do not block these validation issues. Issue #55 remains closed as not planned. Add a message broker only for a selected asynchronous workflow.
+Issues #60 and #56 are complete. Later application operations do not reopen these validation issues. Issue #55 remains closed as not planned. Add a message broker only for a selected asynchronous workflow.
 
 ## Later Application Operations and Features
 
