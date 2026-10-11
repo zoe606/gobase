@@ -24,20 +24,22 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
 | 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | Complete; PRs #53, #57, and #58 merged |
 | 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Complete; PR #59 merged as a611e84; [#54](https://github.com/zoe606/gobase/issues/54) closed |
-| 4. Standalone application validation | Three real applications with different domains, one per engine | Private repositories published; local checks and independent CI pass; deployment and workload pending; [#60](https://github.com/zoe606/gobase/issues/60) |
-| 5. HTTP workflow validation | Tested business workflows across the independent applications | Ten native and Docker scenarios pass locally; further production evidence pending; [#56](https://github.com/zoe606/gobase/issues/56) |
+| 4. Standalone application validation | Three real applications with different domains, one per engine | Private repositories published; local production configuration and independent CI pass; [#60](https://github.com/zoe606/gobase/issues/60) |
+| 5. HTTP workflow validation | Tested business workflows across the independent applications | Ten native and Docker scenarios pass locally and in Ubuntu CI; [Order PR #6](https://github.com/zoe606/commerce-order/pull/6) awaits merge; [#56](https://github.com/zoe606/gobase/issues/56) |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
 flowchart LR
     Foundation[Engine foundation] --> Applications[Three standalone applications]
     Applications --> HTTP[Cross-service HTTP workflows]
-    HTTP --> Evidence[Production verification evidence]
+    HTTP --> Evidence[Automated Linux verification]
 ```
 
 Gobase remains the source template and generator. The applications are separate projects with different responsibilities. Each selects one engine during creation and owns its code, data, and deployment. Use the full profile when its bundled features are needed. Minimal output remains optional; it is not a prerequisite for application validation.
 
 Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
+
+The immediate next step is to merge the verified Linux HTTP workflow and this documentation update after review. Continue applying reusable foundation fixes to gobase when application verification finds them. Database backup and restore are application operations, not a boilerplate feature. External deployment, capacity measurements, cancellation, and real charging are separate application follow-up work. They do not block the engine validation phases below.
 
 ## Phase 1: Template Release Readiness
 
@@ -150,7 +152,7 @@ The minimal profile includes optional configuration, logging, native routing, sh
 
 Tracking: [#60](https://github.com/zoe606/gobase/issues/60). The applications use the full profile and production changes merged in gobase revision `a611e8406f491bb259d8a120b89f86b1f7ebaab5`. Source provenance and application revisions are recorded in the [verification report](commerce-verification.md).
 
-The selected scenario is commerce with Order using Gin, Inventory using stdlib, and Billing using Fiber. Private repositories are named `zoe606/commerce-order`, `zoe606/commerce-inventory`, and `zoe606/commerce-billing`. The initial contracts and local fixture are implemented. External deployment and workload targets must be selected before those verification steps.
+The selected scenario is commerce with Order using Gin, Inventory using stdlib, and Billing using Fiber. Private repositories are named `zoe606/commerce-order`, `zoe606/commerce-inventory`, and `zoe606/commerce-billing`. The initial contracts and local fixture are implemented. External deployment and workload targets belong to later application operations.
 
 | Application | Engine | Owned data and behavior |
 |-------------|--------|-------------------------|
@@ -163,17 +165,16 @@ The initial workflow creates an order, reserves stock, creates an invoice, recor
 - Create three separate repositories. Each owns its Go module, engine metadata, configuration, migrations, data, tests, image, and CI. Record the source template revision.
 - Implement complete business workflows beyond generated CRUD and health routes. Add only features used by the selected product.
 - Test HTTP requests and persisted results against running applications and their actual dependencies. Cover validation, authentication, and access rules for the selected resources. Cover file and worker behavior when used.
-- Verify production configuration and deploy each app to the selected controlled environment. Record dependency versions, resources, configuration, and substituted providers.
-- Verify dependency failures, bounded operations, process shutdown, restarts, and retained data. Where persistence is used, verify production migration procedures and backup and restore.
-- Agree on workload and pass criteria before measuring latency, throughput, errors, and resource usage. Compare each result against its application's requirements.
+- Verify production configuration in independently built containers. Record dependency versions, resources, configuration, and substituted providers.
+- Verify dependency failures, bounded operations, explicit migrations, process shutdown, restarts, and retained data.
 - Fix generated foundation defects in gobase. Apply the fix to every affected application and verify it there. Keep product rules in their owning application.
 - Record each check as passed, failed, or not tested. State the limits of the production-readiness conclusion.
 
 ### Completion Criteria
 
-- Each standalone project has a real workflow, independent CI, reproducible setup, and a tested deployment.
+- Each standalone project has a real workflow, independent CI, reproducible setup, and tested container startup with production configuration.
 - Business, production configuration, failure, restart, migration, and recovery checks pass for each application's actual dependencies.
-- Workload results meet the agreed criteria and include environment details.
+- Each application's existing quality and coverage checks pass without weakening their thresholds.
 - The evidence report identifies application revisions, the source template revision, upstream fixes, and remaining limitations.
 
 ## Phase 5: HTTP Workflow Validation
@@ -198,15 +199,15 @@ This call graph is implemented. Snapshot reads do not start a new write workflow
 - Define idempotency for operations that may be repeated. Retry only when the operation is safe, with a bounded attempt and time budget.
 - Define persisted operation states and partial-failure recovery. Document how to recover when one service succeeds and a later service fails or its response is lost.
 - Test success, invalid requests, rejected callers, missing resources, unavailable and slow downstream services, duplicate requests, partial failure, restart, and graceful shutdown.
-- Start pinned images from the independent repositories for integration verification. Keep modules, databases, and deployments independently owned. A common test environment does not change repository ownership.
-- Record end-to-end workload and failure results against the agreed criteria. Feed foundation defects back into gobase and recheck affected services.
+- Order owns a Linux CI workflow that checks out recorded revisions from the independent repositories and runs the native and Docker scenarios. Keep modules, databases, and deployments independently owned. A common test environment does not change repository ownership.
+- Record end-to-end results and failure recovery. Feed foundation defects back into gobase and recheck affected services.
 
 ### Completion Criteria
 
 - All three real applications participate in the documented business workflow over HTTP.
 - Cross-service contracts and failure scenarios pass against separately running processes with their actual dependencies.
 - Requests finish within the agreed timeout budget. Repeated operations and recovery preserve the agreed business result.
-- Each application builds, tests, and deploys independently. The integration environment is reproducible from recorded revisions.
+- Each application builds and tests independently. The Linux integration environment runs in CI and is reproducible from recorded revisions.
 - The verification report distinguishes tested behavior, substituted providers, and unverified production claims.
 
 ### Optional Message Broker Exercise
