@@ -97,9 +97,9 @@ make docker-stop
 
 ## Release Preparation
 
-Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. Release publication and release notes remain separate work for the revision selected for that release.
+Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. The v0.1.0 baseline includes the later foundation, minimal output, and application verification described below. Historical results remain tied to their recorded revisions.
 
-Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Non-root Docker execution merged through [PR #58](https://github.com/zoe606/gobase/pull/58). See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. The Phase 1 results above remain evidence for their recorded revisions. This source adds minimal service output under issue #54. The next validation work creates three independent applications with different business domains and tests their HTTP workflows. Email verification, password reset, and OpenTelemetry metrics export remain deferred unless a selected product requires them. See the [roadmap](roadmap.md).
+Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Non-root Docker execution merged through [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal output merged through [PR #59](https://github.com/zoe606/gobase/pull/59), closing issue #54. See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. Three independent Commerce applications now verify the selected engines and their HTTP workflow. Issues #60 and #56 are complete. Email verification, password reset, and OpenTelemetry metrics export remain deferred unless a selected product requires them. See the [roadmap](roadmap.md).
 
 The results in this report verify the template and generated runtime for the recorded checks. Application-level production readiness is still unverified. Its report must identify the business workflow, application revisions, production environment, workload criteria, deployment, and failure and recovery results. It must also identify any substituted providers and untested behavior. Monorepo generation is outside the current plan.
 
@@ -151,3 +151,21 @@ Final source revision `631ff36515fce259c0eda237c7716feb359cc96d` passed `make ch
 These local checks used Go 1.27.2 and golangci-lint 2.14.0 on macOS arm64. All seven GitHub jobs passed on the final revision: [Quality](https://github.com/zoe606/gobase/actions/runs/37894333219), and all three full and all three minimal jobs in [Engines](https://github.com/zoe606/gobase/actions/runs/37894333216). Engine jobs include Linux amd64 Docker runtime checks. [PR #59](https://github.com/zoe606/gobase/pull/59) merged on October 9, 2026 as `a611e8406f491bb259d8a120b89f86b1f7ebaab5`. Issue #54 is closed.
 
 The [Commerce verification report](commerce-verification.md) records the application work based on this merged foundation. Application results do not change the scope of the historical template checks above.
+
+## v0.1.0 Baseline
+
+Baseline date: October 11, 2026.
+
+This is the first versioned template baseline. New projects choose Gin v1.12.0, standard `http.ServeMux`, or Fiber v2.52.14 and the full or minimal profile. Gin and full are the creation defaults. The source checkout retains Fiber. Go 1.27.2 and x/net v0.60.0 are the dependency baseline. Full runtime verification uses PostgreSQL 17 and Redis 7.
+
+Full output includes the existing authentication, persistence, local storage, worker, and CRUD generation features. Minimal output starts without required database, cache, storage, email, or worker infrastructure. Handler APIs are native to the selected engine. JSON response envelopes and error contracts remain shared.
+
+The engine is selected during creation and recorded in `.gobase.json`. Editing this file does not convert an existing application. Existing full-profile creation commands remain supported. Generated applications own their code and do not receive source template updates automatically. Apply relevant foundation fixes and verify them in the owning application.
+
+The release tag must identify a master revision whose Quality and six full/minimal engine jobs passed. The 85% coverage gate remains unchanged. The GitHub release notes record the exact tag commit and its CI runs.
+
+Before this documentation update, all seven jobs passed on `620c8614dd4ac72fe54ce024013593d888db28a1`: [Quality](https://github.com/zoe606/gobase/actions/runs/38150670114) and [Engines](https://github.com/zoe606/gobase/actions/runs/38150670107). Engine checks include generated builds, race tests, lint, reachable vulnerability scans, and the relevant code generation, Swagger, HTTP, and non-root Docker runtime checks.
+
+The independent Commerce workflow passed ten scenarios in both modes after Order PR #6 merged. [Commerce E2E](https://github.com/zoe606/commerce-order/actions/runs/38151098408) and [Order Quality](https://github.com/zoe606/commerce-order/actions/runs/38151098378) passed on `d4fb7e78a1e183a11665730aa008b796d29854dd`. The [Commerce report](commerce-verification.md) records all three application revisions.
+
+Email verification, password reset HTTP integration, and OpenTelemetry metrics export remain deferred. External deployment, backup and restore, workload capacity, customer cancellation, refunds, and real charging need separate application evidence. The release records the tested template and workflow baseline. It does not claim complete Commerce production readiness.

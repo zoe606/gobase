@@ -1,8 +1,8 @@
 # Gobase Roadmap
 
-Updated: October 9, 2026.
+Updated: October 11, 2026.
 
-This document plans work on the gobase template and its use in real applications. The user clarified on October 8, 2026 that the next goal is three standalone applications with different business domains, one per engine, followed by HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1, 2, and 3 are merged. The initial Commerce workflow is implemented and verified locally. Issues #60 and #56 track the remaining application and HTTP validation work.
+This document records the gobase template baseline and its validation through real applications. Three standalone applications use different business domains, one per engine, with HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1 through 5 are complete and merged. The initial Commerce workflow passes locally and in Ubuntu CI. Issues #60 and #56 are closed. The versioned template baseline is v0.1.0.
 
 ## Current Baseline
 
@@ -24,8 +24,8 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | 1. Template release readiness | Reproducible setup and CI evidence for all engines | Complete and merged; master CI passed |
 | 2. Engine foundation | Consistent HTTP behavior, resource shutdown, and Docker runtime | Complete; PRs #53, #57, and #58 merged |
 | 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Complete; PR #59 merged as a611e84; [#54](https://github.com/zoe606/gobase/issues/54) closed |
-| 4. Standalone application validation | Three real applications with different domains, one per engine | Private repositories published; local production configuration and independent CI pass; [#60](https://github.com/zoe606/gobase/issues/60) |
-| 5. HTTP workflow validation | Tested business workflows across the independent applications | Ten native and Docker scenarios pass locally and in Ubuntu CI; [Order PR #6](https://github.com/zoe606/commerce-order/pull/6) awaits merge; [#56](https://github.com/zoe606/gobase/issues/56) |
+| 4. Standalone application validation | Three real applications with different domains, one per engine | Complete; private repositories, local production configuration, and independent CI verified; [#60](https://github.com/zoe606/gobase/issues/60) closed |
+| 5. HTTP workflow validation | Tested business workflows across the independent applications | Complete; ten native and Docker scenarios pass after [Order PR #6](https://github.com/zoe606/commerce-order/pull/6) merged; [#56](https://github.com/zoe606/gobase/issues/56) closed |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
@@ -39,11 +39,11 @@ Gobase remains the source template and generator. The applications are separate 
 
 Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
 
-The immediate next step is to merge the verified Linux HTTP workflow and this documentation update after review. Continue applying reusable foundation fixes to gobase when application verification finds them. Database backup and restore are application operations, not a boilerplate feature. External deployment, capacity measurements, cancellation, and real charging are separate application follow-up work. They do not block the engine validation phases below.
+Use v0.1.0 as the reproducible template baseline. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. Database backup and restore are application operations, not a boilerplate feature. External deployment, capacity measurements, cancellation, and real charging are separate application follow-up work. They do not block the completed engine validation phases below.
 
 ## Phase 1: Template Release Readiness
 
-Release readiness and maintenance checks are complete and merged. Release publication remains a separate step.
+Release readiness and maintenance checks are complete and merged. The v0.1.0 baseline records the supported engines, profiles, compatibility, and verification scope.
 
 See the [release readiness report](release-readiness.md) for implemented changes, completed local and GitHub checks, and compatibility notes.
 
@@ -242,7 +242,7 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 tracks implemented minimal output through verification and merge. Issue #55 records the superseded monorepo plan and is not planned. Issue #60 tracks standalone application validation. Issue #56 tracks HTTP workflows between those real applications.
+Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
 
 Use one issue for each bounded outcome. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs. Update the template README and generated application documentation when implemented behavior changes.
 

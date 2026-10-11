@@ -23,11 +23,13 @@ The following application features belong to the default `full` profile. The `mi
 
 ## Project Status
 
+`v0.1.0` is the first versioned template baseline. It includes full and minimal output for Gin, standard `net/http`, and Fiber. See the [release readiness report](docs/release-readiness.md) for scope, compatibility, and verification.
+
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
 Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). Go 1.27.2 and x/net v0.60.0 are the current dependency baseline. Docker images run as UID and GID `65532`.
 
-Three standalone Commerce applications implement Order with Gin, Inventory with stdlib, and Billing with Fiber. Each has an independent repository, module, database, and native handlers. All ten HTTP workflow scenarios passed locally and in Ubuntu CI with native processes and Docker containers. The Linux workflow is ready in [Order PR #6](https://github.com/zoe606/commerce-order/pull/6) and awaits merge. See the [Commerce verification report](docs/commerce-verification.md) for revisions, commands, results, and limits. Monorepo generation is outside the current plan. External deployment, backup and restore, workload criteria, and real payment processing are later application operations and product work. They are not additional boilerplate features or prerequisites for engine validation. See the [roadmap](docs/roadmap.md).
+Three standalone Commerce applications implement Order with Gin, Inventory with stdlib, and Billing with Fiber. Each has an independent repository, module, database, and native handlers. All ten HTTP workflow scenarios passed locally and in Ubuntu CI with native processes and Docker containers. The Linux workflow merged through [Order PR #6](https://github.com/zoe606/commerce-order/pull/6), and both modes passed after merge. Issues #60 and #56 are closed. See the [Commerce verification report](docs/commerce-verification.md) for revisions, commands, results, and limits. Monorepo generation is outside the current plan. External deployment, backup and restore, workload criteria, and real payment processing are later application operations and product work. They are not additional boilerplate features or prerequisites for engine validation. See the [roadmap](docs/roadmap.md).
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
@@ -36,7 +38,7 @@ Email verification and password reset have use cases and token persistence, but 
 Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
-git clone https://github.com/zoe606/gobase.git gobase
+git clone --branch v0.1.0 https://github.com/zoe606/gobase.git gobase
 cd gobase
 make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
 ```
