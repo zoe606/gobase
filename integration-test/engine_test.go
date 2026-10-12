@@ -21,6 +21,7 @@ import (
 	authdto "go-boilerplate/internal/dto/auth"
 	mediadto "go-boilerplate/internal/dto/media"
 	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/worker/tasks"
 	"go-boilerplate/pkg/response"
 )
 
@@ -49,6 +50,7 @@ func TestHTTPCRUDV1(t *testing.T) {
 	require.NoError(t, json.Unmarshal(data, &auth))
 	require.NotEmpty(t, auth.Data.AccessToken)
 	require.NotZero(t, auth.Data.User.ID)
+	assertQueuedTaskOptions(t, tasks.TypeEmailNotification, fmt.Sprintf("engine-%s@example.com", unique))
 	token := auth.Data.AccessToken
 	profileBody := "{\"bio\":\"Engine profile\",\"phone\":\"123456\"}"
 	data = engineRequest(t, "PATCH", "/profile", token, "application/json", bytes.NewBufferString(profileBody), 200)
@@ -73,6 +75,7 @@ func TestHTTPCRUDV1(t *testing.T) {
 	var media response.Response[mediadto.MediaResponse]
 	require.NoError(t, json.Unmarshal(data, &media))
 	require.NotZero(t, media.Data.ID)
+	assertQueuedTaskOptions(t, tasks.TypeImageProcessing, strconv.FormatUint(uint64(media.Data.ID), 10))
 	mediaPath := fmt.Sprintf("/media/%d", media.Data.ID)
 	if os.Getenv("TEST_WORKER_ENABLED") == "true" {
 		deadline := time.Now().Add(time.Minute)

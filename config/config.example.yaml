@@ -50,6 +50,12 @@ rate_limit:
   expiration: 1m
   store: memory  # "memory" (default) or "redis" (requires Redis connection)
 
+# Background Tasks
+asynq:
+  concurrency: 10
+  max_retry: 3
+  job_timeout: 5m
+
 # JWT Configuration
 jwt:
   secret_key: change-me-in-production

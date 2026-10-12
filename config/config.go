@@ -322,11 +322,24 @@ func (c *Config) Validate() error {
 	if c.Postgres.DBName == "" {
 		errs = append(errs, "POSTGRES_DBNAME is required")
 	}
+	errs = append(errs, c.Asynq.validationErrors()...)
 
 	if len(errs) > 0 {
 		return fmt.Errorf("config validation failed: %s", strings.Join(errs, "; "))
 	}
 	return nil
+}
+
+func (a Asynq) validationErrors() []string {
+	var errs []string
+	if a.MaxRetry < 0 {
+		errs = append(errs, "ASYNQ_MAX_RETRY must not be negative")
+	}
+	// Asynq stores task timeouts in whole seconds.
+	if a.JobTimeout < 0 || a.JobTimeout%time.Second != 0 {
+		errs = append(errs, "ASYNQ_JOB_TIMEOUT must be zero or a positive whole number of seconds")
+	}
+	return errs
 }
 
 // Warnings returns non-fatal configuration warnings.

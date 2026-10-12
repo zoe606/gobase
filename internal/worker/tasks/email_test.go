@@ -64,6 +64,7 @@ func TestEmailHandler_ProcessTask_BadPayload(t *testing.T) {
 	err := handler.ProcessTask(context.Background(), task)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unmarshal email payload")
+	require.ErrorIs(t, err, asynq.SkipRetry)
 }
 
 func TestEmailHandler_ProcessTask_SendError(t *testing.T) {

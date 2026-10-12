@@ -77,7 +77,6 @@ func main() {
 		RedisPassword: cfg.Redis.Password,
 		RedisDB:       cfg.Redis.DB,
 		Concurrency:   cfg.Asynq.Concurrency,
-		MaxRetry:      cfg.Asynq.MaxRetry,
 	}, l)
 
 	// Register tracing middleware when telemetry is enabled

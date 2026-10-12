@@ -2,6 +2,7 @@
 package media
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"time"
@@ -20,6 +21,7 @@ type UseCase struct {
 	mediaRepo   repo.MediaRepo
 	storage     storage.Provider
 	asynqClient *asynq.Client
+	taskOptions []asynq.Option
 	l           logger.Interface
 	disk        string
 	maxSize     int64
@@ -45,7 +47,7 @@ func New(
 }
 
 // queueImageProcessing queues an image for background processing.
-func (uc *UseCase) queueImageProcessing(mediaID uint) {
+func (uc *UseCase) queueImageProcessing(ctx context.Context, mediaID uint) {
 	if uc.asynqClient == nil {
 		return
 	}
@@ -56,7 +58,7 @@ func (uc *UseCase) queueImageProcessing(mediaID uint) {
 		return
 	}
 
-	_, err = uc.asynqClient.Enqueue(task)
+	_, err = uc.asynqClient.EnqueueContext(ctx, task, uc.taskOptions...)
 	if err != nil {
 		uc.l.Error(err, "Failed to enqueue image processing task")
 	}

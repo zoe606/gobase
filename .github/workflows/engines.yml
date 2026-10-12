@@ -60,6 +60,11 @@ jobs:
       - name: Scan generated project
         working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
         run: go tool govulncheck ./...
+      - name: Verify Asynq failure and recovery with real Redis
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        env:
+          ASYNQ_TEST_REDIS_ADDR: localhost:6379
+        run: go test -count=1 -race -timeout=4m -v ./config ./integration-test/asynq
       - name: Build and start app
         working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
         env:
@@ -73,6 +78,8 @@ jobs:
           POSTGRES_SSLMODE: disable
           REDIS_HOST: localhost
           REDIS_PORT: '6379'
+          ASYNQ_MAX_RETRY: '1'
+          ASYNQ_JOB_TIMEOUT: '2s'
           JWT_SECRET_KEY: integration-test-secret-key
           STORAGE_DRIVER: local
           STORAGE_LOCAL_PATH: /tmp/uploads
@@ -99,6 +106,9 @@ jobs:
         env:
           APP_HOST: localhost
           APP_PORT: '8080'
+          TEST_ASYNQ_REDIS_ADDR: localhost:6379
+          TEST_ASYNQ_MAX_RETRY: '1'
+          TEST_ASYNQ_JOB_TIMEOUT: '2s'
         run: go test -count=1 -v ./integration-test/... -run 'TestHTTP(Register|Login|GetCurrentUser|RefreshToken|Logout|Unauthorized|CRUD|GeneratedCRUD)V1'
       - name: Build and verify Docker app and worker
         working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
