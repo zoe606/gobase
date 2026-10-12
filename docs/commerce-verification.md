@@ -142,6 +142,12 @@ Fresh full-profile Gin, stdlib, and Fiber projects passed module verification, b
 
 All ten existing Commerce scenarios passed locally in native and Docker modes after the changes. These process tests verify business behavior, dependency failures, recovery, restart, and shutdown. The immutable v0.1.0 release remains evidence for its original revision. Candidate commits need their own CI results.
 
+[Gobase PR #64](https://github.com/zoe606/gobase/pull/64) merged as `339ad3c777afe3197831b063c57c92be109fbe86`. Post-merge [Quality](https://github.com/zoe606/gobase/actions/runs/38202661062) and all six full/minimal [engine jobs](https://github.com/zoe606/gobase/actions/runs/38202661056) passed. The fix is included in v0.1.1.
+
+The application fixes merged through [Order #7](https://github.com/zoe606/commerce-order/pull/7), [Inventory #6](https://github.com/zoe606/commerce-inventory/pull/6), and [Billing #6](https://github.com/zoe606/commerce-billing/pull/6). Their main revisions are Order `0de05cd6e6d09c2106adc8b8d93b477727878125`, Inventory `daabb313c14b2a32e4963659b421b5d74a39eee5`, and Billing `55f2801a042eb774cfd6b799f19bc3e9815a8958`. Post-merge Quality passed for [Order](https://github.com/zoe606/commerce-order/actions/runs/38203192568), [Inventory](https://github.com/zoe606/commerce-inventory/actions/runs/38202732455), and [Billing](https://github.com/zoe606/commerce-billing/actions/runs/38202773047).
+
+Both modes passed all ten scenarios in [Order's post-merge workflow](https://github.com/zoe606/commerce-order/actions/runs/38203192678). Logs record Order `0de05cd6e6d09c2106adc8b8d93b477727878125` and retained peer pins Inventory `6abd22297b9925b44d86b60da25b004468fa110c` and Billing `6406560bc1ae1487022a9793243eef9b54feec73`. Each peer pin is a parent of its main merge commit.
+
 ## Remaining Work
 
 The initial workflow and local production configuration are verified within the limits above. This is not a complete production-readiness claim.

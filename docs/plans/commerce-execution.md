@@ -1,6 +1,6 @@
 # Commerce Application Verification
 
-Updated: October 11, 2026.
+Updated: October 12, 2026.
 
 ## Approved Direction
 
@@ -59,7 +59,7 @@ The October 9 foundation uses Go 1.27.2 and x/net v0.60.0. All seven final GitHu
 
 ## Next Work
 
-1. Use the v0.1.0 template baseline for new projects. The common Linux workflow is enabled on Order's default branch.
+1. Use v0.1.1 for new projects. This patch includes the panic recovery fix verified by the three applications. The common Linux workflow is enabled on Order's default branch.
 2. Run the workflow with candidate peer revisions before adopting them. Update the pins and record the three application revisions and CI results after verification. Independent application CI remains separate.
 3. Fix reusable foundation defects in gobase and adopt each fix in affected applications. Keep Commerce rules and test orchestration in the application repositories.
 
