@@ -1,0 +1,122 @@
+# {{APP_NAME}}
+
+Go application generated from gobase.
+
+- Go: 1.27.2 or newer
+- HTTP engine: `{{ENGINE}}`
+- Profile: `full`
+- Go module: `{{MODULE}}`
+- Database: PostgreSQL 17
+- Queue: Redis 7 and Asynq
+
+The engine and profile are recorded in `.gobase.json` for code generation. Editing this file does not convert the engine or profile. This full application includes persistence and workers. Minimal services are a separate choice when creating a project from the gobase template.
+
+## Included Functionality
+
+The application includes HTTP routes for register, login, refresh, logout, and the current user. It also includes article CRUD, profile management, media storage, translation, and background workers.
+
+Email verification and password reset have use cases and token persistence. Their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export are deferred template features. OpenTelemetry initializes tracing. The application bootstrap closes cache and rate limiter Redis clients after HTTP shutdown. Docker app and worker images run as UID and GID `65532`.
+
+## Run Locally
+
+Install Go and Docker with Docker Compose. From this application's directory:
+
+```bash
+cp .env.example .env
+cp config/config.example.yaml config/config.yaml
+make docker-services
+make run
+```
+
+The application applies migrations automatically in development. Start it before starting the worker in another terminal:
+
+```bash
+make run-worker
+```
+
+The `.env` file supplies Docker Compose variables. Local Go commands read `config/config.yaml` and exported environment variables. Update both configurations when changing database or Redis ports.
+
+New projects use local storage. MinIO is optional. See [deployment](docs/deployment.md) to configure an S3 endpoint or enable the MinIO profile.
+
+```bash
+curl http://localhost:8080/healthz
+curl http://localhost:8080/readyz
+```
+
+Swagger UI is available at `http://localhost:8080/swagger/`. Stop local Go processes with Ctrl+C. Stop the Docker services with `make docker-stop`.
+
+`GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination uses `page` and `limit` with the existing defaults and normalization.
+
+## Run in Docker
+
+After copying the configuration files, build and start the app, worker, and infrastructure:
+
+```bash
+chmod 755 config
+chmod 644 config/config.yaml
+make docker-dev-build
+make docker-logs
+make docker-stop
+```
+
+Docker Compose uses service names for database and Redis connections. Runtime ports inside the containers remain 5432, 6379, and 8080. Environment variables in `.env` select the host ports.
+
+The app and worker share the `upload_data` Docker volume for local storage. Fresh volumes are writable by UID and GID `65532`. The image also provides a writable `/tmp` directory. The permissions above allow reading the local example configuration mounted by Compose. See [runtime permissions](docs/deployment.md#runtime-permissions) for secret files, custom paths, and existing upload volumes owned by root.
+
+## Architecture
+
+```mermaid
+flowchart LR
+    HTTP[Selected HTTP engine] --> Handler[Native handlers]
+    Handler --> UseCase[Use cases]
+    Worker[Asynq worker] --> Repo
+    UseCase --> Repo[Repository interfaces]
+    Repo --> Database[(PostgreSQL)]
+    UseCase --> Queue[(Redis)]
+    Queue --> Worker
+```
+
+Use cases, DTOs, entities, repositories, and workers contain the shared application behavior. HTTP handlers under `internal/handlers/http` use the selected engine's API. See [code patterns](docs/code-patterns.md) for handler signatures and response helpers.
+
+## Add a Feature
+
+Install the migration CLI if needed:
+
+```bash
+go install -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1
+make migrate-create name=create_orders
+```
+
+Edit the SQL migration, then generate its layers using the actual filename:
+
+```bash
+make gen-full MIGRATION=000012_create_orders.up.sql
+make wire
+make swag
+make build
+make check-all
+```
+
+Restarting the development app applies new migrations. Production deployments run migrations explicitly. See [deployment](docs/deployment.md).
+
+## Verify
+
+```bash
+make test
+make check-all
+```
+
+Install golangci-lint v2.14.0 or a newer version compatible with Go 1.27 for the full lint check. Integration tests need a running application, PostgreSQL, and Redis:
+
+```bash
+APP_HOST=localhost APP_PORT=8080 make test-integration
+```
+
+Integration tests create application records. Use a separate development database when running them.
+
+## Documentation
+
+- [Code patterns](docs/code-patterns.md)
+- [Deployment](docs/deployment.md)
+- [Contributing](.github/CONTRIBUTING.md)
+- [License](LICENSE)

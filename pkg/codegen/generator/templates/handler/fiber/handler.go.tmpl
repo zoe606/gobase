@@ -1,0 +1,38 @@
+package {{.Package}}
+
+import (
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+
+	"{{.Module}}/internal/usecase"
+	"{{.Module}}/pkg/logger"
+)
+
+// Handler handles {{.Package}} endpoints.
+type Handler struct {
+	{{.Variable}}UC usecase.{{.Entity}}
+	l   logger.Interface
+	v   *validator.Validate
+}
+
+// New creates a new {{.Package}} handler.
+func New({{.Variable}}UC usecase.{{.Entity}}, l logger.Interface) *Handler {
+	return &Handler{
+		{{.Variable}}UC: {{.Variable}}UC,
+		l:   l,
+		v:   validator.New(validator.WithRequiredStructEnabled()),
+	}
+}
+
+// RegisterRoutes sets up routes.
+func (h *Handler) RegisterRoutes(router fiber.Router) {
+	{{.Variable}}s := router.Group("/{{.Variable}}s")
+	// TODO: Add auth middleware: {{.Variable}}s.Use(middleware.JWT(jwtService))
+	{
+		{{.Variable}}s.Post("/", h.Create)
+		{{.Variable}}s.Get("/", h.List)
+		{{.Variable}}s.Get("/:id", h.GetByID)
+		{{.Variable}}s.Put("/:id", h.Update)
+		{{.Variable}}s.Delete("/:id", h.Delete)
+	}
+}

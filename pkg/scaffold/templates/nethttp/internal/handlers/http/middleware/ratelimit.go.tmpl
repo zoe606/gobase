@@ -1,0 +1,100 @@
+package middleware
+
+import (
+	"net"
+	"net/http"
+	"strconv"
+	"sync"
+	"time"
+
+	"go-boilerplate/config"
+	"go-boilerplate/pkg/json"
+	"go-boilerplate/pkg/ratelimiter"
+)
+
+type limitEntry struct {
+	Count int       `json:"count"`
+	Reset time.Time `json:"reset"`
+}
+type requestLimiter struct {
+	mu          sync.Mutex
+	entries     map[string]limitEntry
+	lastCleanup time.Time
+	maximum     int
+	expiration  time.Duration
+	store       ratelimiter.Storage
+}
+
+func RateLimit(cfg config.RateLimit, store ratelimiter.Storage) func(http.Handler) http.Handler {
+	maximum := cfg.Max
+	if maximum <= 0 {
+		maximum = 5
+	}
+	expiration := cfg.Expiration
+	if expiration <= 0 {
+		expiration = time.Minute
+	}
+	limiter := &requestLimiter{entries: map[string]limitEntry{}, lastCleanup: time.Now(), maximum: maximum, expiration: expiration, store: store}
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) { limiter.serveHTTP(w, r, next) })
+	}
+}
+
+func (l *requestLimiter) serveHTTP(w http.ResponseWriter, r *http.Request, next http.Handler) {
+	ip, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		ip = r.RemoteAddr
+	}
+	entry := l.take("ratelimit:" + ip)
+	remaining := l.maximum - entry.Count
+	if remaining < 0 {
+		remaining = 0
+	}
+	w.Header().Set("X-RateLimit-Limit", strconv.Itoa(l.maximum))
+	w.Header().Set("X-RateLimit-Remaining", strconv.Itoa(remaining))
+	w.Header().Set("X-RateLimit-Reset", strconv.FormatInt(entry.Reset.Unix(), 10))
+	if entry.Count > l.maximum {
+		w.Header().Set("Retry-After", strconv.Itoa(int(time.Until(entry.Reset).Seconds())+1))
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(http.StatusTooManyRequests)
+		_, _ = w.Write([]byte("{\"success\":false,\"error\":{\"code\":\"RATE_LIMITED\",\"message\":\"Too many requests. Please try again later.\"}}"))
+		return
+	}
+	next.ServeHTTP(w, r)
+}
+
+func (l *requestLimiter) take(key string) limitEntry {
+	l.mu.Lock()
+	defer l.mu.Unlock()
+	now := time.Now()
+	l.cleanup(now)
+	entry := l.entries[key]
+	if l.store != nil {
+		if data, err := l.store.Get(key); err == nil {
+			_ = json.Unmarshal(data, &entry)
+		}
+	}
+	if !now.Before(entry.Reset) {
+		entry = limitEntry{Reset: now.Add(l.expiration)}
+	}
+	entry.Count++
+	if l.store != nil {
+		data, _ := json.Marshal(entry)
+		_ = l.store.Set(key, data, time.Until(entry.Reset))
+	} else {
+		l.entries[key] = entry
+	}
+	return entry
+}
+
+func (l *requestLimiter) cleanup(now time.Time) {
+	if now.Sub(l.lastCleanup) <= l.expiration {
+		return
+	}
+	for key, entry := range l.entries {
+		if !now.Before(entry.Reset) {
+			delete(l.entries, key)
+		}
+	}
+	l.lastCleanup = now
+}

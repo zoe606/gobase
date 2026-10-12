@@ -1,0 +1,111 @@
+package middleware
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"strings"
+
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
+)
+
+type claimsKey struct{}
+
+func JWTAuth(service jwt.Service, l logger.Interface) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			header := r.Header.Get("Authorization")
+			if header == "" {
+				response.Unauthorized(w, r, "Missing authorization header")
+				return
+			}
+			parts := strings.Split(header, " ")
+			if len(parts) != 2 || !strings.EqualFold(parts[0], "Bearer") {
+				response.Unauthorized(w, r, "Invalid authorization format. Use: Bearer <token>")
+				return
+			}
+			claims, err := service.ValidateToken(parts[1])
+			if err != nil {
+				l.Debug("JWT validation failed: %v", err)
+				if errors.Is(err, jwt.ErrExpiredToken) {
+					response.Unauthorized(w, r, "Token has expired")
+					return
+				}
+				response.Unauthorized(w, r, "Invalid token")
+				return
+			}
+			*r = *r.WithContext(context.WithValue(r.Context(), claimsKey{}, claims))
+			next.ServeHTTP(w, r)
+		})
+	}
+}
+
+func RequireRole(roles ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			role := GetRole(r)
+			if role == "" {
+				response.Forbidden(w, r, "No role found in token")
+				return
+			}
+			for _, required := range roles {
+				if strings.EqualFold(role, required) {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			response.Forbidden(w, r, "Insufficient role permissions")
+		})
+	}
+}
+func RequirePermission(permission string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			permissions := GetPermissions(r)
+			if permissions == nil {
+				response.Forbidden(w, r, "No permissions found in token")
+				return
+			}
+			for _, actual := range permissions {
+				if actual == permission {
+					next.ServeHTTP(w, r)
+					return
+				}
+			}
+			response.Forbidden(w, r, "Missing required permission: "+permission)
+		})
+	}
+}
+func RequireAnyPermission(permissions ...string) func(http.Handler) http.Handler {
+	return func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			actual := GetPermissions(r)
+			if actual == nil {
+				response.Forbidden(w, r, "No permissions found in token")
+				return
+			}
+			for _, required := range permissions {
+				for _, permission := range actual {
+					if permission == required {
+						next.ServeHTTP(w, r)
+						return
+					}
+				}
+			}
+			response.Forbidden(w, r, "Missing required permissions")
+		})
+	}
+}
+func getClaims(r *http.Request) *jwt.Claims {
+	claims, _ := r.Context().Value(claimsKey{}).(*jwt.Claims)
+	if claims == nil {
+		return &jwt.Claims{}
+	}
+	return claims
+}
+func GetUserID(r *http.Request) uint          { return getClaims(r).UserID }
+func GetEmail(r *http.Request) string         { return getClaims(r).Email }
+func GetRole(r *http.Request) string          { return getClaims(r).Role }
+func GetPermissions(r *http.Request) []string { return getClaims(r).Permissions }

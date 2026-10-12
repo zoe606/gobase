@@ -1,0 +1,43 @@
+package {{.Package}}
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
+
+	_ "{{.Module}}/internal/dto/{{.Package}}" // swagger type resolution
+	{{.Package}}uc "{{.Module}}/internal/usecase/{{.Package}}"
+	"{{.Module}}/pkg/response"
+)
+
+// GetByID godoc
+// @Summary     Get {{.Package}} by ID
+// @Description Get a {{.Package}} by its ID
+// @ID          {{.Package}}-get-by-id
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "{{.Entity}} ID"
+// @Success     200 {object} response.Response[{{.Package}}dto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s/{id} [get]
+func (h *Handler) GetByID(ctx *fiber.Ctx) error {
+	id, err := strconv.ParseUint(ctx.Params("id"), 10, 32)
+	if err != nil {
+		return response.BadRequest(ctx, "INVALID_ID", "Invalid {{.Package}} ID")
+	}
+
+	result, err := h.{{.Variable}}UC.GetByID(ctx.UserContext(), uint(id))
+	if err != nil {
+		if errors.Is(err, {{.Package}}uc.ErrNotFound) {
+			return response.NotFound(ctx, "{{.Entity}} not found")
+		}
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - GetByID")
+		return response.InternalError(ctx)
+	}
+
+	return response.OK(ctx, result)
+}

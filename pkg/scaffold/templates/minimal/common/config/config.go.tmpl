@@ -1,0 +1,74 @@
+package config
+
+import (
+	"errors"
+	"fmt"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/spf13/viper"
+)
+
+type Config struct {
+	App  App  `mapstructure:"app"`
+	HTTP HTTP `mapstructure:"http"`
+	Log  Log  `mapstructure:"log"`
+}
+
+type App struct {
+	Name    string `mapstructure:"name"`
+	Version string `mapstructure:"version"`
+	Env     string `mapstructure:"env"`
+}
+
+type HTTP struct {
+	Port            string        `mapstructure:"port"`
+	Timeout         time.Duration `mapstructure:"timeout"`
+	ShutdownTimeout time.Duration `mapstructure:"shutdown_timeout"`
+	BodyLimit       int           `mapstructure:"body_limit"`
+}
+
+type Log struct {
+	Level string `mapstructure:"level"`
+}
+
+func NewConfig(path string) (*Config, error) {
+	v := viper.New()
+	defaults := map[string]any{
+		"app.name": "{{APP_NAME}}", "app.version": "1.0.0", "app.env": "development",
+		"http.port": "8080", "http.timeout": "15s", "http.shutdown_timeout": "15s",
+		"http.body_limit": 4 * 1024 * 1024, "log.level": "info",
+	}
+	for key, value := range defaults {
+		v.SetDefault(key, value)
+	}
+	v.SetEnvKeyReplacer(strings.NewReplacer(".", "_"))
+	v.AutomaticEnv()
+	if path != "" {
+		v.SetConfigFile(path)
+	} else {
+		v.SetConfigName("config")
+		v.SetConfigType("yaml")
+		v.AddConfigPath(".")
+		v.AddConfigPath("./config")
+	}
+	if err := v.ReadInConfig(); err != nil {
+		var missing viper.ConfigFileNotFoundError
+		if !errors.As(err, &missing) {
+			return nil, fmt.Errorf("read config: %w", err)
+		}
+	}
+	var cfg Config
+	if err := v.Unmarshal(&cfg); err != nil {
+		return nil, fmt.Errorf("decode config: %w", err)
+	}
+	port, err := strconv.Atoi(cfg.HTTP.Port)
+	if err != nil || port < 1 || port > 65535 {
+		return nil, fmt.Errorf("HTTP_PORT must be between 1 and 65535")
+	}
+	if cfg.HTTP.Timeout <= 0 || cfg.HTTP.ShutdownTimeout <= 0 || cfg.HTTP.BodyLimit <= 0 {
+		return nil, fmt.Errorf("HTTP timeouts and body limit must be positive")
+	}
+	return &cfg, nil
+}

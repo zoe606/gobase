@@ -1,0 +1,11 @@
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	fmt.Fprintln(os.Stderr, "Automatic persistence wiring requires the full project profile; add native HTTP endpoints manually in minimal output")
+	os.Exit(1)
+}

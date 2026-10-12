@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
-	fiberRecover "github.com/gofiber/fiber/v2/middleware/recover"
 
 	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
 )
 
 func buildPanicMessage(ctx *fiber.Ctx, err interface{}) string {
@@ -33,8 +33,14 @@ func logPanic(l logger.Interface) func(c *fiber.Ctx, err interface{}) {
 
 // Recovery returns a middleware that recovers from panics.
 func Recovery(l logger.Interface) func(c *fiber.Ctx) error {
-	return fiberRecover.New(fiberRecover.Config{
-		EnableStackTrace:  true,
-		StackTraceHandler: logPanic(l),
-	})
+	logRecovery := logPanic(l)
+	return func(c *fiber.Ctx) (err error) {
+		defer func() {
+			if recovered := recover(); recovered != nil {
+				logRecovery(c, recovered)
+				err = response.InternalError(c)
+			}
+		}()
+		return c.Next()
+	}
 }

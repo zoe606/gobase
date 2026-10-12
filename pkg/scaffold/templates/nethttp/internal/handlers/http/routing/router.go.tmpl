@@ -1,0 +1,124 @@
+package routing
+
+import (
+	"fmt"
+	"net/http"
+	"strings"
+)
+
+type Middleware func(http.Handler) http.Handler
+
+type route struct{ method, path string }
+type registry struct {
+	handler    http.Handler
+	register   func(string, string, http.Handler)
+	middleware []Middleware
+	routes     []route
+}
+
+// Router registers standard HTTP handlers with the selected engine.
+type Router struct {
+	registry   *registry
+	prefix     string
+	middleware []Middleware
+	root       bool
+}
+
+func (r *Router) Group(prefix string, middleware ...Middleware) *Router {
+	chain := append(append([]Middleware{}, r.middleware...), middleware...)
+	return &Router{registry: r.registry, prefix: r.prefix + prefix, middleware: chain}
+}
+
+func (r *Router) Use(middleware ...Middleware) {
+	if r.root {
+		r.registry.middleware = append(r.registry.middleware, middleware...)
+		return
+	}
+	r.middleware = append(append([]Middleware{}, r.middleware...), middleware...)
+}
+
+func (r *Router) Handle(method, path string, handler http.Handler) {
+	path = strings.TrimRight(r.prefix+path, "/")
+	if path == "" {
+		path = "/"
+	}
+	for i := len(r.middleware) - 1; i >= 0; i-- {
+		handler = r.middleware[i](handler)
+	}
+	r.registry.routes = append(r.registry.routes, route{method: method, path: path})
+	r.registry.register(method, path, handler)
+}
+
+func (r *Router) ServeHTTP(w http.ResponseWriter, request *http.Request) {
+	handler := http.HandlerFunc(func(w http.ResponseWriter, req *http.Request) {
+		if status := r.normalize(req); status != http.StatusOK {
+			w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+			w.WriteHeader(status)
+			if status == http.StatusMethodNotAllowed {
+				_, _ = w.Write([]byte(http.StatusText(status))) //nolint:gosec // The response has an explicit text/plain Content-Type.
+			} else {
+				_, _ = fmt.Fprintf(w, "Cannot %s %s", req.Method, req.URL.Path) //nolint:gosec // The response has an explicit text/plain Content-Type.
+			}
+			return
+		}
+		r.registry.handler.ServeHTTP(w, req)
+	})
+	var wrapped http.Handler = handler
+	for i := len(r.registry.middleware) - 1; i >= 0; i-- {
+		wrapped = r.registry.middleware[i](wrapped)
+	}
+	wrapped.ServeHTTP(w, request)
+}
+
+func (r *Router) normalize(req *http.Request) int {
+	path := strings.TrimRight(req.URL.Path, "/")
+	if path == "" {
+		path = "/"
+	}
+	parts := strings.Split(path, "/")
+	status := http.StatusNotFound
+	for _, route := range r.registry.routes {
+		canonical, ok := matchPath(route.path, parts)
+		if !ok {
+			continue
+		}
+		matchesMethod := route.method == req.Method || (req.Method == http.MethodHead && route.method == http.MethodGet)
+		if !matchesMethod {
+			status = http.StatusMethodNotAllowed
+			continue
+		}
+		req.URL.Path = canonical
+		req.URL.RawPath = ""
+		req.Pattern = route.method + " " + route.path
+		return http.StatusOK
+	}
+	return status
+}
+
+func matchPath(pattern string, parts []string) (string, bool) {
+	segments := strings.Split(pattern, "/")
+	canonical := append([]string{}, parts...)
+	for i, segment := range segments {
+		if segment == "*" {
+			if i > len(parts) {
+				return "", false
+			}
+			path := strings.Join(canonical, "/")
+			if i == len(parts) {
+				path += "/"
+			}
+			return path, true
+		}
+		if i >= len(parts) {
+			return "", false
+		}
+		if strings.HasPrefix(segment, ":") {
+			continue
+		}
+		if !strings.EqualFold(segment, parts[i]) {
+			return "", false
+		}
+		canonical[i] = segment
+	}
+	return strings.Join(canonical, "/"), len(parts) == len(segments)
+}

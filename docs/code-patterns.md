@@ -2,6 +2,20 @@
 
 This document covers the coding patterns and conventions used throughout the project.
 
+## HTTP Handler APIs
+
+Use the API for the engine recorded in `.gobase.json`.
+
+All engines use the generic envelope `response.Response[T]` for success JSON responses. `T` is the type of `data` in the response. Success helpers such as `response.OK[T]` construct and write this envelope. Error responses use `response.ErrorResponse`.
+
+| Engine | Handler arguments | Response example |
+|--------|-------------------|------------------|
+| Gin | `c *gin.Context` | `response.OK(c.Writer, c.Request, result)` |
+| stdlib | `w http.ResponseWriter, r *http.Request` | `response.OK(w, r, result)` |
+| Fiber | `c *fiber.Ctx` | `return response.OK(c, result)` |
+
+The helper's Go return value is separate from the JSON response. Gin and stdlib JSON helpers write to HTTP and return no Go value. Fiber JSON helpers write the same response format and return an `error` from writing the response. Return from the handler after an error response. Request parsing and middleware must use the selected engine's API.
+
 ## Error Handling
 
 Errors flow through three layers, each with a distinct responsibility:
@@ -17,9 +31,21 @@ if errors.Is(err, repo.ErrNotFound) {
     return nil, ErrInvalidCredentials  // Don't expose "user not found"
 }
 
-// Handler layer — map domain errors to HTTP responses
+// Fiber handler
 if errors.Is(err, auth.ErrInvalidCredentials) {
     return response.Unauthorized(c, "Invalid email or password")
+}
+
+// Gin handler
+if errors.Is(err, auth.ErrInvalidCredentials) {
+    response.Unauthorized(c.Writer, c.Request, "Invalid email or password")
+    return
+}
+
+// Standard HTTP handler
+if errors.Is(err, auth.ErrInvalidCredentials) {
+    response.Unauthorized(w, r, "Invalid email or password")
+    return
 }
 ```
 
@@ -35,11 +61,13 @@ type RegisterRequest struct {
     Name     string `json:"name" validate:"required,min=2,max=100"`
 }
 
-// Handler validates input
-if err := h.validator.Struct(req); err != nil {
-    return response.ValidationError(c, parseValidationErrors(err))
+// Fiber handler validates input
+if err := h.v.Struct(req); err != nil {
+    return response.ValidationError(c, v1.ParseValidationErrors(err))
 }
 ```
+
+Gin and stdlib use the same validator. Pass `c.Writer, c.Request` or `w, r` to their response helpers, then return from the handler.
 
 ## Transactions
 

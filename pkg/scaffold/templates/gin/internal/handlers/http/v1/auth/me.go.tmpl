@@ -1,0 +1,47 @@
+package auth
+
+import (
+	"errors"
+
+	"github.com/gin-gonic/gin"
+	authdto "go-boilerplate/internal/dto/auth" // swagger
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/internal/repo"
+	"go-boilerplate/pkg/response"
+)
+
+// Ensure authdto is used for swagger.
+var _ = authdto.UserResponse{}
+
+// Me godoc
+// @Summary     Get current user
+// @Description Get currently authenticated user info
+// @ID          auth-me
+// @Tags        auth
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} response.Response[authdto.UserResponse]
+// @Failure     401 {object} response.ErrorResponse
+// @Router      /auth/me [get]
+func (h *Handler) Me(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	userID := middleware.GetUserID(r)
+	if userID == 0 {
+		response.Unauthorized(w, r, "User not found in context")
+		return
+	}
+
+	result, err := h.authUC.GetCurrentUser(r.Context(), userID)
+	if err != nil {
+		if errors.Is(err, repo.ErrNotFound) {
+			response.NotFound(w, r, "User not found")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - auth - Me")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

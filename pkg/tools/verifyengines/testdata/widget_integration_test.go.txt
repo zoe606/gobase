@@ -1,0 +1,41 @@
+package integration_test
+
+import (
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"testing"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestHTTPGeneratedCRUDV1(t *testing.T) {
+	engineRequest(t, "POST", "/widgets", "", "application/json", bytes.NewBufferString("{"), 400)
+	engineRequest(t, "POST", "/widgets", "", "application/json", bytes.NewBufferString("{}"), 400)
+	data := engineRequest(t, "POST", "/widgets", "", "application/json", bytes.NewBufferString(`{"name":"Generated widget"}`), 201)
+	var result struct {
+		Success bool `json:"success"`
+		Data    struct {
+			ID   uint   `json:"id"`
+			Name string `json:"name"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(data, &result))
+	require.True(t, result.Success)
+	require.NotZero(t, result.Data.ID)
+	require.Equal(t, "Generated widget", result.Data.Name)
+	path := fmt.Sprintf("/widgets/%d", result.Data.ID)
+	data = engineRequest(t, "GET", path, "", "application/json", http.NoBody, 200)
+	require.NoError(t, json.Unmarshal(data, &result))
+	require.Equal(t, "Generated widget", result.Data.Name)
+	data = engineRequest(t, "GET", "/widgets?page=1&limit=5", "", "application/json", http.NoBody, 200)
+	require.Contains(t, string(data), "Generated widget")
+	engineRequest(t, "GET", "/widgets?page=invalid", "", "application/json", http.NoBody, 400)
+	engineRequest(t, "GET", "/widgets/invalid", "", "application/json", http.NoBody, 400)
+	data = engineRequest(t, "PUT", path, "", "application/json", bytes.NewBufferString(`{"name":"Updated widget"}`), 200)
+	require.NoError(t, json.Unmarshal(data, &result))
+	require.Equal(t, "Updated widget", result.Data.Name)
+	require.Empty(t, engineRequest(t, "DELETE", path, "", "application/json", http.NoBody, 204))
+	engineRequest(t, "GET", path, "", "application/json", http.NoBody, 404)
+}

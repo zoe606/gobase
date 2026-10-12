@@ -1,0 +1,38 @@
+package config
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+)
+
+func TestConfigEnvironmentOverridesFile(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("app:\n  name: from-file\nhttp:\n  port: '8081'\n"), 0o600))
+	t.Setenv("HTTP_PORT", "9092")
+	t.Setenv("HTTP_SHUTDOWN_TIMEOUT", "2s")
+	t.Setenv("APP_ENV", "production")
+	cfg, err := NewConfig(path)
+	require.NoError(t, err)
+	require.Equal(t, "from-file", cfg.App.Name)
+	require.Equal(t, "9092", cfg.HTTP.Port)
+	require.Equal(t, 2*time.Second, cfg.HTTP.ShutdownTimeout)
+	require.True(t, cfg.App.IsProduction())
+}
+
+func TestConfigRejectsInvalidHTTPSettings(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.yaml")
+	require.NoError(t, os.WriteFile(path, []byte("{}\n"), 0o600))
+	for _, port := range []string{"bad", "0", "65536"} {
+		t.Run(port, func(t *testing.T) { t.Setenv("HTTP_PORT", port); _, err := NewConfig(path); require.Error(t, err) })
+	}
+	t.Setenv("HTTP_PORT", "8080")
+	t.Setenv("HTTP_SHUTDOWN_TIMEOUT", "0s")
+	_, err := NewConfig(path)
+	require.Error(t, err)
+	_, err = NewConfig(filepath.Join(t.TempDir(), "missing.yaml"))
+	require.Error(t, err)
+}

@@ -1,0 +1,55 @@
+// Package httpserver runs the selected HTTP router with net/http.
+package httpserver
+
+import (
+	"context"
+	"errors"
+	"net/http"
+	"time"
+
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/pkg/logger"
+)
+
+const (
+	_defaultAddr            = ":80"
+	_defaultReadTimeout     = 5 * time.Second
+	_defaultWriteTimeout    = 5 * time.Second
+	_defaultShutdownTimeout = 3 * time.Second
+	_defaultBodyLimit       = 4 * 1024 * 1024
+)
+
+type Server struct {
+	App                                        *routing.Router
+	notify                                     chan error
+	server                                     *http.Server
+	address                                    string
+	prefork                                    bool
+	readTimeout, writeTimeout, shutdownTimeout time.Duration
+	bodyLimit                                  int
+	logger                                     logger.Interface
+}
+
+func New(l logger.Interface, opts ...Option) *Server {
+	s := &Server{App: routing.New(), notify: make(chan error, 1), address: _defaultAddr, readTimeout: _defaultReadTimeout, writeTimeout: _defaultWriteTimeout, shutdownTimeout: _defaultShutdownTimeout, bodyLimit: _defaultBodyLimit, logger: l}
+	for _, option := range opts {
+		option(s)
+	}
+	s.server = &http.Server{Addr: s.address, Handler: s.App, ReadTimeout: s.readTimeout, WriteTimeout: s.writeTimeout, ReadHeaderTimeout: s.readTimeout}
+	return s
+}
+func (s *Server) Start() {
+	go func() {
+		err := s.server.ListenAndServe()
+		if err != nil && !errors.Is(err, http.ErrServerClosed) {
+			s.notify <- err
+		}
+		close(s.notify)
+	}()
+}
+func (s *Server) Notify() <-chan error { return s.notify }
+func (s *Server) Shutdown() error {
+	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
+	defer cancel()
+	return s.server.Shutdown(ctx)
+}

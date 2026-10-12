@@ -1,0 +1,43 @@
+package {{.Package}}
+
+import (
+	{{.Package}}dto "{{.Module}}/internal/dto/{{.Package}}"
+	v1 "{{.Module}}/internal/handlers/http/v1"
+	"{{.Module}}/pkg/request"
+	"{{.Module}}/pkg/response"
+	"net/http"
+)
+
+// Create godoc
+// @Summary     Create {{.Package}}
+// @Description Create a new {{.Package}}
+// @ID          {{.Package}}-create
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       request body {{.Package}}dto.CreateRequest true "Create {{.Entity}} request"
+// @Success     201 {object} response.Response[{{.Package}}dto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s [post]
+func (h *Handler) Create(w http.ResponseWriter, r *http.Request) {
+	var req {{.Package}}dto.CreateRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+
+	result, err := h.{{.Variable}}UC.Create(r.Context(), req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - Create")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.Created(w, r, result)
+}

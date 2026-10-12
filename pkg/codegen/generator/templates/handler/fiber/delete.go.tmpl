@@ -1,0 +1,41 @@
+package {{.Package}}
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/gofiber/fiber/v2"
+
+	{{.Package}}uc "{{.Module}}/internal/usecase/{{.Package}}"
+	"{{.Module}}/pkg/response"
+)
+
+// Delete godoc
+// @Summary     Delete {{.Package}}
+// @Description Delete a {{.Package}} by ID
+// @ID          {{.Package}}-delete
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "{{.Entity}} ID"
+// @Success     204 "No Content"
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s/{id} [delete]
+func (h *Handler) Delete(ctx *fiber.Ctx) error {
+	id, err := strconv.ParseUint(ctx.Params("id"), 10, 32)
+	if err != nil {
+		return response.BadRequest(ctx, "INVALID_ID", "Invalid {{.Package}} ID")
+	}
+
+	if err := h.{{.Variable}}UC.Delete(ctx.UserContext(), uint(id)); err != nil {
+		if errors.Is(err, {{.Package}}uc.ErrNotFound) {
+			return response.NotFound(ctx, "{{.Entity}} not found")
+		}
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - Delete")
+		return response.InternalError(ctx)
+	}
+
+	return response.NoContent(ctx)
+}

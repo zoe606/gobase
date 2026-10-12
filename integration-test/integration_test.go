@@ -105,14 +105,16 @@ func TestMain(m *testing.M) {
 
 // Package-level variables to store auth state between tests.
 var (
+	authEmail        string
 	authAccessToken  string
 	authRefreshToken string
 )
 
 // HTTP POST: /v1/auth/register.
 func TestHTTPRegisterV1(t *testing.T) {
+	authEmail = fmt.Sprintf("integration-test-%d@example.com", time.Now().UnixNano())
 	url := basePathV1 + "/auth/register"
-	body := `{"email":"integration-test@example.com","password":"testpassword123","name":"Integration Test"}`
+	body := fmt.Sprintf(`{"email":%q,"password":"testpassword123","name":"Integration Test"}`, authEmail)
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
@@ -153,7 +155,7 @@ func TestHTTPRegisterV1(t *testing.T) {
 // HTTP POST: /v1/auth/login.
 func TestHTTPLoginV1(t *testing.T) {
 	url := basePathV1 + "/auth/login"
-	body := `{"email":"integration-test@example.com","password":"testpassword123"}`
+	body := fmt.Sprintf(`{"email":%q,"password":"testpassword123"}`, authEmail)
 
 	ctx, cancel := context.WithTimeout(context.Background(), requestTimeout)
 	defer cancel()
@@ -226,8 +228,8 @@ func TestHTTPGetCurrentUserV1(t *testing.T) {
 		t.Fatalf("Failed to decode response: %v", err)
 	}
 
-	if result.Data.Email != "integration-test@example.com" {
-		t.Errorf("Expected email 'integration-test@example.com', got '%s'", result.Data.Email)
+	if result.Data.Email != authEmail {
+		t.Errorf("Expected email %q, got %q", authEmail, result.Data.Email)
 	}
 }
 

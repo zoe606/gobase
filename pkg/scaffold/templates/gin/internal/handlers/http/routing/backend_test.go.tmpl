@@ -1,0 +1,98 @@
+package routing
+
+import (
+	"bytes"
+	"fmt"
+	"io"
+	"net/http"
+	"net/http/httptest"
+	"testing"
+
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/require"
+	"go-boilerplate/config"
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/pkg/logger"
+)
+
+type recordingWriter struct {
+	http.ResponseWriter
+	body   bytes.Buffer
+	status int
+}
+
+func TestNativeGinWriterThroughMiddleware(t *testing.T) {
+	router := New()
+	l := logger.New("error")
+	log := middleware.StructuredLogger(l.GetZapLogger(), config.Log{})
+	router.Use(middleware.Compress, log)
+	group := router.Group("/example", log)
+	result := make(chan error, 1)
+	group.Handle(http.MethodGet, "/connection", HandlerFunc(func(c *gin.Context) {
+		if c.Writer.CloseNotify() == nil {
+			result <- fmt.Errorf("CloseNotify was not forwarded")
+			http.Error(c.Writer, "writer error", http.StatusInternalServerError)
+			return
+		}
+		connection, writer, err := c.Writer.Hijack()
+		if err != nil {
+			result <- err
+			http.Error(c.Writer, "writer error", http.StatusInternalServerError)
+			return
+		}
+		defer func() { _ = connection.Close() }()
+		_, err = writer.WriteString("HTTP/1.1 200 OK\r\nContent-Length: 6\r\nConnection: close\r\n\r\nnative")
+		if err == nil {
+			err = writer.Flush()
+		}
+		result <- err
+	}))
+	server := httptest.NewServer(router)
+	t.Cleanup(server.Close)
+	request, err := http.NewRequestWithContext(t.Context(), http.MethodGet, server.URL+"/example/connection", http.NoBody)
+	require.NoError(t, err)
+	request.Header.Set("Connection", "Upgrade")
+	request.Header.Set("Upgrade", "test")
+	request.Header.Set("Accept-Encoding", "gzip")
+	response, err := server.Client().Do(request)
+	require.NoError(t, err)
+	defer response.Body.Close()
+	data, err := io.ReadAll(response.Body)
+	require.NoError(t, err)
+	require.NoError(t, <-result)
+	require.Equal(t, http.StatusOK, response.StatusCode)
+	require.Equal(t, "native", string(data))
+	require.Empty(t, response.Header.Get("Content-Encoding"))
+}
+
+func (w *recordingWriter) WriteHeader(status int) {
+	w.status = status
+	w.ResponseWriter.WriteHeader(status)
+}
+func (w *recordingWriter) Write(data []byte) (int, error) {
+	_, _ = w.body.Write(data)
+	return w.ResponseWriter.Write(data)
+}
+
+func TestNativeGinHandlerWithHTTPMiddleware(t *testing.T) {
+	router := New()
+	group := router.Group("/example")
+	var captured recordingWriter
+	group.Use(func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			captured.ResponseWriter = w
+			next.ServeHTTP(&captured, r)
+		})
+	})
+	group.Handle(http.MethodGet, "/:id", HandlerFunc(func(c *gin.Context) {
+		c.Header("X-Native-Gin", "true")
+		c.JSON(http.StatusCreated, gin.H{"id": c.Param("id"), "query": c.Query("q")})
+	}))
+	response := httptest.NewRecorder()
+	router.ServeHTTP(response, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/example/7?q=value", http.NoBody))
+	require.Equal(t, http.StatusCreated, response.Code)
+	require.Equal(t, http.StatusCreated, captured.status)
+	require.Equal(t, "true", response.Header().Get("X-Native-Gin"))
+	require.JSONEq(t, `{"id":"7","query":"value"}`, response.Body.String())
+	require.Equal(t, response.Body.String(), captured.body.String())
+}

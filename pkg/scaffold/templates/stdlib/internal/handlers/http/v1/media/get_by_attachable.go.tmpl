@@ -1,0 +1,53 @@
+package media
+
+import (
+	"net/http"
+	"strconv"
+
+	mediadto "go-boilerplate/internal/dto/media"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// GetByAttachable returns media for an attachable entity.
+// @Summary     Get media by attachable
+// @Description Returns all media items for an attachable entity
+// @Tags        media
+// @Security    BearerAuth
+// @Produce     json
+// @Param       attachable_type query string true  "Entity type (e.g., users, posts)"
+// @Param       attachable_id   query int    true  "Entity ID"
+// @Param       collection      query string false "Collection name"
+// @Success     200 {object} response.Response[mediadto.MediaListResponse]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Router      /media [get]
+func (h *Handler) GetByAttachable(w http.ResponseWriter, r *http.Request) {
+	attachableType := request.QueryValue(r, "attachable_type")
+	if attachableType == "" {
+		response.BadRequest(w, r, "MISSING_PARAM", "attachable_type is required")
+		return
+	}
+
+	attachableIDStr := request.QueryValue(r, "attachable_id")
+	attachableID, err := strconv.ParseUint(attachableIDStr, 10, 64)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_PARAM", "attachable_id must be a valid number")
+		return
+	}
+
+	collection := request.QueryValue(r, "collection", "")
+
+	result, err := h.mediaUC.GetByAttachable(r.Context(), mediadto.GetMediaRequest{
+		AttachableType: attachableType,
+		AttachableID:   uint(attachableID),
+		Collection:     collection,
+	})
+	if err != nil {
+		h.l.Error(err, "Failed to get media by attachable")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

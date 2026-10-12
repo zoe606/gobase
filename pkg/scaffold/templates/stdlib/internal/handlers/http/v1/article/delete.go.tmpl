@@ -1,0 +1,52 @@
+package article
+
+import (
+	"errors"
+	"net/http"
+	"strconv"
+
+	"go-boilerplate/internal/handlers/http/middleware"
+	articleuc "go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/response"
+)
+
+// Delete godoc
+// @Summary     Delete article
+// @Description Delete a article by ID
+// @ID          article-delete
+// @Tags        articles
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "Article ID"
+// @Success     204 "No Content"
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     403 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Security    BearerAuth
+// @Router      /articles/{id} [delete]
+func (h *Handler) Delete(w http.ResponseWriter, r *http.Request) {
+	id, err := strconv.ParseUint(r.PathValue("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid article ID")
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	if err := h.articleUC.Delete(r.Context(), userID, uint(id)); err != nil {
+		if errors.Is(err, articleuc.ErrNotFound) {
+			response.NotFound(w, r, "Article not found")
+			return
+		}
+		if errors.Is(err, articleuc.ErrForbidden) {
+			response.Forbidden(w, r, "Not authorized to modify this article")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - article - Delete")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.NoContent(w, r)
+}

@@ -1,0 +1,11 @@
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	fmt.Fprintln(os.Stderr, "SQL CRUD generation requires persistence and the full project profile; minimal output has no database or migrations")
+	os.Exit(1)
+}

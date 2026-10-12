@@ -1,0 +1,40 @@
+package {{.Package}}
+
+import (
+	"github.com/gofiber/fiber/v2"
+
+	{{.Package}}dto "{{.Module}}/internal/dto/{{.Package}}"
+	v1 "{{.Module}}/internal/handlers/http/v1"
+	"{{.Module}}/pkg/response"
+)
+
+// Create godoc
+// @Summary     Create {{.Package}}
+// @Description Create a new {{.Package}}
+// @ID          {{.Package}}-create
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       request body {{.Package}}dto.CreateRequest true "Create {{.Entity}} request"
+// @Success     201 {object} response.Response[{{.Package}}dto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s [post]
+func (h *Handler) Create(ctx *fiber.Ctx) error {
+	var req {{.Package}}dto.CreateRequest
+	if err := ctx.BodyParser(&req); err != nil {
+		return response.BadRequest(ctx, "INVALID_JSON", "Invalid request body")
+	}
+
+	if err := h.v.Struct(req); err != nil {
+		return response.ValidationError(ctx, v1.ParseValidationErrors(err))
+	}
+
+	result, err := h.{{.Variable}}UC.Create(ctx.UserContext(), req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - Create")
+		return response.InternalError(ctx)
+	}
+
+	return response.Created(ctx, result)
+}

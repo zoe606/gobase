@@ -10,6 +10,7 @@ import (
 
 	"go-boilerplate/pkg/codegen/generator"
 	"go-boilerplate/pkg/codegen/parser"
+	"go-boilerplate/pkg/project"
 )
 
 func main() {
@@ -36,6 +37,11 @@ func main() {
 	}
 
 	flag.Parse()
+	settings, settingsErr := project.Read(*outputDir)
+	if settingsErr != nil {
+		fmt.Fprintln(os.Stderr, settingsErr)
+		os.Exit(1)
+	}
 
 	// Validate migration flag
 	if *migration == "" {
@@ -85,6 +91,7 @@ func main() {
 
 	// Create generator config
 	config := generator.Config{
+		Engine:     settings.Engine,
 		ModuleName: modName,
 		OutputDir:  *outputDir,
 		Layers:     layerList,

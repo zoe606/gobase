@@ -1,0 +1,39 @@
+package profile
+
+import (
+	profiledto "go-boilerplate/internal/dto/profile"
+	"go-boilerplate/internal/handlers/http/middleware"
+	"go-boilerplate/pkg/response"
+	"net/http"
+)
+
+// Ensure profiledto is used for swagger.
+var _ = profiledto.ProfileResponse{}
+
+// GetProfile godoc
+// @Summary     Get current user's profile
+// @Description Returns the profile of the currently authenticated user
+// @ID          profile-get
+// @Tags        profile
+// @Produce     json
+// @Security    BearerAuth
+// @Success     200 {object} response.Response[profiledto.ProfileResponse]
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /profile [get]
+func (h *Handler) GetProfile(w http.ResponseWriter, r *http.Request) {
+	userID := middleware.GetUserID(r)
+	if userID == 0 {
+		response.Unauthorized(w, r, "User not found in context")
+		return
+	}
+
+	result, err := h.profileUC.GetProfile(r.Context(), userID)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - profile - GetProfile")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

@@ -1,0 +1,32 @@
+package http
+
+import (
+	"net/http"
+
+	"github.com/go-playground/validator/v10"
+	"github.com/gofiber/fiber/v2"
+
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	"go-boilerplate/pkg/httpserver"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
+)
+
+func newTestClient() *http.Client {
+	l := logger.New("error")
+	srv := httpserver.New(l)
+	NewRouter(srv, l)
+	validate := validator.New()
+	srv.App.Post("/echo", func(c *fiber.Ctx) error {
+		var input echoInput
+		if err := c.BodyParser(&input); err != nil {
+			return response.BadRequest(c, "INVALID_BODY", "Invalid JSON body")
+		}
+		if err := validate.Struct(input); err != nil {
+			return response.ValidationError(c, v1.ParseValidationErrors(err))
+		}
+		return response.OK(c, input)
+	})
+	srv.App.Get("/panic", func(_ *fiber.Ctx) error { panic("private-panic") })
+	return &http.Client{Transport: testTransport(func(req *http.Request) (*http.Response, error) { return srv.App.Test(req) })}
+}

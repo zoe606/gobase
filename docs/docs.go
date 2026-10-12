@@ -41,7 +41,17 @@ const docTemplate = `{
                         "type": "integer",
                         "default": 20,
                         "description": "Page size",
-                        "name": "page_size",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "draft",
+                            "published"
+                        ],
+                        "type": "string",
+                        "description": "Article status; omit or leave empty for all statuses",
+                        "name": "status",
                         "in": "query"
                     }
                 ],
@@ -50,6 +60,12 @@ const docTemplate = `{
                         "description": "OK",
                         "schema": {
                             "$ref": "#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_article_ListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     },
                     "500": {
@@ -61,11 +77,6 @@ const docTemplate = `{
                 }
             },
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Create a new article",
                 "consumes": [
                     "application/json"
@@ -114,7 +125,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/articles/{id}": {
@@ -162,11 +178,6 @@ const docTemplate = `{
                 }
             },
             "put": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Update an existing article",
                 "consumes": [
                     "application/json"
@@ -234,14 +245,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "description": "Delete a article by ID",
                 "consumes": [
                     "application/json"
@@ -291,7 +302,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/auth/login": {
@@ -343,11 +359,6 @@ const docTemplate = `{
         },
         "/auth/logout": {
             "post": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Invalidate refresh token",
                 "consumes": [
                     "application/json"
@@ -387,16 +398,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/auth/me": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/auth/me": {
+            "get": {
                 "description": "Get currently authenticated user info",
                 "produces": [
                     "application/json"
@@ -419,7 +430,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/auth/refresh": {
@@ -518,11 +534,6 @@ const docTemplate = `{
         },
         "/config": {
             "get": {
-                "security": [
-                    {
-                        "BearerAuth": []
-                    }
-                ],
                 "description": "Returns sanitized application configuration (admin only)",
                 "produces": [
                     "application/json"
@@ -550,16 +561,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/config/cache/invalidate": {
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/config/cache/invalidate": {
+            "post": {
                 "description": "Clears the cached configuration (admin only)",
                 "produces": [
                     "application/json"
@@ -587,16 +598,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/media": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/media": {
+            "get": {
                 "description": "Returns all media items for an attachable entity",
                 "produces": [
                     "application/json"
@@ -646,16 +657,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/media/presigned-url": {
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/media/presigned-url": {
+            "post": {
                 "description": "Returns a presigned URL for direct client-to-storage upload",
                 "consumes": [
                     "application/json"
@@ -697,16 +708,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/media/upload": {
-            "post": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/media/upload": {
+            "post": {
                 "description": "Uploads a file and attaches it to an entity",
                 "consumes": [
                     "multipart/form-data"
@@ -766,16 +777,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/media/{id}": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/media/{id}": {
+            "get": {
                 "description": "Returns a media item by its ID",
                 "produces": [
                     "application/json"
@@ -818,14 +829,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            },
-            "delete": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "delete": {
                 "description": "Deletes a media item and its associated files",
                 "produces": [
                     "application/json"
@@ -868,16 +879,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/media/{id}/url": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/media/{id}/url": {
+            "get": {
                 "description": "Returns a signed URL to access the media file",
                 "produces": [
                     "application/json"
@@ -926,16 +937,16 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            }
-        },
-        "/profile": {
-            "get": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            }
+        },
+        "/profile": {
+            "get": {
                 "description": "Returns the profile of the currently authenticated user",
                 "produces": [
                     "application/json"
@@ -964,14 +975,14 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
-            },
-            "patch": {
+                },
                 "security": [
                     {
                         "BearerAuth": []
                     }
-                ],
+                ]
+            },
+            "patch": {
                 "description": "Updates the profile of the currently authenticated user",
                 "consumes": [
                     "application/json"
@@ -1020,7 +1031,12 @@ const docTemplate = `{
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
                     }
-                }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
             }
         },
         "/translation/do-translate": {

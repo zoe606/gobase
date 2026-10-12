@@ -1,0 +1,32 @@
+package http
+
+import (
+	"crypto/rand"
+	"fmt"
+	"net/http"
+
+	"go-boilerplate/pkg/httpserver"
+	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
+)
+
+func NewRouter(srv *httpserver.Server, l logger.Interface) {
+	srv.App.HandleFunc("GET /healthz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("OK")) })
+	srv.App.HandleFunc("GET /readyz", func(w http.ResponseWriter, _ *http.Request) { _, _ = w.Write([]byte("OK")) })
+	srv.App.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) { response.NotFound(w, r, "Not found") })
+	srv.Handler = http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		id := r.Header.Get("X-Request-ID")
+		if id == "" {
+			id = rand.Text()
+		}
+		w.Header().Set("X-Request-ID", id)
+		defer func() {
+			if value := recover(); value != nil {
+				l.Error(fmt.Sprintf("HTTP handler panic: %v", value))
+				response.InternalError(w, r)
+			}
+		}()
+		l.Info("%s %s", r.Method, r.URL.Path)
+		srv.App.ServeHTTP(w, r)
+	})
+}

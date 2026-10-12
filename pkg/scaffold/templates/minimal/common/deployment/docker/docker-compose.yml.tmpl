@@ -1,0 +1,13 @@
+services:
+  app:
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+    env_file:
+      - ../../.env
+    environment:
+      HTTP_PORT: "8080"
+    ports:
+      - "${HTTP_PORT:-8080}:8080"
+    volumes:
+      - ../../config:/config:ro

@@ -1,0 +1,38 @@
+package {{.Package}}
+
+import (
+	{{.Package}}dto "{{.Module}}/internal/dto/{{.Package}}"
+	"{{.Module}}/pkg/request"
+	"{{.Module}}/pkg/response"
+	"net/http"
+)
+
+// List godoc
+// @Summary     List {{.Package}}s
+// @Description Get a paginated list of {{.Package}}s
+// @ID          {{.Package}}-list
+// @Tags        {{.Package}}s
+// @Accept      json
+// @Produce     json
+// @Param       page query int false "Page number" default(1)
+// @Param       page_size query int false "Page size" default(20)
+// @Success     200 {object} response.Response[{{.Package}}dto.ListResponse]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Router      /{{.Variable}}s [get]
+func (h *Handler) List(w http.ResponseWriter, r *http.Request) {
+	var req {{.Package}}dto.ListRequest
+	if err := request.Query(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_QUERY", "Invalid query parameters")
+		return
+	}
+
+	result, err := h.{{.Variable}}UC.List(r.Context(), req)
+	if err != nil {
+		h.l.Error(err, "handlers - http - v1 - {{.Package}} - List")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

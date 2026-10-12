@@ -1,29 +1,69 @@
-# Go Clean Architecture Boilerplate
+# gobase
 
-Production-ready REST API boilerplate with Clean Architecture, JWT authentication, media uploads, and background workers.
+Go HTTP template with full application and minimal service profiles. Select Gin, standard `net/http`, or Fiber when creating a project. The default full profile includes Clean Architecture, JWT authentication, media uploads, and background workers.
 
-[![Go Version](https://img.shields.io/badge/Go-1.26-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.27.2-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![Fiber](https://img.shields.io/badge/Fiber-v2-00ACD7?logo=go)](https://gofiber.io/)
+[![HTTP Engines](https://img.shields.io/badge/HTTP-Gin%20%7C%20net%2Fhttp%20%7C%20Fiber-00ACD7?logo=go)](docs/http-engines.md)
 [![GORM](https://img.shields.io/badge/GORM-ORM-00ADD8)](https://gorm.io/)
 [![Swagger](https://img.shields.io/badge/Swagger-API%20Docs-85EA2D?logo=swagger)](https://swagger.io/)
 
 ## Features
 
-- **Authentication** — JWT access/refresh tokens, email verification, password reset, roles & permissions
+The following application features belong to the default `full` profile. The `minimal` profile includes configuration, logging, native HTTP routing, request and response helpers, health probes, and graceful shutdown without required infrastructure.
+
+- **Authentication** — Register, login, JWT access/refresh tokens, logout, and current user endpoints
+- **Authorization** — JWT role and permission middleware
 - **Media Management** — S3/Local storage, polymorphic attachments, image processing, presigned URLs
 - **Articles** — Full CRUD with draft/publish workflow, cover images, SEO slugs
 - **Translation** — Google Translate API integration with history
 - **Background Jobs** — Asynq workers for emails, image processing
 - **Code Generation** — Scaffold all layers from a single migration file
+- **HTTP Engine Selection** — Create a project with Gin, standard `net/http`, or Fiber
 
-## Quick Start
+## Project Status
+
+`v0.1.1` is the current template release. It includes full and minimal output for Gin, standard `net/http`, and Fiber. This patch fixes panic responses before a handler writes its response: HTTP 500 with the shared JSON error envelope and request ID, including gzip requests. `v0.1.0` is the first versioned baseline. See the [release readiness report](docs/release-readiness.md) for scope, compatibility, and verification.
+
+The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
+
+Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). Go 1.27.2 and x/net v0.60.0 are the current dependency baseline. Docker images run as UID and GID `65532`.
+
+Three standalone Commerce applications implement Order with Gin, Inventory with stdlib, and Billing with Fiber. Each has an independent repository, module, database, and native handlers. All ten HTTP workflow scenarios passed locally and in Ubuntu CI with native processes and Docker containers. The Linux workflow merged through [Order PR #6](https://github.com/zoe606/commerce-order/pull/6), and both modes passed after merge. Issues #60 and #56 are closed. See the [Commerce verification report](docs/commerce-verification.md) for revisions, commands, results, and limits. Monorepo generation is outside the current plan. External deployment, backup and restore, workload criteria, and real payment processing are later application operations and product work. They are not additional boilerplate features or prerequisites for engine validation. See the [roadmap](docs/roadmap.md).
+
+Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
+
+## Create a Project
+
+Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
-# Clone and configure
-git clone <repository-url>
-cd go-boilerplate
+git clone --branch v0.1.1 https://github.com/zoe606/gobase.git gobase
+cd gobase
+make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
+```
+
+Gin v1.12.0 is the default. Use `ENGINE=stdlib` for `http.ServeMux`, or `ENGINE=fiber` for Fiber v2. Each output contains one engine. See [HTTP Engines](docs/http-engines.md) for the architecture and compatibility rules.
+
+`PROFILE=full` is the default and preserves existing creation commands. To create a service without bundled business features or infrastructure:
+
+```bash
+make init PROFILE=minimal ENGINE=stdlib MODULE=github.com/your-org/service APP_NAME=service OUTPUT=../service
+cd ../service
+make run
+```
+
+Both `/healthz` and `/readyz` return `OK`. No database, Redis, storage, email sender, or worker is required. The generated README describes its native handler API and app-only Docker setup. Configuration files are optional. Export environment variables to override defaults. SQL CRUD and persistence wiring commands return a clear error because persistence is omitted. See [minimal services](docs/minimal-services.md) for the file and dependency set.
+
+## Run a Project
+
+These instructions apply to the `full` profile. Minimal services use the commands above and their generated README.
+
+```bash
+# Configure the generated project
+cd ../myapp
 cp .env.example .env
+cp config/config.example.yaml config/config.yaml
 
 # Start infrastructure
 make docker-services
@@ -32,11 +72,15 @@ make docker-services
 make run
 ```
 
+The development app applies database migrations on startup. Start the worker in another terminal with `make run-worker`. The `.env` file supplies Docker Compose variables. Local Go commands read `config/config.yaml` and exported environment variables; update both configurations when changing connection ports.
+
+New projects use local storage. MinIO is optional; see [Deployment](docs/deployment.md) for S3 configuration.
+
 Verify it's running:
 
 ```bash
 curl http://localhost:8080/healthz    # Liveness probe
-curl http://localhost:8080/readyz     # Readiness probe (checks DB/Redis)
+curl http://localhost:8080/readyz     # Readiness probe (checks PostgreSQL)
 ```
 
 ## API Documentation
@@ -49,7 +93,11 @@ http://localhost:8080/swagger/
 
 All endpoints, request/response schemas, and authentication requirements are documented there.
 
+`GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination continues to use `page` and `limit` with the existing defaults and normalization.
+
 ## Architecture
+
+The diagram below describes the full application. Minimal services keep only configuration, logging, the selected native HTTP engine, HTTP helpers, and process lifecycle. Both profiles use the generic `response.Response[T]` envelope.
 
 ```mermaid
 flowchart TB
@@ -59,7 +107,7 @@ flowchart TB
 
     subgraph "Go Application"
         subgraph "HTTP Layer"
-            Fiber[Fiber Server]
+            Server[Selected HTTP Engine]
             MW[Middleware<br/>JWT, CORS, RateLimit]
             Handlers[Handlers]
         end
@@ -76,7 +124,7 @@ flowchart TB
     subgraph "Infrastructure"
         PG[(PostgreSQL)]
         Redis[(Redis)]
-        S3[(MinIO/S3)]
+        Storage[(Local files / S3)]
     end
 
     subgraph "Background"
@@ -84,17 +132,17 @@ flowchart TB
         Queue[Task Queue]
     end
 
-    Browser --> Fiber
-    Fiber --> MW --> Handlers
+    Browser --> Server
+    Server --> MW --> Handlers
     Handlers --> UseCases
     UseCases --> Repos
     Repos --> PG
     UseCases --> Redis
-    UseCases --> S3
+    UseCases --> Storage
     UseCases --> Queue
     Queue --> Worker
     Worker --> PG
-    Worker --> S3
+    Worker --> Storage
 ```
 
 ### Layer Flow
@@ -105,10 +153,12 @@ Handler → UseCase → Repository → Entity/External API
 
 - **Handlers** — Parse requests, validate input, return JSON responses
 - **Use Cases** — Business logic, orchestrate repositories, return domain errors
-- **Repositories** — Data access (PostgreSQL, S3, external APIs)
+- **Repositories** — Data access (PostgreSQL, file storage, external APIs)
 - **Entities** — GORM domain models
 
 ## Project Structure
+
+The directories below describe the full profile. Generated HTTP handlers use the selected engine. The template checkout runs Fiber; full engine sources are maintained under `pkg/scaffold/templates/{gin,stdlib,fiber}`, minimal sources under `pkg/scaffold/templates/minimal`, and CRUD templates under `pkg/codegen/generator/templates/handler`.
 
 ```
 ├── cmd/
@@ -119,7 +169,7 @@ Handler → UseCase → Repository → Entity/External API
 │   ├── app/                    # DI container & bootstrap
 │   ├── dto/                    # Request/Response DTOs
 │   ├── entity/                 # GORM domain models
-│   ├── handlers/http/          # Fiber HTTP handlers
+│   ├── handlers/http/          # Native HTTP handlers
 │   │   ├── middleware/
 │   │   └── v1/
 │   ├── repo/                   # Repository implementations
@@ -130,7 +180,7 @@ Handler → UseCase → Repository → Entity/External API
 │   └── worker/                 # Asynq task handlers
 ├── pkg/                        # Reusable packages
 ├── migrations/                 # SQL migration files
-├── docs/                       # Swagger documentation
+├── docs/                       # Swagger and project documentation
 └── deployment/docker/          # Docker configuration
 ```
 
@@ -149,9 +199,11 @@ internal/usecase/auth/
 
 ## Configuration
 
-Copy `.env.example` and configure the required variables. See [Deployment](docs/deployment.md) for the full environment variable reference and production checklist.
+Copy both example files as shown in [Run a Project](#run-a-project). Docker Compose reads `.env`. Local Go commands read `config/config.yaml` and exported environment variables. See [Deployment](docs/deployment.md) for storage options, environment variables, and production configuration.
 
 ## Commands
+
+The tables below describe full-profile commands. Run application commands from the generated project's directory. Project creation, `make test-engines`, and `make test-minimal` run from the template checkout. Minimal services provide their own smaller Makefile.
 
 ### Development
 
@@ -171,6 +223,8 @@ Copy `.env.example` and configure the required variables. See [Deployment](docs/
 | `make lint` | Run linter |
 | `make vuln` | Check vulnerabilities |
 | `make test` | Run unit tests |
+| `make test-engines` | Verify generated Gin, stdlib, and Fiber projects from the template checkout |
+| `make test-minimal` | Verify minimal output, HTTP contracts, startup, and shutdown for all three engines without infrastructure |
 
 ### Database
 
@@ -194,10 +248,14 @@ Copy `.env.example` and configure the required variables. See [Deployment](docs/
 
 | Command | Description |
 |---------|-------------|
-| `make docker-services` | Start DB, Redis, MinIO |
+| `make docker-services` | Start PostgreSQL and Redis |
+| `make docker-services-s3` | Start services with optional MinIO |
 | `make docker-dev` | Start full stack |
+| `make docker-dev-build` | Rebuild and start full stack |
 | `make docker-stop` | Stop all containers |
 | `make docker-logs` | View container logs |
+
+The app and worker run as UID and GID `65532`. Follow [runtime permissions](docs/deployment.md#runtime-permissions) for the local configuration bind mount and any existing upload volume before starting the full stack.
 
 ## Adding a New Feature
 
@@ -215,7 +273,7 @@ make swag                                     # 7. Regenerate Swagger docs
 
 ```bash
 make test                # Unit tests with coverage
-make test-integration    # Integration tests (requires Docker)
+make test-integration    # Integration tests (requires a running app, PostgreSQL, and Redis)
 make coverage            # Generate HTML coverage report
 make generate            # Regenerate mocks after interface changes
 ```
@@ -224,6 +282,9 @@ make generate            # Regenerate mocks after interface changes
 
 | Document | Description |
 |----------|-------------|
+| [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
+| [Roadmap](docs/roadmap.md) | Engine foundation, standalone application validation, and HTTP workflow plans |
+| [Release Readiness](docs/release-readiness.md) | Phase 1 implementation, local runtime results, and passing CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |
 

@@ -1,0 +1,73 @@
+package article
+
+import (
+	"errors"
+	"strconv"
+
+	"github.com/gin-gonic/gin"
+	articledto "go-boilerplate/internal/dto/article"
+	"go-boilerplate/internal/handlers/http/middleware"
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	articleuc "go-boilerplate/internal/usecase/article"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// Update godoc
+// @Summary     Update article
+// @Description Update an existing article
+// @ID          article-update
+// @Tags        articles
+// @Accept      json
+// @Produce     json
+// @Param       id path int true "Article ID"
+// @Param       request body articledto.UpdateRequest true "Update Article request"
+// @Success     200 {object} response.Response[articledto.Response]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     403 {object} response.ErrorResponse
+// @Failure     500 {object} response.ErrorResponse
+// @Security    BearerAuth
+// @Router      /articles/{id} [put]
+func (h *Handler) Update(c *gin.Context) {
+	w,
+		r := c.Writer,
+		c.Request
+
+	id, err := strconv.ParseUint(c.Param("id"), 10, 32)
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid article ID")
+		return
+	}
+
+	var req articledto.UpdateRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+
+	userID := middleware.GetUserID(r)
+
+	result, err := h.articleUC.Update(r.Context(), userID, uint(id), req)
+	if err != nil {
+		if errors.Is(err, articleuc.ErrNotFound) {
+			response.NotFound(w, r, "Article not found")
+			return
+		}
+		if errors.Is(err, articleuc.ErrForbidden) {
+			response.Forbidden(w, r, "Not authorized to modify this article")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - article - Update")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.OK(w, r, result)
+}

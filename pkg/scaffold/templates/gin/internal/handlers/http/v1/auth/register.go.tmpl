@@ -1,0 +1,52 @@
+package auth
+
+import (
+	"errors"
+
+	"github.com/gin-gonic/gin"
+	authdto "go-boilerplate/internal/dto/auth"
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	autherrors "go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// Register godoc
+// @Summary     Register a new user
+// @Description Register a new user account
+// @ID          auth-register
+// @Tags        auth
+// @Accept      json
+// @Produce     json
+// @Param       request body authdto.RegisterRequest true "Registration details"
+// @Success     201 {object} response.Response[authdto.LoginResponse]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     409 {object} response.ErrorResponse
+// @Router      /auth/register [post]
+func (h *Handler) Register(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	var req authdto.RegisterRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+
+	result, err := h.authUC.Register(r.Context(), req)
+	if err != nil {
+		if errors.Is(err, autherrors.ErrEmailExists) {
+			response.Conflict(w, r, "Email already exists")
+			return
+		}
+		h.l.Error(err, "handlers - http - v1 - auth - Register")
+		response.InternalError(w, r)
+		return
+	}
+
+	response.Created(w, r, result)
+}

@@ -1,0 +1,40 @@
+package {{.Package}}
+
+import (
+	"net/http"
+
+	"github.com/go-playground/validator/v10"
+
+	"{{.Module}}/internal/handlers/http/routing"
+	"{{.Module}}/internal/usecase"
+	"{{.Module}}/pkg/logger"
+)
+
+// Handler handles {{.Package}} endpoints.
+type Handler struct {
+	{{.Variable}}UC usecase.{{.Entity}}
+	l        logger.Interface
+	v        *validator.Validate
+}
+
+// New creates a new {{.Package}} handler.
+func New({{.Variable}}UC usecase.{{.Entity}}, l logger.Interface) *Handler {
+	return &Handler{
+		{{.Variable}}UC: {{.Variable}}UC,
+		l:        l,
+		v:        validator.New(validator.WithRequiredStructEnabled()),
+	}
+}
+
+// RegisterRoutes sets up routes.
+func (h *Handler) RegisterRoutes(router *routing.Router) {
+	{{.Variable}}s := router.Group("/{{.Variable}}s")
+	// TODO: Add auth middleware: {{.Variable}}s.Use(middleware.JWT(jwtService))
+	{
+		{{.Variable}}s.Handle("POST", "/", http.HandlerFunc(h.Create))
+		{{.Variable}}s.Handle("GET", "/", http.HandlerFunc(h.List))
+		{{.Variable}}s.Handle("GET", "/:id", http.HandlerFunc(h.GetByID))
+		{{.Variable}}s.Handle("PUT", "/:id", http.HandlerFunc(h.Update))
+		{{.Variable}}s.Handle("DELETE", "/:id", http.HandlerFunc(h.Delete))
+	}
+}

@@ -1,0 +1,35 @@
+package media
+
+import (
+	"github.com/gin-gonic/gin"
+	"go-boilerplate/pkg/response"
+)
+
+// Delete removes a media item.
+// @Summary     Delete media
+// @Description Deletes a media item and its associated files
+// @Tags        media
+// @Security    BearerAuth
+// @Produce     json
+// @Param       id path int true "Media ID"
+// @Success     200 {object} response.Response[map[string]string]
+// @Failure     400 {object} response.ErrorResponse
+// @Failure     401 {object} response.ErrorResponse
+// @Failure     404 {object} response.ErrorResponse
+// @Router      /media/{id} [delete]
+func (h *Handler) Delete(c *gin.Context) {
+	w, r := c.Writer, c.Request
+
+	id, err := parseUint(c.Param("id"))
+	if err != nil {
+		response.BadRequest(w, r, "INVALID_ID", "Invalid media ID")
+		return
+	}
+
+	if err := h.mediaUC.Delete(r.Context(), id); err != nil {
+		response.NotFound(w, r, "Media not found")
+		return
+	}
+
+	response.OK(w, r, map[string]any{"message": "Media deleted successfully"})
+}

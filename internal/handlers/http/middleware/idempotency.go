@@ -2,13 +2,13 @@ package middleware
 
 import (
 	"errors"
-	"strconv"
 	"strings"
 
 	"github.com/gofiber/fiber/v2"
 
 	"go-boilerplate/config"
 	"go-boilerplate/pkg/cache"
+	"go-boilerplate/pkg/jwt"
 )
 
 const idempotencyHeader = "Idempotency-Key"
@@ -22,7 +22,7 @@ type idempotencyResponse struct {
 
 // Idempotency returns middleware that deduplicates mutating requests using an Idempotency-Key header.
 // GET, DELETE, OPTIONS, and HEAD requests bypass the middleware entirely.
-func Idempotency(appCache cache.Cache, cfg config.Idempotency) fiber.Handler {
+func Idempotency(appCache cache.Cache, cfg config.Idempotency, services ...jwt.Service) fiber.Handler {
 	return func(ctx *fiber.Ctx) error {
 		method := ctx.Method()
 		if method == fiber.MethodGet || method == fiber.MethodDelete ||
@@ -46,10 +46,9 @@ func Idempotency(appCache cache.Cache, cfg config.Idempotency) fiber.Handler {
 			return ctx.Next()
 		}
 
-		// Best-effort user scoping (only works if JWTAuth ran before this middleware)
-		userPart := "shared"
-		if id, ok := ctx.Locals(UserIDKey).(uint); ok {
-			userPart = strconv.FormatUint(uint64(id), 10)
+		userPart, valid := idempotencyScope(GetUserID(ctx), ctx.Get("Authorization"), ctx.Body(), services)
+		if !valid {
+			return ctx.Next()
 		}
 		cacheKey := "idempotency:" + userPart + ":" + ctx.Method() + ":" + ctx.Path() + ":" + key
 
@@ -72,6 +71,9 @@ func Idempotency(appCache cache.Cache, cfg config.Idempotency) fiber.Handler {
 		// Cache miss — execute the handler.
 		if err := ctx.Next(); err != nil {
 			return err
+		}
+		if ctx.Response().StatusCode() >= 400 {
+			return nil
 		}
 
 		// Cache the response (best effort).

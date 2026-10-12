@@ -1,0 +1,64 @@
+package response
+
+import (
+	"net/http"
+
+	"go-boilerplate/pkg/apperror"
+	"go-boilerplate/pkg/json"
+)
+
+func writeJSON(w http.ResponseWriter, r *http.Request, status int, value any) {
+	data, err := json.Marshal(value)
+	if err != nil {
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(status)
+	if r.Method != http.MethodHead {
+		_, _ = w.Write(data)
+	}
+}
+func OK[T any](w http.ResponseWriter, r *http.Request, data T) {
+	writeJSON(w, r, http.StatusOK, Response[T]{Success: true, Data: data, RequestID: w.Header().Get("X-Request-ID")})
+}
+func OKWithMeta[T any](w http.ResponseWriter, r *http.Request, data T, meta *Meta) {
+	writeJSON(w, r, http.StatusOK, Response[T]{Success: true, Data: data, Meta: meta, RequestID: w.Header().Get("X-Request-ID")})
+}
+func Created[T any](w http.ResponseWriter, r *http.Request, data T) {
+	writeJSON(w, r, http.StatusCreated, Response[T]{Success: true, Data: data, RequestID: w.Header().Get("X-Request-ID")})
+}
+func NoContent(w http.ResponseWriter, _ *http.Request) { w.WriteHeader(http.StatusNoContent) }
+func Error(w http.ResponseWriter, r *http.Request, status int, code, message string) {
+	writeJSON(w, r, status, ErrorResponse{Success: false, Error: ErrorDetail{Code: code, Message: message}, RequestID: w.Header().Get("X-Request-ID")})
+}
+func ErrorWithDetails(w http.ResponseWriter, r *http.Request, status int, code, message string, details map[string]string) {
+	writeJSON(w, r, status, ErrorResponse{Success: false, Error: ErrorDetail{Code: code, Message: message, Details: details}, RequestID: w.Header().Get("X-Request-ID")})
+}
+func BadRequest(w http.ResponseWriter, r *http.Request, code, message string) {
+	Error(w, r, http.StatusBadRequest, code, message)
+}
+func ValidationError(w http.ResponseWriter, r *http.Request, details map[string]string) {
+	ErrorWithDetails(w, r, http.StatusBadRequest, "VALIDATION_ERROR", "Validation failed", details)
+}
+func Unauthorized(w http.ResponseWriter, r *http.Request, message string) {
+	Error(w, r, http.StatusUnauthorized, "UNAUTHORIZED", message)
+}
+func Forbidden(w http.ResponseWriter, r *http.Request, message string) {
+	Error(w, r, http.StatusForbidden, "FORBIDDEN", message)
+}
+func NotFound(w http.ResponseWriter, r *http.Request, message string) {
+	Error(w, r, http.StatusNotFound, "NOT_FOUND", message)
+}
+func Conflict(w http.ResponseWriter, r *http.Request, message string) {
+	Error(w, r, http.StatusConflict, "CONFLICT", message)
+}
+func RateLimited(w http.ResponseWriter, r *http.Request, message string) {
+	Error(w, r, http.StatusTooManyRequests, "RATE_LIMITED", message)
+}
+func InternalError(w http.ResponseWriter, r *http.Request) {
+	Error(w, r, http.StatusInternalServerError, "INTERNAL_ERROR", "An unexpected error occurred")
+}
+func FromAppError(w http.ResponseWriter, r *http.Request, err *apperror.AppError) {
+	Error(w, r, err.Status, err.Code, err.Message)
+}

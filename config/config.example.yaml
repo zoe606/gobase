@@ -34,6 +34,12 @@ postgres:
 metrics:
   enabled: true
 
+# Local storage for new projects. Set driver to s3 and configure STORAGE_S3_* to use S3.
+storage:
+  driver: local
+  local_path: ./uploads
+  local_url: http://localhost:8080/uploads
+
 # Swagger Documentation
 swagger:
   enabled: true

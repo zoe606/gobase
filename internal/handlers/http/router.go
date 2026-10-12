@@ -10,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
 
@@ -43,18 +42,17 @@ type HealthChecker interface {
 //	@host        localhost:8080
 //	@BasePath    /v1
 func SetupRoutes(app *fiber.App, cfg *config.Config, translationUC usecase.Translation, authUC usecase.Auth, mediaUC usecase.Media, profileUC usecase.Profile, articleUC usecase.Article, jwtService jwt.Service, l logger.Interface, healthChecker HealthChecker, rateLimitStore fiber.Storage, appCache cache.Cache) {
-	setupMiddleware(app, cfg, l, rateLimitStore, appCache)
+	setupMiddleware(app, cfg, l, rateLimitStore, appCache, jwtService)
 	setupOptionalFeatures(app, cfg)
 	setupHealthEndpoints(app, healthChecker)
 	setupAPIRoutes(app, cfg, translationUC, authUC, mediaUC, profileUC, articleUC, jwtService, l)
 }
 
 // setupMiddleware configures global middleware chain.
-func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rateLimitStore fiber.Storage, appCache cache.Cache) {
+func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rateLimitStore fiber.Storage, appCache cache.Cache, jwtService jwt.Service) {
 	if cfg.Telemetry.Enabled {
 		app.Use(middleware.Tracing())
 	}
-	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(requestid.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CORS.AllowOrigins,
@@ -65,6 +63,7 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rat
 	}))
 	app.Use(helmet.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelDefault}))
+	app.Use(middleware.Recovery(l))
 	limiterCfg := limiter.Config{
 		Max:          cfg.RateLimit.Max,
 		Expiration:   cfg.RateLimit.Expiration,
@@ -74,7 +73,7 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rat
 	}
 	app.Use(limiter.New(limiterCfg))
 	if cfg.Idempotency.Enabled && appCache != nil {
-		app.Use(middleware.Idempotency(appCache, cfg.Idempotency))
+		app.Use(middleware.Idempotency(appCache, cfg.Idempotency, jwtService))
 	}
 	if cfg.HTTP.RequestTimeout > 0 {
 		app.Use(middleware.Timeout(cfg.HTTP.RequestTimeout))
