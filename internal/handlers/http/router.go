@@ -10,7 +10,6 @@ import (
 	"github.com/gofiber/fiber/v2/middleware/cors"
 	"github.com/gofiber/fiber/v2/middleware/helmet"
 	"github.com/gofiber/fiber/v2/middleware/limiter"
-	"github.com/gofiber/fiber/v2/middleware/recover"
 	"github.com/gofiber/fiber/v2/middleware/requestid"
 	"github.com/gofiber/swagger"
 
@@ -54,7 +53,6 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rat
 	if cfg.Telemetry.Enabled {
 		app.Use(middleware.Tracing())
 	}
-	app.Use(recover.New(recover.Config{EnableStackTrace: true}))
 	app.Use(requestid.New())
 	app.Use(cors.New(cors.Config{
 		AllowOrigins:     cfg.CORS.AllowOrigins,
@@ -65,6 +63,7 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rat
 	}))
 	app.Use(helmet.New())
 	app.Use(compress.New(compress.Config{Level: compress.LevelDefault}))
+	app.Use(middleware.Recovery(l))
 	limiterCfg := limiter.Config{
 		Max:          cfg.RateLimit.Max,
 		Expiration:   cfg.RateLimit.Expiration,

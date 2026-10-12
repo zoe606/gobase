@@ -42,6 +42,8 @@ Generated projects receive application documentation from `pkg/scaffold/applicat
 
 Standard HTTP middleware can wrap a Gin or stdlib router with `func(http.Handler) http.Handler`. The Gin routing adapter passes native handlers through this middleware and preserves their response writers. Fiber projects use Fiber middleware. Fiber prefork is specific to Fiber; the standard HTTP server runs one process.
 
+When a handler panics before writing a response, recovery returns HTTP 500 with the shared `INTERNAL_ERROR` JSON envelope and request ID. Panic details remain in server logs. Recovery runs inside compression so gzip cannot commit HTTP 200 while the panic is being handled. Gin and stdlib cannot replace a response whose headers have already been sent.
+
 ### Minimal Profile
 
 `pkg/scaffold/minimal.go` copies an explicit file set and renders `pkg/scaffold/templates/minimal/common`, the selected engine directory, and `minimal/nethttp` for Gin or stdlib. The minimal server exposes `*gin.Engine`, `*http.ServeMux`, or `*fiber.App` directly. It has no routing adapter or full application layers. The generic `response.Response[T]` remains shared; response helper arguments follow the selected engine's native API.
@@ -68,7 +70,7 @@ See [Local Verification Results](http-engines-verification.md) for the completed
 
 From the template checkout, run `make test-engines`. This generates all three projects, resolves and verifies modules, builds the app and worker, checks runtime dependencies, and runs tests with the race detector. It also generates and wires a new CRUD feature, regenerates and checks Swagger, and compiles the result. Use `go run ./pkg/tools/verifyengines -engine=stdlib -lint` to include lint for one engine.
 
-The shared HTTP contract suite runs against real HTTP servers. It covers JSON parsing, validation, JWT auth, article CRUD and ownership errors, profile updates, multipart uploads, pagination, CORS, health probes, rate limiting, body limits, Swagger, and metrics. The Engines workflow runs these checks for every engine. Integration tests require PostgreSQL, Redis, and a running application.
+The shared HTTP contract suite runs against real HTTP servers. It covers JSON parsing, validation, JWT auth, article CRUD and ownership errors, profile updates, multipart uploads, pagination, CORS, health probes, rate limiting, body limits, Swagger, and metrics. Panic tests check HTTP 500, the JSON envelope, request IDs, gzip decoding, and a successful request after recovery. The Engines workflow runs these checks for every engine. Integration tests require PostgreSQL, Redis, and a running application.
 
 Run `make test-minimal` or `go run ./pkg/tools/verifyengines -profile=minimal -lint` for all three minimal outputs. This checks modules, builds, race tests, HTTP contracts, unsupported generation errors, real process startup without infrastructure, occupied-port failure, and SIGTERM shutdown. Separate `Minimal` CI jobs repeat these checks and verify non-root Docker runtime. They start no PostgreSQL or Redis services.
 
