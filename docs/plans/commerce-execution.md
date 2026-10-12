@@ -4,7 +4,7 @@ Updated: October 12, 2026.
 
 ## Approved Direction
 
-Build three standalone applications with different business domains. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application owns its repository, Go module, data, configuration, CI, and deployment. Use HTTP for the initial workflow. A message broker is an optional later exercise.
+The three standalone applications test the gobase foundation. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application owns its repository, Go module, data, configuration, CI, and deployment. The initial HTTP workflow is complete. Further work follows the [foundation capability plan](foundation-capabilities.md) instead of extending the Commerce product.
 
 Tracking: [applications #60](https://github.com/zoe606/gobase/issues/60) and [HTTP workflows #56](https://github.com/zoe606/gobase/issues/56). The superseded monorepo issue #55 is closed as not planned.
 
@@ -16,7 +16,7 @@ Use the full profile to exercise generated authentication, persistence, HTTP mid
 
 Application repositories are kept separately under the ignored `.worktrees` directory during implementation: `commerce-order`, `commerce-inventory`, and `commerce-billing`. They have independent Git metadata and no shared Go workspace. The user approved private GitHub repositories with these names on October 9, 2026. An external deployment target is not selected yet.
 
-The current goal is to validate the gobase engine foundation through real applications. Database backup and restore, external deployment, capacity targets, customer cancellation, and real charging belong to application operations or product development. They are not additional boilerplate features or prerequisites for completing engine validation.
+The applications exist to validate the gobase foundation. On October 12, 2026, the user confirmed that additional Commerce business features are not needed. The next work is recorded in the [foundation capability plan](foundation-capabilities.md): Asynq failure and recovery, optional WebSocket, then optional application gRPC. The existing application workflow remains regression coverage.
 
 ## Business and HTTP Contract
 
@@ -59,13 +59,15 @@ The October 9 foundation uses Go 1.27.2 and x/net v0.60.0. All seven final GitHu
 
 ## Next Work
 
-1. Use v0.1.1 for new projects. This patch includes the panic recovery fix verified by the three applications. The common Linux workflow is enabled on Order's default branch.
-2. Run the workflow with candidate peer revisions before adopting them. Update the pins and record the three application revisions and CI results after verification. Independent application CI remains separate.
-3. Fix reusable foundation defects in gobase and adopt each fix in affected applications. Keep Commerce rules and test orchestration in the application repositories.
+1. Execute the [foundation capability plan](foundation-capabilities.md) in order: Asynq failure and recovery, WebSocket integration, then an optional application gRPC server. Use small technical examples without new Commerce business flows.
+2. Use v0.1.1 for new projects. Run the existing workflow with candidate peer revisions before adopting foundation changes. Update pins and record all three application revisions and CI results after verification.
+3. Fix reusable foundation defects in gobase and adopt each fix in affected test applications. Keep independent modules and CI. Record capability results separately from the completed Commerce workflow.
 
 Issues #60 and #56 are complete. Later application operations do not reopen these validation issues. Issue #55 remains closed as not planned. Add a message broker only for a selected asynchronous workflow.
 
-## Later Application Operations and Features
+## Application Limits Outside the Active Plan
+
+The items below describe unverified operations and product capabilities. They are not the next foundation tasks. Resume them only if these examples are later developed into products.
 
 - Verify database backup and restore into isolated databases. Keep the existing application data intact.
 - Select a controlled external deployment target and verify TLS, credentials, migrations, and runtime behavior there.
@@ -73,4 +75,4 @@ Issues #60 and #56 are complete. Later application operations do not reopen thes
 - Define coordinated cancellation, reservation release, invoice voiding, and refunds before exposing a customer cancellation workflow.
 - Choose a payment provider when real payment processing is required. Keep the current operator payment recording labeled as a test scenario.
 
-These items require their own evidence before a full Commerce production-readiness claim. They do not block completion of the current boilerplate validation.
+These items would require their own evidence before a full Commerce production-readiness claim. The active capability plan does not make that claim or reopen the completed validation issues.

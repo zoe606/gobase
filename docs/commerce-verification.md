@@ -155,7 +155,9 @@ The initial workflow and local production configuration are verified within the 
 - Run the common workflow with candidate peer revisions before adopting them. Update the pinned revisions after verification.
 - Fix reusable foundation defects in gobase when found and adopt those fixes in affected applications.
 
-The items below are later Commerce application operations and product work. They are not boilerplate features or completion requirements for the current engine validation.
+The [foundation capability plan](plans/foundation-capabilities.md) tracks the next work: Asynq failure and recovery, optional WebSocket, and optional application gRPC. The existing Commerce workflow remains regression coverage.
+
+The items below are unverified Commerce operations and product capabilities outside the active plan. They are not boilerplate features or completion requirements for the current engine validation.
 
 - Select an external deployment environment and verify TLS, credentials, migrations, and runtime behavior there.
 - Verify backup and restore into isolated databases. Existing application data must remain intact.
