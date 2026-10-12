@@ -1,6 +1,6 @@
 # Commerce Verification
 
-Updated: October 11, 2026.
+Updated: October 12, 2026.
 
 ## Scope and Revisions
 
@@ -129,6 +129,18 @@ Inventory and Billing checkouts use separate read-only deploy keys stored as Ord
 On October 11, [Commerce E2E run 38151098408](https://github.com/zoe606/commerce-order/actions/runs/38151098408) passed all ten scenarios in each mode. [Order Quality run 38151098378](https://github.com/zoe606/commerce-order/actions/runs/38151098378) passed. Logs confirm non-root runtime probes for all three Docker containers. Both jobs record Order `d4fb7e78a1e183a11665730aa008b796d29854dd`, Inventory `1dd4467f4097216f392cae019e4687b439d12d3a`, and Billing `7e219a0fe6e9c2a31a9416c406a499e601f94a77`.
 
 [Gobase PR #62](https://github.com/zoe606/gobase/pull/62) merged as `620c8614dd4ac72fe54ce024013593d888db28a1`. Post-merge [Quality](https://github.com/zoe606/gobase/actions/runs/38150670114) and all six full/minimal [engine jobs](https://github.com/zoe606/gobase/actions/runs/38150670107) passed. Issues #60 and #56 are closed as completed.
+
+### Panic Recovery Follow-up
+
+On October 12, `TestEnginePanicRecovery` reproduced a foundation defect in the three applications and the source checkout. Gin and stdlib returned HTTP 200 when gzip closed during panic handling. Plain requests returned text errors. Fiber recovery also returned text errors instead of the shared JSON envelope.
+
+The fix returns HTTP 500 with `INTERNAL_ERROR` and the request ID. Recovery runs inside compression. Panic details remain in server logs. The source Fiber checkout, full-profile templates, and all three applications adopt the fix. Gin and stdlib cannot replace headers that have already been sent.
+
+`go test -race -count=1 ./internal/handlers/http/...` passed in the source and each application. The regression uses a test use case with the production middleware chain and a live HTTP server. It checks plain and gzip responses, supplied and generated request IDs, hidden panic details, and a successful health request after recovery.
+
+Fresh full-profile Gin, stdlib, and Fiber projects passed module verification, builds, race tests, CRUD generation and wiring, Swagger checks, and lint through `go run ./pkg/tools/verifyengines -lint`. Minimal output is outside this change.
+
+All ten existing Commerce scenarios passed locally in native and Docker modes after the changes. These process tests verify business behavior, dependency failures, recovery, restart, and shutdown. The immutable v0.1.0 release remains evidence for its original revision. Candidate commits need their own CI results.
 
 ## Remaining Work
 

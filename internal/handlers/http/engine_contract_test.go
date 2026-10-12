@@ -42,6 +42,58 @@ type contractHealth struct{ err error }
 
 func (h contractHealth) Ping() error { return h.err }
 
+type contractPanickingArticle struct{ usecase.Article }
+
+func (contractPanickingArticle) GetByID(context.Context, uint) (*articledto.Response, error) {
+	panic("private panic detail")
+}
+
+func TestEnginePanicRecovery(t *testing.T) {
+	for _, tt := range []struct {
+		name, encoding, requestID string
+	}{
+		{"plain", "", "panic-contract"},
+		{"gzip", "gzip", "panic-contract"},
+		{"generated request ID", "", ""},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			service := jwt.New("contract-secret", time.Hour, time.Hour)
+			handler := contractHandler(t, contractConfig(), contractTranslation{}, contractAuth{t: t}, contractMedia{t: t}, contractProfile{t: t}, contractPanickingArticle{}, service, contractHealth{}, nil)
+			request := httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/v1/articles/9", http.NoBody)
+			request.Header.Set("X-Request-ID", tt.requestID)
+			request.Header.Set("Accept-Encoding", tt.encoding)
+			recorder := httptest.NewRecorder()
+			handler.ServeHTTP(recorder, request)
+			require.Equal(t, http.StatusInternalServerError, recorder.Code)
+			require.Contains(t, recorder.Header().Get("Content-Type"), "application/json")
+
+			body := recorder.Body.Bytes()
+			if recorder.Header().Get("Content-Encoding") == "gzip" {
+				reader, err := gzip.NewReader(bytes.NewReader(body))
+				require.NoError(t, err)
+				body, err = io.ReadAll(reader)
+				require.NoError(t, err)
+				require.NoError(t, reader.Close())
+			}
+			var result response.ErrorResponse
+			require.NoError(t, json.Unmarshal(body, &result))
+			require.False(t, result.Success)
+			require.Equal(t, "INTERNAL_ERROR", result.Error.Code)
+			require.Equal(t, "An unexpected error occurred", result.Error.Message)
+			require.NotEmpty(t, result.RequestID)
+			require.Equal(t, recorder.Header().Get("X-Request-ID"), result.RequestID)
+			if tt.requestID != "" {
+				require.Equal(t, tt.requestID, result.RequestID)
+			}
+			require.NotContains(t, string(body), "private panic detail")
+
+			health := httptest.NewRecorder()
+			handler.ServeHTTP(health, httptest.NewRequestWithContext(t.Context(), http.MethodGet, "/healthz", http.NoBody))
+			require.Equal(t, http.StatusOK, health.Code)
+		})
+	}
+}
+
 type contractAuth struct {
 	usecase.Auth
 	t *testing.T

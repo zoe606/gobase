@@ -15,6 +15,7 @@ import (
 	"github.com/google/uuid"
 	"go-boilerplate/config"
 	"go-boilerplate/pkg/logger"
+	"go-boilerplate/pkg/response"
 )
 
 func RequestID(next http.Handler) http.Handler {
@@ -33,7 +34,7 @@ func Recovery(l logger.Interface) func(http.Handler) http.Handler {
 			defer func() {
 				if recovered := recover(); recovered != nil {
 					l.Error("HTTP panic: %v", recovered)
-					http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+					response.InternalError(w, r)
 				}
 			}()
 			next.ServeHTTP(w, r)

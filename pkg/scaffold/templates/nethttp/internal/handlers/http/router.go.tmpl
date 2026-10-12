@@ -45,7 +45,7 @@ func setupMiddleware(app *routing.Router, cfg *config.Config, l logger.Interface
 	if cfg.Telemetry.Enabled {
 		app.Use(middleware.Tracing())
 	}
-	app.Use(middleware.Recovery(l), middleware.RequestID, middleware.CORS(cfg.CORS), middleware.SecurityHeaders, middleware.Compress, middleware.BodyLimit(cfg.HTTP.BodyLimit), middleware.RateLimit(cfg.RateLimit, store))
+	app.Use(middleware.RequestID, middleware.CORS(cfg.CORS), middleware.SecurityHeaders, middleware.Compress, middleware.Recovery(l), middleware.BodyLimit(cfg.HTTP.BodyLimit), middleware.RateLimit(cfg.RateLimit, store))
 	if cfg.Idempotency.Enabled && appCache != nil {
 		app.Use(middleware.Idempotency(appCache, cfg.Idempotency, jwtService))
 	}
