@@ -97,7 +97,7 @@ make docker-stop
 
 ## Release Preparation
 
-Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. The v0.1.0 baseline includes the later foundation, minimal output, and application verification described below. Historical results remain tied to their recorded revisions.
+Phase 1 verification and merge are complete. All four verification jobs passed on the merged revision above. The v0.1.0 baseline includes the later foundation, minimal output, and application verification described below. Patch release v0.1.1 adds the verified panic recovery fix. Historical results remain tied to their recorded revisions.
 
 Phase 2.1 article filter validation merged through [PR #53](https://github.com/zoe606/gobase/pull/53). Redis cache and rate limiter cleanup merged through [PR #57](https://github.com/zoe606/gobase/pull/57). Non-root Docker execution merged through [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal output merged through [PR #59](https://github.com/zoe606/gobase/pull/59), closing issue #54. See [runtime permissions](deployment.md#runtime-permissions) for bind mounts and existing upload volumes. Three independent Commerce applications now verify the selected engines and their HTTP workflow. Issues #60 and #56 are complete. Email verification, password reset, and OpenTelemetry metrics export remain deferred unless a selected product requires them. See the [roadmap](roadmap.md).
 
@@ -169,3 +169,13 @@ Before this documentation update, all seven jobs passed on `620c8614dd4ac72fe54c
 The independent Commerce workflow passed ten scenarios in both modes after Order PR #6 merged. [Commerce E2E](https://github.com/zoe606/commerce-order/actions/runs/38151098408) and [Order Quality](https://github.com/zoe606/commerce-order/actions/runs/38151098378) passed on `d4fb7e78a1e183a11665730aa008b796d29854dd`. The [Commerce report](commerce-verification.md) records all three application revisions.
 
 Email verification, password reset HTTP integration, and OpenTelemetry metrics export remain deferred. External deployment, backup and restore, workload capacity, customer cancellation, refunds, and real charging need separate application evidence. The release records the tested template and workflow baseline. It does not claim complete Commerce production readiness.
+
+## v0.1.1 Patch Release
+
+Release preparation date: October 12, 2026.
+
+This patch includes the panic recovery fix from [PR #64](https://github.com/zoe606/gobase/pull/64). When a full-profile handler panics before writing a response, Gin, stdlib, and Fiber return HTTP 500 with `INTERNAL_ERROR`, the shared JSON envelope, and the request ID. Recovery runs inside compression so gzip does not commit HTTP 200 while the panic is handled. Panic details remain in server logs. Gin and stdlib cannot replace headers that have already been sent.
+
+Engine selection, full and minimal creation commands, native handler APIs, and dependency versions retain the v0.1.0 baseline. Generated applications own their code and need explicit adoption of the relevant middleware and router changes. The three Commerce applications have adopted and verified the fix. See the [Commerce report](commerce-verification.md#panic-recovery-follow-up) for their revisions and CI results.
+
+All seven source checks passed on the merged fix revision `339ad3c777afe3197831b063c57c92be109fbe86`: [Quality](https://github.com/zoe606/gobase/actions/runs/38202661062) and all six [engine jobs](https://github.com/zoe606/gobase/actions/runs/38202661056). These results precede the release documentation update. The release tag must identify a master revision whose Quality and six full/minimal engine jobs passed. Release notes record that exact commit and its CI runs.

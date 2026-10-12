@@ -23,7 +23,7 @@ The following application features belong to the default `full` profile. The `mi
 
 ## Project Status
 
-`v0.1.0` is the first versioned template baseline. It includes full and minimal output for Gin, standard `net/http`, and Fiber. See the [release readiness report](docs/release-readiness.md) for scope, compatibility, and verification.
+`v0.1.1` is the current template release. It includes full and minimal output for Gin, standard `net/http`, and Fiber. This patch fixes panic responses before a handler writes its response: HTTP 500 with the shared JSON error envelope and request ID, including gzip requests. `v0.1.0` is the first versioned baseline. See the [release readiness report](docs/release-readiness.md) for scope, compatibility, and verification.
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
@@ -38,7 +38,7 @@ Email verification and password reset have use cases and token persistence, but 
 Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
-git clone --branch v0.1.0 https://github.com/zoe606/gobase.git gobase
+git clone --branch v0.1.1 https://github.com/zoe606/gobase.git gobase
 cd gobase
 make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
 ```

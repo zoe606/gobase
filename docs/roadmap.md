@@ -1,8 +1,8 @@
 # Gobase Roadmap
 
-Updated: October 11, 2026.
+Updated: October 12, 2026.
 
-This document records the gobase template baseline and its validation through real applications. Three standalone applications use different business domains, one per engine, with HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1 through 5 are complete and merged. The initial Commerce workflow passes locally and in Ubuntu CI. Issues #60 and #56 are closed. The versioned template baseline is v0.1.0.
+This document records the gobase template baseline and its validation through real applications. Three standalone applications use different business domains, one per engine, with HTTP workflows between them. Each application has its own repository. Monorepo generation is outside the current plan. Phases 1 through 5 are complete and merged. The initial Commerce workflow passes locally and in Ubuntu CI. Issues #60 and #56 are closed. The current template release is v0.1.1, which includes the panic recovery fix after the v0.1.0 baseline.
 
 ## Current Baseline
 
@@ -39,11 +39,11 @@ Gobase remains the source template and generator. The applications are separate 
 
 Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
 
-Use v0.1.0 as the reproducible template baseline. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. Database backup and restore are application operations, not a boilerplate feature. External deployment, capacity measurements, cancellation, and real charging are separate application follow-up work. They do not block the completed engine validation phases below.
+Use v0.1.1 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. Database backup and restore are application operations, not a boilerplate feature. External deployment, capacity measurements, cancellation, and real charging are separate application follow-up work. They do not block the completed engine validation phases below.
 
 ## Phase 1: Template Release Readiness
 
-Release readiness and maintenance checks are complete and merged. The v0.1.0 baseline records the supported engines, profiles, compatibility, and verification scope.
+Release readiness and maintenance checks are complete and merged. The v0.1.0 baseline records the supported engines, profiles, compatibility, and verification scope. Patch release v0.1.1 adds the verified panic recovery fix and retains the same creation options.
 
 See the [release readiness report](release-readiness.md) for implemented changes, completed local and GitHub checks, and compatibility notes.
 
