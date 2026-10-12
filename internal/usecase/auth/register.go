@@ -73,14 +73,14 @@ func (uc *UseCase) Register(ctx context.Context, input authdto.RegisterRequest) 
 		return nil, fmt.Errorf("auth - Register - StoreRefreshToken: %w", err)
 	}
 
-	// Enqueue welcome email (non-blocking, best effort)
-	uc.enqueueWelcomeEmail(user)
+	// Enqueue welcome email (best effort)
+	uc.enqueueWelcomeEmail(ctx, user)
 
 	return authdto.NewLoginResponse(user, tokens.AccessToken, tokens.RefreshToken, tokens.AccessExpiresAt), nil
 }
 
 // enqueueWelcomeEmail enqueues a welcome email task if Asynq is configured.
-func (uc *UseCase) enqueueWelcomeEmail(user *entity.User) {
+func (uc *UseCase) enqueueWelcomeEmail(ctx context.Context, user *entity.User) {
 	if uc.asynqClient == nil {
 		return
 	}
@@ -91,5 +91,6 @@ func (uc *UseCase) enqueueWelcomeEmail(user *entity.User) {
 		return
 	}
 
-	_, _ = uc.asynqClient.Enqueue(task, asynq.Queue("default"))
+	options := append([]asynq.Option{asynq.Queue("default")}, uc.taskOptions...)
+	_, _ = uc.asynqClient.EnqueueContext(ctx, task, options...)
 }

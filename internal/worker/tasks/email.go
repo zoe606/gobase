@@ -39,7 +39,7 @@ func NewEmailHandler(l logger.Interface, mailer email.Sender) *EmailHandler {
 func (h *EmailHandler) ProcessTask(ctx context.Context, t *asynq.Task) error {
 	var payload EmailPayload
 	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		return fmt.Errorf("unmarshal email payload: %w", err)
+		return fmt.Errorf("unmarshal email payload: %w: %w", err, asynq.SkipRetry)
 	}
 
 	h.l.Info("Sending email",

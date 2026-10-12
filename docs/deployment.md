@@ -89,6 +89,46 @@ To include the image worker check when testing against a running app and worker:
 APP_HOST=localhost APP_PORT=8080 TEST_WORKER_ENABLED=true make test-integration
 ```
 
+## Background Tasks
+
+The full profile includes `cmd/worker` and email and image tasks. The selected HTTP engine does not change worker behavior. Minimal projects do not include Asynq or require Redis.
+
+| Setting | Default | Behavior |
+|---------|---------|----------|
+| `ASYNQ_CONCURRENCY` | `10` | Maximum concurrent worker tasks |
+| `ASYNQ_MAX_RETRY` | `3` | Retries after the initial attempt; `0` disables retries |
+| `ASYNQ_JOB_TIMEOUT` | `5m` | Maximum duration per task execution |
+
+Export these values for local Go processes or set `asynq.concurrency`, `asynq.max_retry`, and `asynq.job_timeout` in `config/config.yaml`. Retry and timeout settings belong to the producer app. Restart that app to change options for new tasks. Existing queued tasks retain their recorded options. The worker error log reports each task's actual retry limit. Custom producers must pass their own options when enqueuing tasks.
+
+Retry limits cannot be negative. Positive timeouts must use whole seconds because Asynq stores task timeouts in seconds. For example, `2s` and `5m` are valid; `200ms` and `1.5s` fail configuration validation. With the pinned Asynq v0.26.0, `0` uses its 30-minute fallback when no deadline is supplied. Use a positive value to set the intended limit explicitly.
+
+Email and image handlers archive malformed JSON immediately using `asynq.SkipRetry`. Other handler errors follow the task's retry limit and Asynq's default retry delay. Exhausted tasks are archived. See [Asynq retry configuration](https://github.com/hibiken/asynq/wiki/Task-Retry).
+
+Task execution can repeat after a crash or incomplete shutdown. The template does not guarantee exactly-once execution or email delivery. Handlers with external effects need an idempotency policy for their operation. On SIGTERM, the worker waits up to Asynq's default eight-second shutdown timeout. Unfinished work is returned to the queue. After a forced kill, recovery waits for the active task lease to expire.
+
+Welcome-email submission remains best effort and does not fail registration. Image submission errors are logged without failing the completed upload. Both enqueue calls use the request context. Explicit callers should use `EnqueueContext` with a deadline and handle its error when Redis is unavailable. Readiness continues to check PostgreSQL; it does not assert Redis availability.
+
+### Failure and Recovery Verification
+
+Run against a dedicated Redis 7 instance:
+
+```bash
+ASYNQ_TEST_REDIS_ADDR=localhost:6379 go test -count=1 -race -timeout=4m -v ./integration-test/asynq
+```
+
+This suite starts separate worker processes with the real email handler and a controlled sender. It verifies temporary failures, retry exhaustion, malformed JSON, pending and active restart, repeated execution, task timeout, Redis connection interruption and recovery, and SIGTERM during processing. The controlled sender stores one logical effect atomically in Redis. This checks fixture idempotency, not actual email delivery. Tests use database 15 with unique queues and result keys, and delete only their own fixture data. They skip when `ASYNQ_TEST_REDIS_ADDR` is unset. Forced-kill recovery may take over one minute while the lease expires.
+
+To check actual HTTP producer options, run the app with `ASYNQ_MAX_RETRY=1` and `ASYNQ_JOB_TIMEOUT=2s`, with no worker consuming its queue. Point the test at the same Redis database 0:
+
+```bash
+APP_HOST=localhost APP_PORT=8080 TEST_ASYNQ_REDIS_ADDR=localhost:6379 \
+  TEST_ASYNQ_MAX_RETRY=1 TEST_ASYNQ_JOB_TIMEOUT=2s \
+  go test -count=1 -v ./integration-test -run '^TestHTTPCRUDV1$'
+```
+
+This checks welcome-email and uploaded-image task metadata without changing successful HTTP responses. Existing Docker checks with `TEST_WORKER_ENABLED=true` verify successful processing by the actual worker. The Engines workflow runs these checks for each generated Gin, stdlib, and Fiber project. Exact proposed revisions and CI results are recorded in [#66](https://github.com/zoe606/gobase/issues/66).
+
 ## Production Checklist
 
 - [ ] Set `APP_ENV=production`

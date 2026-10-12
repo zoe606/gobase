@@ -48,7 +48,7 @@ func NewImageProcessingHandler(l logger.Interface, mediaRepo repo.MediaRepo, sto
 func (h *ImageProcessingHandler) ProcessTask(ctx context.Context, t *asynq.Task) error {
 	var payload ImageProcessingPayload
 	if err := json.Unmarshal(t.Payload(), &payload); err != nil {
-		return fmt.Errorf("unmarshal payload: %w", err)
+		return fmt.Errorf("unmarshal payload: %w: %w", err, asynq.SkipRetry)
 	}
 
 	h.l.Info("Processing image", "media_id", payload.MediaID)

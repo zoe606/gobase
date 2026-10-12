@@ -9,6 +9,8 @@ import (
 	"fmt"
 	"time"
 
+	libasynq "github.com/hibiken/asynq"
+
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
 	"go-boilerplate/pkg/asynq"
@@ -26,6 +28,7 @@ type UseCase struct {
 	jwtService            jwt.Service
 	auditLogger           audit.Logger
 	asynqClient           *asynq.Client
+	taskOptions           []libasynq.Option
 	appName               string
 	verificationConfig    VerificationConfig
 	resetConfig           ResetConfig

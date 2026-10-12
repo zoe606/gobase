@@ -170,6 +170,36 @@ func TestConfig_Validate_RequiredFields(t *testing.T) {
 	}
 }
 
+func TestConfig_Validate_AsynqOptions(t *testing.T) {
+	tests := []struct {
+		name    string
+		retry   int
+		timeout time.Duration
+		err     string
+	}{
+		{name: "defaults", retry: 3, timeout: 5 * time.Minute},
+		{name: "zero values"},
+		{name: "one second", retry: 1, timeout: time.Second},
+		{name: "negative retry", retry: -1, err: "ASYNQ_MAX_RETRY must not be negative"},
+		{name: "negative timeout", timeout: -time.Second, err: "ASYNQ_JOB_TIMEOUT"},
+		{name: "subsecond timeout", timeout: 200 * time.Millisecond, err: "ASYNQ_JOB_TIMEOUT"},
+		{name: "fractional seconds", timeout: 1500 * time.Millisecond, err: "ASYNQ_JOB_TIMEOUT"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := Config{
+				Postgres: Postgres{Host: "localhost", DBName: "app"},
+				Asynq:    Asynq{MaxRetry: tt.retry, JobTimeout: tt.timeout},
+			}
+			if tt.err == "" {
+				require.NoError(t, cfg.Validate())
+			} else {
+				require.ErrorContains(t, cfg.Validate(), tt.err)
+			}
+		})
+	}
+}
+
 func TestPostgres_DSN(t *testing.T) {
 	pg := Postgres{
 		Host:     "localhost",

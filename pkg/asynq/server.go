@@ -2,6 +2,7 @@ package asynq
 
 import (
 	"context"
+	"time"
 
 	"go-boilerplate/pkg/logger"
 
@@ -17,18 +18,23 @@ type Server struct {
 
 // ServerConfig holds server configuration.
 type ServerConfig struct {
-	RedisAddr     string
-	RedisPassword string
-	RedisDB       int
-	Concurrency   int
-	MaxRetry      int
+	RedisAddr                string
+	RedisPassword            string
+	RedisDB                  int
+	Concurrency              int
+	MaxRetry                 int // Retained for compatibility. Retry limits are task enqueue options.
+	Queues                   map[string]int
+	ShutdownTimeout          time.Duration
+	TaskCheckInterval        time.Duration
+	DelayedTaskCheckInterval time.Duration
+	RetryDelayFunc           asynq.RetryDelayFunc
 }
 
 // NewServer creates a new Asynq server.
 func NewServer(cfg ServerConfig, l logger.Interface) *Server {
-	maxRetry := cfg.MaxRetry
-	if maxRetry <= 0 {
-		maxRetry = 3
+	queues := cfg.Queues
+	if queues == nil {
+		queues = map[string]int{"critical": 6, "default": 3, "low": 1}
 	}
 
 	srv := asynq.NewServer(
@@ -38,20 +44,16 @@ func NewServer(cfg ServerConfig, l logger.Interface) *Server {
 			DB:       cfg.RedisDB,
 		},
 		asynq.Config{
-			Concurrency: cfg.Concurrency,
-			Queues: map[string]int{
-				"critical": 6,
-				"default":  3,
-				"low":      1,
-			},
-			RetryDelayFunc: asynq.DefaultRetryDelayFunc,
+			Concurrency:              cfg.Concurrency,
+			Queues:                   queues,
+			ShutdownTimeout:          cfg.ShutdownTimeout,
+			TaskCheckInterval:        cfg.TaskCheckInterval,
+			DelayedTaskCheckInterval: cfg.DelayedTaskCheckInterval,
+			RetryDelayFunc:           cfg.RetryDelayFunc,
 			ErrorHandler: asynq.ErrorHandlerFunc(func(ctx context.Context, task *asynq.Task, err error) {
 				retried, _ := asynq.GetRetryCount(ctx)
-				l.Error(err, "asynq task failed",
-					"type", task.Type(),
-					"retry", retried,
-					"max_retry", maxRetry,
-				)
+				maxRetry, _ := asynq.GetMaxRetry(ctx)
+				l.Error("asynq task failed (type=%s retry=%d max_retry=%d): %v", task.Type(), retried, maxRetry, err)
 			}),
 		},
 	)

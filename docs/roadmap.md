@@ -26,7 +26,7 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Complete; PR #59 merged as a611e84; [#54](https://github.com/zoe606/gobase/issues/54) closed |
 | 4. Standalone application validation | Three real applications with different domains, one per engine | Complete; private repositories, local production configuration, and independent CI verified; [#60](https://github.com/zoe606/gobase/issues/60) closed |
 | 5. HTTP workflow validation | Tested business workflows across the independent applications | Complete; ten native and Docker scenarios pass after [Order PR #6](https://github.com/zoe606/commerce-order/pull/6) merged; [#56](https://github.com/zoe606/gobase/issues/56) closed |
-| 6. Foundation capability validation | Asynq failure and recovery, optional WebSocket, and optional application gRPC | Planned; execute 6.1, 6.2, then 6.3 under the [capability plan](plans/foundation-capabilities.md) |
+| 6. Foundation capability validation | Asynq failure and recovery, optional WebSocket, and optional application gRPC | 6.1 implementation available; verification tracked in #66. 6.2 and 6.3 remain planned under the [capability plan](plans/foundation-capabilities.md) |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
@@ -223,7 +223,7 @@ See the [execution plan](plans/foundation-capabilities.md) for tracking, scenari
 
 | Order | Capability | Work |
 |-------|------------|------|
-| 6.1 [#66](https://github.com/zoe606/gobase/issues/66) | Existing Asynq worker | Verify retries, invalid payloads, repeated execution, Redis failures, worker restart, and shutdown during processing |
+| 6.1 [#66](https://github.com/zoe606/gobase/issues/66) | Existing Asynq worker | Producer options and malformed-payload handling implemented; real Redis tests cover retry, archive, restart, repeated execution, Redis failures, and shutdown. Verification and merge evidence are tracked in the issue |
 | 6.2 [#67](https://github.com/zoe606/gobase/issues/67) | Optional WebSocket | Verify native integration, authenticated upgrades, origins, message limits, slow clients, middleware, and connection shutdown for all three engines |
 | 6.3 [#68](https://github.com/zoe606/gobase/issues/68) | Optional application gRPC | Add one shared server on a separate port, a unary example and client, reproducible protobuf generation, authentication, deadlines, health, and shutdown |
 

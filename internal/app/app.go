@@ -13,6 +13,7 @@ import (
 	"github.com/golang-migrate/migrate/v4"
 	pgmigrate "github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file" // file source driver for golang-migrate
+	libasynq "github.com/hibiken/asynq"
 	goredis "github.com/redis/go-redis/v9"
 	"gorm.io/gorm"
 
@@ -278,8 +279,10 @@ func initAsynqClient(cfg *config.Config) *asynq.Client {
 
 // initUseCases creates all usecase instances.
 func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Service, asynqClient *asynq.Client, storageProvider storage.Provider, l logger.Interface, auditLogger audit.Logger, appCache pkgcache.Cache) *usecases {
+	taskOptions := []libasynq.Option{libasynq.MaxRetry(cfg.Asynq.MaxRetry), libasynq.Timeout(cfg.Asynq.JobTimeout)}
 	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService, auditLogger).
-		WithAsynq(asynqClient, cfg.App.Name)
+		WithAsynq(asynqClient, cfg.App.Name).
+		WithTaskOptions(taskOptions...)
 
 	mediaUC := media.New(
 		repos.media,
@@ -288,7 +291,7 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 		l,
 		cfg.Storage.Driver,
 		cfg.Storage.MaxSize,
-	)
+	).WithTaskOptions(taskOptions...)
 
 	profileUC := profile.New(
 		repos.profile,

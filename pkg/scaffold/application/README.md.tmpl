@@ -38,6 +38,8 @@ The `.env` file supplies Docker Compose variables. Local Go commands read `confi
 
 New projects use local storage. MinIO is optional. See [deployment](docs/deployment.md) to configure an S3 endpoint or enable the MinIO profile.
 
+Email and image tasks use `ASYNQ_MAX_RETRY=3` and `ASYNQ_JOB_TIMEOUT=5m` by default. These settings apply when the app enqueues new tasks. Invalid JSON is archived without retry. Processing can repeat, so handlers with external effects need an idempotency policy. See [background tasks](docs/deployment.md#background-tasks) for configuration, shutdown behavior, and real Redis failure and recovery tests.
+
 ```bash
 curl http://localhost:8080/healthz
 curl http://localhost:8080/readyz

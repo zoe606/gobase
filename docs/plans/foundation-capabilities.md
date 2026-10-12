@@ -1,8 +1,8 @@
 # Foundation Capability Validation
 
-Updated: October 12, 2026.
+Updated: October 13, 2026.
 
-Status: Planned. This plan records the approved next work. It does not declare WebSocket or application gRPC support implemented.
+Status: Asynq implementation available; verification and merge evidence are tracked in #66. WebSocket and application gRPC remain planned.
 
 ## Purpose and Baseline
 
@@ -16,7 +16,7 @@ The full profile already includes Asynq clients, email and image task handlers, 
 
 | Slice | Outcome | Status | Tracking |
 |-------|---------|--------|----------|
-| 6.1 | Verify and harden existing Asynq processing | Planned; first slice | [#66](https://github.com/zoe606/gobase/issues/66) |
+| 6.1 | Verify and harden existing Asynq processing | Implementation available; verification tracked in issue | [#66](https://github.com/zoe606/gobase/issues/66) |
 | 6.2 | Add optional WebSocket support with native engine integration | Planned; follows 6.1 | [#67](https://github.com/zoe606/gobase/issues/67) |
 | 6.3 | Add an optional application gRPC server and client example | Planned; follows 6.2 | [#68](https://github.com/zoe606/gobase/issues/68) |
 
@@ -43,6 +43,8 @@ Required scenarios:
 Confirm that retry configuration matches actual task options. Fix only reproduced foundation defects. Preserve existing valid HTTP responses and the full profile's creation commands. Minimal output must continue to build and start without Redis or a worker.
 
 Completion requires reproducible failure and recovery checks, documented task and worker behavior, passing source quality checks, and passing generated-project CI. Exercise the HTTP-to-queue integration through Gin, stdlib, and Fiber. Shared worker behavior needs one implementation.
+
+The implementation applies producer retry and timeout settings, preserves request contexts, and archives malformed JSON without retry. `integration-test/asynq` provides real Redis checks with separate workers and controlled failures. HTTP tests inspect actual queued options, and existing Docker tests verify email and image processing. See [background tasks](../deployment.md#background-tasks) for commands, configuration, and limits. Issue #66 records verification separately from implementation availability.
 
 ## 6.2 Optional WebSocket Support
 

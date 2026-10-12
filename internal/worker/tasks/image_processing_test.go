@@ -79,6 +79,7 @@ func TestImageProcessingHandler_ProcessTask_BadPayload(t *testing.T) {
 	err := handler.ProcessTask(context.Background(), task)
 	require.Error(t, err)
 	require.Contains(t, err.Error(), "unmarshal payload")
+	require.ErrorIs(t, err, asynq.SkipRetry)
 }
 
 func TestImageProcessingHandler_ProcessTask_MediaNotFound(t *testing.T) {

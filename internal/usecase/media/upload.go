@@ -60,7 +60,7 @@ func (uc *UseCase) Upload(ctx context.Context, req mediadto.UploadRequest) (*med
 
 	// Queue image processing if it's an image.
 	if mediaType == entity.MediaTypeImage {
-		uc.queueImageProcessing(media.ID)
+		uc.queueImageProcessing(ctx, media.ID)
 	}
 
 	uc.l.Info("Media uploaded",
