@@ -2,7 +2,7 @@
 
 Updated: October 13, 2026.
 
-Status: Asynq is complete through PR #70. WebSocket is complete through PR #77, with seven checks passing before and after merge. Full-profile application gRPC implementation is available; verification and merge evidence are tracked in #68.
+Status: Phase 6 is complete through PRs #70, #77, and #78. Application gRPC passed all seven checks before and after merge. The Commerce follow-up is implemented and merged in all three mini-apps. Native/Docker interoperability and revision evidence are tracked under #79.
 
 ## Purpose and Baseline
 
@@ -18,7 +18,8 @@ The Full profile includes Asynq clients, email and image task handlers, and `cmd
 |-------|---------|--------|----------|
 | 6.1 | Verify and harden existing Asynq processing | Complete; PR #70 merged as `ab7a30d`, source and six engine/profile jobs passed after merge | [#66](https://github.com/zoe606/gobase/issues/66) |
 | 6.2 | Add optional WebSocket support with native engine integration | Complete; PR #77 merged as `e3edeef`, source and six engine/profile jobs passed after merge | [#67](https://github.com/zoe606/gobase/issues/67) |
-| 6.3 | Add an optional application gRPC server and client example | Full implementation available; verification tracked in issue | [#68](https://github.com/zoe606/gobase/issues/68) |
+| 6.3 | Add an optional application gRPC server and client example | Complete; PR #78 merged as `7ae5687`, with seven checks passing before and after merge | [#68](https://github.com/zoe606/gobase/issues/68) |
+| Follow-up | Verify application-to-application RPC calls | Implemented and merged through Order #8, Inventory #7, and Billing #7; native/Docker checks pass; final evidence in issue | [#79](https://github.com/zoe606/gobase/issues/79) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
 
@@ -86,7 +87,9 @@ The implementation follows the Full profile used in 6.2. [gRPC setup](../grpc.md
 
 ## After Phase 6
 
-Complete and merge 6.3 before choosing more capabilities. Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced foundation defects. Select the next capability from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. Keep issues #49 and #50 deferred until needed. A new release tag requires its own readiness verification.
+The approved RPC interoperability follow-up is implemented in the existing mini-apps. They adopt the shared runtime from revision `7ae56879be7d8737295172f1c694dde6436fb003`. Each repository owns its proto, generated code, and optional server. Order owns the common runner. Native and Docker checks verify all six directed pairs, three three-service chains, TLS, JWT, bounded failures, and recovery. Revisions, reproducible commands, and CI evidence are recorded in #79 and the [Commerce report](../commerce-verification.md#application-grpc-interoperability). The technical Probe RPC does not add business workflows.
+
+Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced foundation defects. Select further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. Keep issues #49 and #50 deferred until needed. A new release tag requires its own readiness verification.
 
 ## Verification and Compatibility
 

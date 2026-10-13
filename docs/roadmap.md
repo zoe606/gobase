@@ -2,7 +2,7 @@
 
 Updated: October 13, 2026.
 
-This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 5 are complete and merged. Issues #60 and #56 are closed. The current release is v0.1.1. The approved next work is Phase 6: Asynq failure and recovery checks, optional WebSocket support, and an optional application gRPC server.
+This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 are complete and merged. The current release is v0.1.1. The approved follow-up verifies application-to-application gRPC calls in the three mini-apps under #79.
 
 ## Current Baseline
 
@@ -26,7 +26,8 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | 3. Minimal service output | Optional service profile without bundled application features or required infrastructure | Complete; PR #59 merged as a611e84; [#54](https://github.com/zoe606/gobase/issues/54) closed |
 | 4. Standalone application validation | Three real applications with different domains, one per engine | Complete; private repositories, local production configuration, and independent CI verified; [#60](https://github.com/zoe606/gobase/issues/60) closed |
 | 5. HTTP workflow validation | Tested business workflows across the independent applications | Complete; ten native and Docker scenarios pass after [Order PR #6](https://github.com/zoe606/commerce-order/pull/6) merged; [#56](https://github.com/zoe606/gobase/issues/56) closed |
-| 6. Foundation capability validation | Asynq failure and recovery, optional WebSocket, and optional application gRPC | 6.1 and 6.2 complete through PRs #70 and #77. 6.3 Full implementation available, verification tracked in #68 under the [capability plan](plans/foundation-capabilities.md) |
+| 6. Foundation capability validation | Asynq failure and recovery, optional WebSocket, and optional application gRPC | Complete through PRs #70, #77, and #78; issues #66, #67, and #68 closed with verification evidence |
+| Application gRPC follow-up | Calls between the three independent mini-apps using generated clients | Implemented and merged in Order #8, Inventory #7, and Billing #7; native/Docker evidence tracked in [#79](https://github.com/zoe606/gobase/issues/79) and the [report](commerce-verification.md#application-grpc-interoperability) |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
@@ -225,7 +226,7 @@ See the [execution plan](plans/foundation-capabilities.md) for tracking, scenari
 |-------|------------|------|
 | 6.1 [#66](https://github.com/zoe606/gobase/issues/66) | Existing Asynq worker | Complete; PR #70 merged as `ab7a30d`. Real Redis failure and recovery scenarios and all six engine/profile jobs passed after merge |
 | 6.2 [#67](https://github.com/zoe606/gobase/issues/67) | Optional WebSocket | Complete; PR #77 merged as `e3edeef`. All seven checks passed before and after merge, including native and Docker active shutdown |
-| 6.3 [#68](https://github.com/zoe606/gobase/issues/68) | Optional application gRPC | Full implementation available: separate server, unary Echo, generated client, pinned protobuf tools, JWT, TLS, deadlines, health, and bounded shutdown. Verification and merge evidence are tracked in the issue |
+| 6.3 [#68](https://github.com/zoe606/gobase/issues/68) | Optional application gRPC | Complete through PR #78, merged as `7ae5687`, with seven checks passing before and after merge. The issue records runtime, generation, TLS, JWT, deadline, and shutdown results |
 
 Asynq already exists in the Full profile. Optional WebSocket and application gRPC are implemented for Full and disabled by default. See [WebSocket setup](websocket.md) and [gRPC setup](grpc.md) for authentication, native libraries, limits, and verification. Minimal output omits these capabilities. The application RPC server is separate from the telemetry exporter and selected HTTP engine. Preserve the existing Full and Minimal defaults.
 
@@ -261,9 +262,9 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
 
-Phase 6 is tracked by [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). Issues #66 and #67 are complete after PRs #70 and #77 merged and master checks passed. Application gRPC verification is tracked in #68. Implementation availability alone does not close an issue.
+Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The approved [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. Generated template fixtures and application interoperability are recorded separately.
 
-After 6.3 is verified and merged, maintain these capability paths and fix reproduced defects. Choose another capability from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming are possible follow-ups. They are not automatic new phases. A new release tag has a separate readiness check. See the [capability plan](plans/foundation-capabilities.md#after-phase-6).
+Maintain the capability paths and application interoperability checks, and fix reproduced defects. Choose further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming are possible follow-ups. They are not automatic new phases. A new release tag has a separate readiness check. See the [capability plan](plans/foundation-capabilities.md#after-phase-6).
 
 Use one issue for each bounded outcome. This document defines the phase order and scope. GitHub issues track execution status and links to implementing PRs. Update the template README and generated application documentation when implemented behavior changes.
 
