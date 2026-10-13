@@ -36,6 +36,24 @@ services:
       - ../../config:/config:ro
       - upload_data:/uploads
 
+  grpc:
+    profiles: [grpc]
+    build:
+      context: ../..
+      dockerfile: deployment/docker/Dockerfile
+      args:
+        TARGET: grpc
+    env_file:
+      - ../../.env
+    environment:
+      GRPC_ADDRESS: "0.0.0.0:50051"
+    ports:
+      - "${GRPC_PORT:-50051}:50051"
+    networks:
+      - app_network
+    volumes:
+      - ../../config:/config:ro
+
   worker:
     container_name: ${APP_NAME:-go-boilerplate}-worker
     build:

@@ -243,7 +243,8 @@ func (c *projectCopier) renderFile(path string, data []byte) ([]byte, error) {
 		}
 		data = []byte(strings.ReplaceAll(string(data), "go-boilerplate", c.cfg.Name))
 	}
-	if strings.HasSuffix(path, ".go") {
+	// Preserve compiler import grouping so protobuf regeneration produces identical bytes.
+	if strings.HasSuffix(path, ".go") && !strings.HasSuffix(path, ".pb.go") {
 		formatted, err := imports.Process(path, data, &imports.Options{Comments: true, FormatOnly: true})
 		if err != nil {
 			return nil, fmt.Errorf("format %s: %w", path, err)

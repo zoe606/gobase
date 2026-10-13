@@ -27,6 +27,13 @@ run: ## Run the application
 build: ## Build the application
 	CGO_ENABLED=0 go build -ldflags="-s -w" -o ./bin/app ./cmd/app
 
+.PHONY: run-grpc proto
+run-grpc: ## Run the optional gRPC server
+	go run ./cmd/grpc
+
+proto: ## Regenerate protobuf with pinned compiler and Go plugins
+	bash deployment/protobuf/generate.sh
+
 ##@ Code Quality
 
 .PHONY: fmt

@@ -19,6 +19,7 @@ The following application features belong to the default `full` profile. The `mi
 - **Translation** — Google Translate API integration with history
 - **Background Jobs** — Asynq workers for emails, image processing
 - **Optional WebSocket** — JWT handshake, native upgrades, bounded sessions, and active shutdown in Full projects
+- **Optional gRPC** — A separate JWT-authenticated Echo server, generated Go client, health checks, and TLS in Full projects
 - **Code Generation** — Scaffold all layers from a single migration file
 - **HTTP Engine Selection** — Create a project with Gin, standard `net/http`, or Fiber
 
@@ -34,7 +35,9 @@ Three standalone Commerce applications test the foundation: Order with Gin, Inve
 
 The [capability plan](docs/plans/foundation-capabilities.md) tracks Asynq failure and recovery, optional WebSocket support, and an optional application gRPC server. Asynq work merged through [PR #70](https://github.com/zoe606/gobase/pull/70), with passing source and six engine/profile jobs. See [background task behavior](docs/deployment.md#background-tasks) and [#66](https://github.com/zoe606/gobase/issues/66) for commands and verification.
 
-Full projects include optional `GET /v1/ws` with existing JWT access tokens, explicit allowed origins, echo and notification frames, connection limits, and graceful shutdown. It is disabled by default. See [WebSocket setup](docs/websocket.md) and [#67](https://github.com/zoe606/gobase/issues/67) for scope and verification. These capability updates follow v0.1.1; generate from the corresponding source revision to use them. Application gRPC remains planned under [#68](https://github.com/zoe606/gobase/issues/68). Minimal startup remains free of required infrastructure.
+WebSocket work merged through [PR #77](https://github.com/zoe606/gobase/pull/77), with all seven checks passing before and after merge. Full projects include optional `GET /v1/ws` with existing JWT access tokens, explicit allowed origins, echo and notification frames, connection limits, and graceful shutdown. See [WebSocket setup](docs/websocket.md) and [#67](https://github.com/zoe606/gobase/issues/67) for scope and verification.
+
+Full projects also include optional `cmd/grpc` and `cmd/grpc-client`, one unary Echo RPC, shared JWT configuration, verified TLS, standard health checks, and bounded shutdown. The gRPC process and port are separate from the chosen HTTP engine. Both optional capabilities are disabled by default. See [gRPC setup](docs/grpc.md) and [#68](https://github.com/zoe606/gobase/issues/68) for configuration and verification. These updates follow v0.1.1; generate from the corresponding source revision to use them. Minimal startup remains free of required infrastructure.
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 

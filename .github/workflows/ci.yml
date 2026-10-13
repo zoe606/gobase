@@ -41,6 +41,11 @@ jobs:
       - name: Build
         run: go build ./...
 
+      - name: Verify pinned protobuf generation
+        run: |
+          make proto
+          git diff --exit-code -- pkg/api/echo/v1
+
       - name: Run tests
         run: make test
 

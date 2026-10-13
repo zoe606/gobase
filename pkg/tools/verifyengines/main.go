@@ -2,6 +2,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"embed"
 	"encoding/json"
@@ -105,10 +106,35 @@ func checkProject(ctx context.Context, path string, engine project.Engine, lint 
 	return nil
 }
 
+func checkProtobuf(ctx context.Context, path string) error {
+	names := []string{"pkg/api/echo/v1/echo.pb.go", "pkg/api/echo/v1/echo_grpc.pb.go"}
+	before := make(map[string][]byte)
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(path, name))
+		if err != nil {
+			return err
+		}
+		before[name] = data
+	}
+	if err := run(ctx, path, "make", "proto"); err != nil {
+		return err
+	}
+	for _, name := range names {
+		data, err := os.ReadFile(filepath.Join(path, name))
+		if err != nil {
+			return err
+		}
+		if !bytes.Equal(before[name], data) {
+			return fmt.Errorf("protobuf regeneration changed %s", name)
+		}
+	}
+	return nil
+}
+
 func checkDependencies(ctx context.Context, path string, engine project.Engine, profile project.Profile) error {
 	args := []string{"list", "-deps", "./cmd/app"}
 	if profile == project.Full {
-		args = append(args, "./cmd/worker")
+		args = append(args, "./cmd/worker", "./cmd/grpc")
 	}
 	cmd := exec.CommandContext(ctx, "go", args...)
 	cmd.Dir = path
@@ -135,6 +161,9 @@ func checkDependencies(ctx context.Context, path string, engine project.Engine, 
 }
 
 func checkCodegen(ctx context.Context, path string) error {
+	if err := checkProtobuf(ctx, path); err != nil {
+		return err
+	}
 	root, err := os.OpenRoot(path)
 	if err != nil {
 		return err

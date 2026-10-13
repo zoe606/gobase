@@ -2,7 +2,7 @@
 
 Updated: October 13, 2026.
 
-Status: Asynq is complete and merged through PR #70. Full-profile WebSocket implementation is available; verification and merge evidence are tracked in #67. Application gRPC remains planned.
+Status: Asynq is complete through PR #70. WebSocket is complete through PR #77, with seven checks passing before and after merge. Full-profile application gRPC implementation is available; verification and merge evidence are tracked in #68.
 
 ## Purpose and Baseline
 
@@ -10,15 +10,15 @@ The standalone Order, Inventory, and Billing applications exist to test gobase's
 
 Phases 1 through 5 are complete. The current release is v0.1.1. Master revision `84685ebafbf12c26b49e0fb3fbcca13c72c566da` also includes the Zap v1.28.0 update. The [roadmap](../roadmap.md) records completed work. The [Commerce report](../commerce-verification.md) retains the existing verification results and their limits.
 
-The Full profile includes Asynq clients, email and image task handlers, and `cmd/worker`. Engine CI checks processing, failure recovery, and worker shutdown. Optional WebSocket is disabled by default and uses the existing JWT service. Application gRPC endpoints are not implemented. The existing gRPC dependency supports the OpenTelemetry trace exporter.
+The Full profile includes Asynq clients, email and image task handlers, and `cmd/worker`. Engine CI checks processing, failure recovery, and worker shutdown. Optional WebSocket and application gRPC use the existing JWT service and remain disabled by default. The telemetry trace exporter is separate from the application RPC server.
 
 ## Execution Order and Tracking
 
 | Slice | Outcome | Status | Tracking |
 |-------|---------|--------|----------|
 | 6.1 | Verify and harden existing Asynq processing | Complete; PR #70 merged as `ab7a30d`, source and six engine/profile jobs passed after merge | [#66](https://github.com/zoe606/gobase/issues/66) |
-| 6.2 | Add optional WebSocket support with native engine integration | Full implementation available; verification tracked in issue | [#67](https://github.com/zoe606/gobase/issues/67) |
-| 6.3 | Add an optional application gRPC server and client example | Planned; follows 6.2 | [#68](https://github.com/zoe606/gobase/issues/68) |
+| 6.2 | Add optional WebSocket support with native engine integration | Complete; PR #77 merged as `e3edeef`, source and six engine/profile jobs passed after merge | [#67](https://github.com/zoe606/gobase/issues/67) |
+| 6.3 | Add an optional application gRPC server and client example | Full implementation available; verification tracked in issue | [#68](https://github.com/zoe606/gobase/issues/68) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
 
@@ -81,6 +81,12 @@ Required scenarios:
 - Run the optional server alongside each HTTP engine and verify independent startup and shutdown.
 
 Completion requires real client/server integration tests, race tests, Docker runtime checks, and setup documentation. Use one shared gRPC implementation. Additional streaming RPC types are separate follow-up work.
+
+The implementation follows the Full profile used in 6.2. [gRPC setup](../grpc.md) defines the unary protobuf contract, JWT metadata, TLS configuration, health, limits, and independent process lifecycle. `cmd/grpc` starts only the RPC server. `cmd/grpc-client` uses the generated client. Protobuf generation pins the compiler and both Go plugins. Real TCP/TLS tests cover credentials, deadlines, cancellation, status codes, recovery, and graceful/forced shutdown. Issue #68 records verification and merge evidence. Minimal gRPC support, mTLS, HTTP gateways, business streaming RPCs, and new Commerce flows are outside this slice.
+
+## After Phase 6
+
+Complete and merge 6.3 before choosing more capabilities. Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced foundation defects. Select the next capability from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. Keep issues #49 and #50 deferred until needed. A new release tag requires its own readiness verification.
 
 ## Verification and Compatibility
 

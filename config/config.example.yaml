@@ -56,6 +56,19 @@ asynq:
   max_retry: 3
   job_timeout: 5m
 
+# Application gRPC (Full profile)
+grpc:
+  enabled: false
+  address: "127.0.0.1:50051"
+  insecure: false
+  tls_cert_file: ""
+  tls_key_file: ""
+  request_timeout: "5s"
+  shutdown_timeout: "15s"
+  connection_timeout: "5s"
+  max_message_size: 65536
+  max_concurrent_streams: 128
+
 # WebSocket (Full profile)
 websocket:
   enabled: false

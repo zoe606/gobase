@@ -60,6 +60,20 @@ flowchart LR
 
 The feature is disabled by default and omitted from Minimal output. HTTP middleware handles the handshake. Session recovery handles panics after the upgrade and sends a generic close reason. HTTP gzip skips enabled WebSocket upgrades. See [WebSocket setup](websocket.md) for authentication, explicit origins, frame contracts, browser limits, and activation.
 
+### Optional Application gRPC in Full Projects
+
+The selected engine continues to handle HTTP. `cmd/grpc` starts a separate grpc-go server with the same configuration, JWT service, and logging. It exposes the generated Echo service through a native gRPC handler and a small shared use case. Its listener, health status, request deadlines, and shutdown are separate from HTTP. No database or Redis connection is opened by the gRPC command. gRPC uses protobuf and status codes; HTTP keeps its JSON envelope. See [gRPC setup](grpc.md) for supported profiles, credentials, client usage, and pinned generation.
+
+```mermaid
+flowchart LR
+    Client[HTTP client] --> HTTP[Selected native HTTP engine]
+    RPCClient[Generated RPC client] --> GRPC[Separate grpc-go process]
+    GRPC --> Handler[Native Echo RPC handler]
+    Handler --> Echo[Echo use case]
+    Config[Shared configuration and JWT] --> HTTP
+    Config --> GRPC
+```
+
 ### Minimal Profile
 
 `pkg/scaffold/minimal.go` copies an explicit file set and renders `pkg/scaffold/templates/minimal/common`, the selected engine directory, and `minimal/nethttp` for Gin or stdlib. The minimal server exposes `*gin.Engine`, `*http.ServeMux`, or `*fiber.App` directly. It has no routing adapter or full application layers. The generic `response.Response[T]` remains shared; response helper arguments follow the selected engine's native API.

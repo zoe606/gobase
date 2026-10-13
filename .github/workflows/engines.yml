@@ -118,6 +118,32 @@ jobs:
           TEST_ASYNQ_MAX_RETRY: '1'
           TEST_ASYNQ_JOB_TIMEOUT: '2s'
         run: go test -count=1 -v ./integration-test/... -run 'TestHTTP(Register|Login|GetCurrentUser|RefreshToken|Logout|Unauthorized|CRUD|GeneratedCRUD)V1'
+      - name: Verify native gRPC alongside HTTP
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        env:
+          GRPC_ENABLED: 'true'
+          GRPC_INSECURE: 'true'
+          GRPC_ADDRESS: 127.0.0.1:50051
+          JWT_SECRET_KEY: integration-test-secret-key
+        run: |
+          go build -o ./bin/grpc ./cmd/grpc
+          (
+            ./bin/grpc &
+            grpc_pid=$!
+            echo "$grpc_pid" > "$RUNNER_TEMP/grpc.pid"
+            status=0
+            wait "$grpc_pid" || status=$?
+            echo "$status" > "$RUNNER_TEMP/grpc.exit"
+          ) > "$RUNNER_TEMP/grpc.log" 2>&1 &
+          go run ./integration-test/grpccheck -insecure
+          kill -TERM "$(cat "$RUNNER_TEMP/grpc.pid")"
+          for attempt in $(seq 1 20); do
+            if [ -f "$RUNNER_TEMP/grpc.exit" ]; then break; fi
+            sleep 1
+          done
+          test "$(cat "$RUNNER_TEMP/grpc.exit")" = 0
+          curl -fsS http://localhost:8080/readyz
+          echo 'gRPC stopped independently; HTTP remains ready'
       - name: Verify native WebSocket and active shutdown
         working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
         run: |
@@ -145,6 +171,7 @@ jobs:
         run: |
           app_name="gobase-${{ matrix.engine }}-smoke-app"
           worker_name="gobase-${{ matrix.engine }}-smoke-worker"
+          grpc_name="gobase-${{ matrix.engine }}-smoke-grpc"
           upload_volume="gobase-${{ matrix.engine }}-smoke-uploads"
           client_pid=''
           cleanup() {
@@ -152,7 +179,8 @@ jobs:
             cat "$RUNNER_TEMP/websocket-docker.log" 2>/dev/null || true
             docker logs "$app_name" 2>&1 || true
             docker logs "$worker_name" 2>&1 || true
-            docker rm -f "$app_name" "$worker_name" > /dev/null 2>&1 || true
+            docker logs "$grpc_name" 2>&1 || true
+            docker rm -f "$app_name" "$worker_name" "$grpc_name" > /dev/null 2>&1 || true
             docker volume rm "$upload_volume" > /dev/null 2>&1 || true
           }
           trap cleanup EXIT
@@ -161,8 +189,10 @@ jobs:
           CGO_ENABLED=0 GOOS=linux go build -o "$RUNNER_TEMP/runtime-check" ./integration-test/runtimecheck
           docker build -f deployment/docker/Dockerfile --build-arg TARGET=app -t gobase-smoke:app .
           docker build -f deployment/docker/Dockerfile --build-arg TARGET=worker -t gobase-smoke:worker .
+          docker build -f deployment/docker/Dockerfile --build-arg TARGET=grpc -t gobase-smoke:grpc .
           test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:app)" = '65532:65532'
           test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:worker)" = '65532:65532'
+          test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:grpc)" = '65532:65532'
           docker volume create "$upload_volume"
           runtime_env=(--network host --mount "source=$upload_volume,target=/uploads" -e APP_ENV=development -e HTTP_PORT=18080 -e POSTGRES_HOST=localhost -e POSTGRES_DBNAME=test_db -e POSTGRES_SSLMODE=disable -e REDIS_HOST=localhost -e REDIS_DB=1 -e JWT_SECRET_KEY=integration-test-secret-key -e STORAGE_DRIVER=local -e STORAGE_LOCAL_PATH=/uploads -e WEBSOCKET_ENABLED=true -e WEBSOCKET_ALLOWED_ORIGINS=https://example.com)
           docker run -d --name "$app_name" "${runtime_env[@]}" gobase-smoke:app
@@ -174,6 +204,12 @@ jobs:
           test "$ready" = true
           curl -fsS http://localhost:18080/healthz
           curl -fsS http://localhost:18080/swagger/doc.json | jq -e '.paths["/widgets"].post.responses["201"]'
+          docker run -d --name "$grpc_name" --network host -e GRPC_ENABLED=true -e GRPC_INSECURE=true -e GRPC_ADDRESS=0.0.0.0:50051 -e JWT_SECRET_KEY=integration-test-secret-key gobase-smoke:grpc
+          go run ./integration-test/grpccheck -insecure -http-url=http://localhost:18080
+          docker stop --time 25 "$grpc_name"
+          test "$(docker inspect --format '{{.State.ExitCode}}' "$grpc_name")" = 0
+          curl -fsS http://localhost:18080/readyz
+          echo 'Docker gRPC stopped independently; HTTP remains ready'
           docker run -d --name "$worker_name" "${runtime_env[@]}" gobase-smoke:worker
           for container in "$app_name" "$worker_name"; do
             docker cp "$RUNNER_TEMP/runtime-check" "$container":/runtime-check
@@ -206,6 +242,10 @@ jobs:
       - name: Stop app
         if: always()
         run: |
+          if [ -f "$RUNNER_TEMP/grpc.pid" ] && [ ! -f "$RUNNER_TEMP/grpc.exit" ]; then
+            kill "$(cat "$RUNNER_TEMP/grpc.pid")" 2>/dev/null || true
+          fi
+          if [ -f "$RUNNER_TEMP/grpc.log" ]; then cat "$RUNNER_TEMP/grpc.log"; fi
           if [ -f "$RUNNER_TEMP/app.pid" ]; then
             kill "$(cat "$RUNNER_TEMP/app.pid")" 2>/dev/null || true
           fi
