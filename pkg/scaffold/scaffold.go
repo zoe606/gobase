@@ -257,7 +257,7 @@ func engineSourceFile(path string) bool {
 	if strings.HasSuffix(path, "_test.go") || path == "internal/handlers/http/middleware/idempotency_scope.go" {
 		return false
 	}
-	if strings.HasPrefix(path, "internal/handlers/http/middleware/") || path == "internal/handlers/http/router.go" || path == "pkg/response/helpers.go" || path == "pkg/httpserver/server.go" {
+	if strings.HasPrefix(path, "internal/handlers/http/middleware/") || path == "internal/handlers/http/router.go" || path == "internal/handlers/http/websocket.go" || path == "pkg/response/helpers.go" || path == "pkg/httpserver/server.go" {
 		return true
 	}
 	return strings.HasPrefix(path, "internal/handlers/http/v1/") && filepath.Dir(path) != "internal/handlers/http/v1"

@@ -1,0 +1,36 @@
+package httphandler
+
+import (
+	"context"
+	"net/http/httptest"
+	"strings"
+	"testing"
+	"time"
+
+	"github.com/stretchr/testify/require"
+
+	"go-boilerplate/config"
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/logger"
+	ws "go-boilerplate/pkg/websocket"
+)
+
+func websocketFixture(t *testing.T, cfg *config.Config, service jwt.Service) (url string, websocketServer *ws.Server, shutdownHTTP func()) {
+	t.Helper()
+	l := logger.New("error")
+	hub := ws.New(ws.Options{HandshakeTimeout: cfg.WebSocket.HandshakeTimeout, MaxMessageSize: cfg.WebSocket.MaxMessageSize, ReadTimeout: cfg.WebSocket.ReadTimeout, WriteTimeout: cfg.WebSocket.WriteTimeout, PingInterval: cfg.WebSocket.PingInterval, MaxConnections: cfg.WebSocket.MaxConnections}, l)
+	app := routing.New()
+	setupMiddleware(app, cfg, l, nil, nil, service)
+	setupOptionalFeatures(app, cfg)
+	SetupWebSocketRoutes(app, cfg.WebSocket, service, hub)
+	server := httptest.NewServer(app)
+	shutdown := func() {
+		ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+		defer cancel()
+		require.NoError(t, hub.Shutdown(ctx))
+		server.Close()
+	}
+	t.Cleanup(shutdown)
+	return strings.Replace(server.URL, "http", "ws", 1) + "/v1/ws", hub, shutdown
+}

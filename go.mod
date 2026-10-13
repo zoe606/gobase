@@ -16,13 +16,16 @@ require (
 	github.com/alicebob/miniredis/v2 v2.38.0
 	github.com/ansrivas/fiberprometheus/v2 v2.17.0
 	github.com/disintegration/imaging v1.6.2
+	github.com/fasthttp/websocket v1.5.12
 	github.com/go-playground/validator/v10 v10.30.1
 	github.com/goccy/go-json v0.10.6
+	github.com/gofiber/contrib/websocket v1.3.4
 	github.com/gofiber/fiber/v2 v2.52.15
 	github.com/gofiber/swagger v1.1.1
 	github.com/golang-jwt/jwt/v5 v5.3.1
 	github.com/golang-migrate/migrate/v4 v4.20.1
 	github.com/google/uuid v1.6.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/hibiken/asynq v0.26.0
 	github.com/minio/minio-go/v7 v7.0.99
 	github.com/redis/go-redis/v9 v9.21.0
@@ -225,6 +228,7 @@ require (
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
 	github.com/sashamelentyev/usestdlibvars v1.28.0 // indirect
+	github.com/savsgio/gotils v0.0.0-20240704082632-aef3928b8a38 // indirect
 	github.com/securego/gosec/v2 v2.22.2 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/sivchari/containedctx v1.0.3 // indirect

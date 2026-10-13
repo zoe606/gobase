@@ -13,7 +13,7 @@ The engine and profile are recorded in `.gobase.json` for code generation. Editi
 
 ## Included Functionality
 
-The application includes HTTP routes for register, login, refresh, logout, and the current user. It also includes article CRUD, profile management, media storage, translation, and background workers.
+The application includes HTTP routes for register, login, refresh, logout, and the current user. It also includes article CRUD, profile management, media storage, translation, background workers, and optional WebSocket support.
 
 Email verification and password reset have use cases and token persistence. Their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export are deferred template features. OpenTelemetry initializes tracing. The application bootstrap closes cache and rate limiter Redis clients after HTTP shutdown. Docker app and worker images run as UID and GID `65532`.
 
@@ -46,6 +46,8 @@ curl http://localhost:8080/readyz
 ```
 
 Swagger UI is available at `http://localhost:8080/swagger/`. Stop local Go processes with Ctrl+C. Stop the Docker services with `make docker-stop`.
+
+WebSocket is disabled by default. Enable it with `WEBSOCKET_ENABLED=true` and an explicit `WEBSOCKET_ALLOWED_ORIGINS` value. `GET /v1/ws` requires an existing JWT access token in the Authorization header and an allowed Origin. `cmd/ws-client` demonstrates notification and echo frames. Active connections close during HTTP shutdown. Browser authentication is a separate design because browser WebSocket APIs cannot set Authorization headers. See [WebSocket setup](docs/websocket.md) for native library versions, limits, and verification commands.
 
 `GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination uses `page` and `limit` with the existing defaults and normalization.
 
@@ -120,5 +122,6 @@ Integration tests create application records. Use a separate development databas
 
 - [Code patterns](docs/code-patterns.md)
 - [Deployment](docs/deployment.md)
+- [WebSocket setup](docs/websocket.md)
 - [Contributing](.github/CONTRIBUTING.md)
 - [License](LICENSE)

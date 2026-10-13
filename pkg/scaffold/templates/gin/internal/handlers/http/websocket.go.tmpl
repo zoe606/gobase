@@ -1,0 +1,32 @@
+package httphandler
+
+import (
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+	"github.com/gorilla/websocket"
+
+	"go-boilerplate/config"
+	"go-boilerplate/internal/handlers/http/routing"
+	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/response"
+	ws "go-boilerplate/pkg/websocket"
+)
+
+func SetupWebSocketRoutes(app *routing.Router, cfg config.WebSocket, service jwt.Service, server *ws.Server) {
+	if !cfg.Enabled { return }
+	upgrader := websocket.Upgrader{HandshakeTimeout: cfg.HandshakeTimeout, CheckOrigin: func(r *http.Request) bool { return cfg.AllowsOrigin(r.Header.Get("Origin")) }}
+	app.Handle(http.MethodGet, "/v1/ws", routing.HandlerFunc(func(c *gin.Context) {
+		w, r := c.Writer, c.Request
+		claims, err := websocketClaims(service, r.Header.Get("Authorization"))
+		if err != nil { response.Unauthorized(w, r, "Invalid WebSocket credentials"); return }
+		if !cfg.AllowsOrigin(r.Header.Get("Origin")) { response.Forbidden(w, r, "WebSocket origin is not allowed"); return }
+		if r.Method != http.MethodGet || !websocket.IsWebSocketUpgrade(r) || !websocketHeadersValid(r.Header.Get("Sec-WebSocket-Version"), r.Header.Get("Sec-WebSocket-Key")) { w.Header().Set("Sec-WebSocket-Version", "13"); response.Error(w, r, http.StatusUpgradeRequired, "UPGRADE_REQUIRED", "WebSocket upgrade required"); return }
+		session, ok := server.Reserve()
+		if !ok { response.Error(w, r, http.StatusServiceUnavailable, "UNAVAILABLE", "WebSocket connections unavailable"); return }
+		defer session.Release()
+		conn, err := upgrader.Upgrade(w, r, w.Header().Clone())
+		if err != nil { return }
+		session.Serve(conn, w.Header().Get("X-Request-ID"), claims.UserID, claims.ExpiresAt.Time)
+	}))
+}

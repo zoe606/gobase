@@ -36,7 +36,8 @@ type Server struct {
 	shutdownTimeout time.Duration
 	bodyLimit       int
 
-	logger logger.Interface
+	logger        logger.Interface
+	shutdownHooks []func(context.Context) error
 }
 
 // New -.
@@ -102,10 +103,17 @@ func (s *Server) Notify() <-chan error {
 // Shutdown -.
 func (s *Server) Shutdown() error {
 	var shutdownErrors []error
+	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
+	defer cancel()
+	for _, hook := range s.shutdownHooks {
+		if err := hook(ctx); err != nil {
+			shutdownErrors = append(shutdownErrors, err)
+		}
+	}
 
-	err := s.App.ShutdownWithTimeout(s.shutdownTimeout)
+	err := s.App.ShutdownWithContext(ctx)
 	if err != nil && !errors.Is(err, context.Canceled) {
-		s.logger.Error(err, "restapi server - Server - Shutdown - s.App.ShutdownWithTimeout")
+		s.logger.Error(err, "restapi server - Server - Shutdown - s.App.ShutdownWithContext")
 
 		shutdownErrors = append(shutdownErrors, err)
 	}

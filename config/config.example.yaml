@@ -56,6 +56,17 @@ asynq:
   max_retry: 3
   job_timeout: 5m
 
+# WebSocket (Full profile)
+websocket:
+  enabled: false
+  allowed_origins: ""
+  handshake_timeout: 5s
+  read_timeout: 60s
+  write_timeout: 10s
+  ping_interval: 25s
+  max_message_size: 65536
+  max_connections: 128
+
 # JWT Configuration
 jwt:
   secret_key: change-me-in-production

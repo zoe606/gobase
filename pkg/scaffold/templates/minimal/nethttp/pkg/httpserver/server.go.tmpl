@@ -20,6 +20,7 @@ type Server struct {
 	readTimeout, writeTimeout, shutdownTimeout time.Duration
 	bodyLimit int
 	logger logger.Interface
+	shutdownHooks []func(context.Context) error
 }
 
 func New(l logger.Interface, opts ...Option) *Server {
@@ -44,5 +45,10 @@ func (s *Server) Notify() <-chan error { return s.notify }
 func (s *Server) Shutdown() error {
 	ctx, cancel := context.WithTimeout(context.Background(), s.shutdownTimeout)
 	defer cancel()
-	return s.server.Shutdown(ctx)
+	var errs []error
+	for _, hook := range s.shutdownHooks {
+		if err := hook(ctx); err != nil { errs = append(errs, err) }
+	}
+	errs = append(errs, s.server.Shutdown(ctx))
+	return errors.Join(errs...)
 }

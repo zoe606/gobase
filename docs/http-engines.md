@@ -44,6 +44,22 @@ Standard HTTP middleware can wrap a Gin or stdlib router with `func(http.Handler
 
 When a handler panics before writing a response, recovery returns HTTP 500 with the shared `INTERNAL_ERROR` JSON envelope and request ID. Panic details remain in server logs. Recovery runs inside compression so gzip cannot commit HTTP 200 while the panic is being handled. Gin and stdlib cannot replace a response whose headers have already been sent.
 
+### Optional WebSocket in Full Projects
+
+Each engine has a native `GET /v1/ws` upgrade handler. Gin and stdlib use Gorilla WebSocket v1.5.3. Fiber v2 uses contrib/websocket v1.3.4 with fasthttp/websocket v1.5.12. Gin and stdlib do not acquire a Fiber runtime dependency. Shared `pkg/websocket` code owns frame messages, deadlines, connection reservations, and reader/writer cleanup. HTTP server shutdown invokes this registry before stopping ordinary requests because upgraded connections have a separate lifecycle.
+
+```mermaid
+flowchart LR
+    Client[Authenticated client] --> Upgrade[Selected engine upgrade handler]
+    Upgrade --> Session[Shared WebSocket session]
+    Session --> Reader[One reader]
+    Session --> Writer[One writer with bounded buffering]
+    Shutdown[HTTP shutdown hook] --> Registry[Connection registry]
+    Registry --> Session
+```
+
+The feature is disabled by default and omitted from Minimal output. HTTP middleware handles the handshake. Session recovery handles panics after the upgrade and sends a generic close reason. HTTP gzip skips enabled WebSocket upgrades. See [WebSocket setup](websocket.md) for authentication, explicit origins, frame contracts, browser limits, and activation.
+
 ### Minimal Profile
 
 `pkg/scaffold/minimal.go` copies an explicit file set and renders `pkg/scaffold/templates/minimal/common`, the selected engine directory, and `minimal/nethttp` for Gin or stdlib. The minimal server exposes `*gin.Engine`, `*http.ServeMux`, or `*fiber.App` directly. It has no routing adapter or full application layers. The generic `response.Response[T]` remains shared; response helper arguments follow the selected engine's native API.

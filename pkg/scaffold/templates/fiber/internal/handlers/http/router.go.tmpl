@@ -3,6 +3,7 @@ package httphandler
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/ansrivas/fiberprometheus/v2"
 	"github.com/gofiber/fiber/v2"
@@ -62,7 +63,7 @@ func setupMiddleware(app *fiber.App, cfg *config.Config, l logger.Interface, rat
 		MaxAge:           cfg.CORS.MaxAge,
 	}))
 	app.Use(helmet.New())
-	app.Use(compress.New(compress.Config{Level: compress.LevelDefault}))
+	app.Use(compress.New(compress.Config{Level: compress.LevelDefault, Next: func(c *fiber.Ctx) bool { return cfg.WebSocket.Enabled && strings.EqualFold(c.Get("Upgrade"), "websocket") }}))
 	app.Use(middleware.Recovery(l))
 	limiterCfg := limiter.Config{
 		Max:          cfg.RateLimit.Max,
