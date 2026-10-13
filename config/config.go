@@ -45,6 +45,7 @@ type (
 		CircuitBreaker    CircuitBreaker    `mapstructure:"circuit_breaker"`
 		Telemetry         Telemetry         `mapstructure:"telemetry"`
 		WebSocket         WebSocket         `mapstructure:"websocket"`
+		GRPC              GRPC              `mapstructure:"grpc"`
 	}
 
 	// App holds application-specific configuration.
@@ -325,6 +326,7 @@ func (c *Config) Validate() error {
 	}
 	errs = append(errs, c.Asynq.validationErrors()...)
 	errs = append(errs, c.WebSocket.validationErrors()...)
+	errs = append(errs, c.GRPC.validationErrors(c.App.IsProduction())...)
 
 	if len(errs) > 0 {
 		return fmt.Errorf("config validation failed: %s", strings.Join(errs, "; "))
@@ -363,6 +365,7 @@ func (c *Config) Warnings() []string {
 
 func setDefaults() {
 	setWebSocketDefaults()
+	setGRPCDefaults()
 	// App defaults
 	viper.SetDefault("app.name", "go-boilerplate")
 	viper.SetDefault("app.version", "1.0.0")

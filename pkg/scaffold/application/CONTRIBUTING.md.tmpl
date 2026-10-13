@@ -8,6 +8,8 @@ Follow the [README](../README.md) for local configuration and services. Change n
 
 Use the existing handler API and response helpers. Add focused tests for changed behavior. Run `make check-all` and `make build` before submitting a change. Run integration tests against a separate development database when the HTTP or persistence contract changes.
 
+Optional RPC handlers live in `internal/handlers/grpc`. Change `pkg/api/echo/v1/echo.proto` and run `make proto` when the RPC contract changes. Keep the gRPC process independent of the selected HTTP engine. See [gRPC setup](../docs/grpc.md) for credentials, generation tools, and wire tests.
+
 ## Generated Features
 
 `make gen-full` reads the engine from `.gobase.json`. `make wire` registers generated features with the dependency container and router. Run `make swag` after changing handlers or request and response schemas.

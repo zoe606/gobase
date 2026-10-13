@@ -26,6 +26,8 @@ The runnable checkout uses Fiber. Generated projects use independent endpoint te
 | Cross-engine HTTP behavior | `internal/handlers/http/engine_contract_test.go` |
 | WebSocket native upgrades and wire contracts | Selected engine's `websocket.go.tmpl`, `internal/handlers/http/websocket_contract_test.go` |
 | Shared WebSocket sessions and shutdown | `pkg/websocket`, `pkg/httpserver` |
+| Application RPC contract and generated Go code | `pkg/api/echo/v1`, `deployment/protobuf/generate.sh`, `make proto` |
+| Shared gRPC runtime, client transport, and native handler | `pkg/grpcserver`, `pkg/grpcclient`, `internal/handlers/grpc` |
 | Minimal service file set and dependencies | `pkg/scaffold/minimal.go` |
 | Minimal bootstrap, native routers, contracts, and documentation | `pkg/scaffold/templates/minimal` |
 
@@ -38,6 +40,8 @@ Generated applications omit template maintenance tools and historical plans. The
 For minimal-profile changes, also run `go run ./pkg/tools/verifyengines -profile=minimal -lint`. It verifies all three engines without infrastructure, including process startup, health, unsupported generation errors, and shutdown. Minimal Docker CI jobs have no database or Redis services. Keep `full` as the default and preserve legacy metadata without a profile.
 
 WebSocket wire tests run in all Full engine outputs. CI also verifies authenticated message exchange and active shutdown in native app processes and Docker. Keep handshake authentication, origin checks, and upgrades native to the selected engine. See [WebSocket setup](../docs/websocket.md) for activation and the standalone runtime check.
+
+Application gRPC uses one shared implementation. Real TCP/TLS contract tests run in each Full output. The verifier regenerates protobuf with pinned tools and requires identical bytes after changing the module path. CI runs a separate gRPC process and Docker container alongside each HTTP engine. Preserve the HTTP, Full, and Minimal defaults. See [gRPC setup](../docs/grpc.md) for commands and limits.
 
 ### Before You Code
 
