@@ -155,7 +155,65 @@ The initial workflow and local production configuration are verified within the 
 - Run the common workflow with candidate peer revisions before adopting them. Update the pinned revisions after verification.
 - Fix reusable foundation defects in gobase when found and adopt those fixes in affected applications.
 
-The [foundation capability plan](plans/foundation-capabilities.md) tracks the next work: Asynq failure and recovery, optional WebSocket, and optional application gRPC. The existing Commerce workflow remains regression coverage.
+The [foundation capability plan](plans/foundation-capabilities.md) records completed Asynq, WebSocket, and application gRPC work. The existing Commerce workflow remains regression coverage. The application gRPC follow-up is recorded below.
+
+## Application gRPC Interoperability
+
+Updated: October 13, 2026. Tracking: [#79](https://github.com/zoe606/gobase/issues/79).
+
+These checks use the three existing application repositories, separately from Phase 6.3's generated template fixtures. Each application selectively adopts the shared gRPC runtime from gobase `7ae56879be7d8737295172f1c694dde6436fb003`. Each owns its proto, generated Go code, optional server, and generated peer clients. HTTP business operations retain their existing protocol and behavior.
+
+| Application | Engine | Proposed revision | Merged revision | Local selective coverage |
+|-------------|--------|-------------------|-----------------|--------------------------|
+| Order | Gin | `79a18865486f68e7e3a7fd48e0c680c10387159a` | `31710fec02b5205b6d78656fea6d205884613db4` | 85.7% |
+| Inventory | stdlib | `a3f40c21432cccb9ffd27d9c1cdb7e5d36726bc0` | `c12c4acd09700eedcadfdf57bce1d40786b0e655` | 85.4% |
+| Billing | Fiber | `ac4d16d3ebda6944407466b2f834faa90a2078e2` | `2b586a43f623c0022bfaaa28d38ba14ebfe83851` | 87.0% |
+
+The application changes merged through [Order #8](https://github.com/zoe606/commerce-order/pull/8), [Inventory #7](https://github.com/zoe606/commerce-inventory/pull/7), and [Billing #7](https://github.com/zoe606/commerce-billing/pull/7).
+
+### Contract and Operation
+
+`commerce.probe.v1.ProbeService/Probe` accepts non-empty UTF-8 text up to 4096 bytes and at most two distinct configured peer names. A response contains the message, actual services visited, and the request ID. Order can call Inventory, which then calls Billing using Inventory's independently generated client. All six directed pairs and all three rotations of the three-service chain are tested.
+
+The separate `cmd/grpc` process uses the existing JWT service. It forwards the access token, request ID, and bounded context. Each configured peer connection verifies TLS. The fixture shares JWT trust between the RPC processes; service-specific production trust and permissions require an application decision. The runtime remains optional and disabled by default.
+
+`Echo` is a sample RPC name, not an HTTP framework. Gin, stdlib, and Fiber retain their native HTTP handlers. Application gRPC uses `google.golang.org/grpc`. Official `protoc`, `protoc-gen-go`, and `protoc-gen-go-grpc` generate messages, clients, and server interfaces. Application code implements the handlers.
+
+Each repository's `make proto` pins protoc v36.2, protoc-gen-go v1.36.11, and protoc-gen-go-grpc v1.6.2. The runner compares the three Probe contracts and requires unchanged regenerated output. Runtime versions are grpc-go v1.83.2 and protobuf-go v1.36.11. The source template's module is replaced by each application's own module through the generator import mapping.
+
+### Results and CI
+
+Local `make check-all COVERAGE_THRESHOLD=85` passed independently in each application with its migrated PostgreSQL fixture. Race tests, lint, vulnerability scans, and the unchanged coverage gate passed. Real TCP tests verify active deadline and cancellation propagation to a controlled peer. All three applications regenerate protobuf code without a diff.
+
+Both local native and non-root Docker process runs passed all 14 RPC scenarios and the ten existing HTTP scenarios. The RPC scenarios cover six directed pairs, three chain rotations, HTTP-issued JWTs, invalid input and credentials, verified TLS, canceled/expired client contexts, bounded failure after peer shutdown, restart recovery, rejection of forwarded credentials by a peer with different JWT trust, request correlation, and clean independent shutdown. Active deadline/cancellation propagation is verified by the controlled TCP tests, rather than by slowing normal application handlers.
+
+| Application or common check | PR CI | Post-merge CI |
+|-----------------------------|-------|---------------|
+| Inventory Quality | [38394262477](https://github.com/zoe606/commerce-inventory/actions/runs/38394262477), passed | [38395404273](https://github.com/zoe606/commerce-inventory/actions/runs/38395404273), passed |
+| Billing Quality | [38394476275](https://github.com/zoe606/commerce-billing/actions/runs/38394476275), passed | [38395499843](https://github.com/zoe606/commerce-billing/actions/runs/38395499843), passed |
+| Order Quality | [38395727478](https://github.com/zoe606/commerce-order/actions/runs/38395727478), passed | [38420737749](https://github.com/zoe606/commerce-order/actions/runs/38420737749), tracked in #79 |
+| Common native and Docker | [38395727490](https://github.com/zoe606/commerce-order/actions/runs/38395727490), both passed | [38420737754](https://github.com/zoe606/commerce-order/actions/runs/38420737754), tracked in #79 |
+
+The common PR jobs checked out Order's synthetic merge revision `b0bb91bd8b94d03ce829ec05497972d40b1431be`, Inventory `c12c4acd09700eedcadfdf57bce1d40786b0e655`, and Billing `2b586a43f623c0022bfaaa28d38ba14ebfe83851`. Both raw logs contain passing results for each RPC scenario and the existing HTTP workflow. The post-merge jobs use Order `31710fec02b5205b6d78656fea6d205884613db4` with the same peer pins. Issue #79 records the final inspection of those runs.
+
+### Reproduce and Limits
+
+Run from the Order repository with the recorded peer revisions checked out:
+
+```bash
+INVENTORY_PROJECT=/absolute/path/to/commerce-inventory \
+BILLING_PROJECT=/absolute/path/to/commerce-billing \
+bash scripts/commerce-grpc-e2e.sh
+
+COMMERCE_E2E_DOCKER=1 \
+INVENTORY_PROJECT=/absolute/path/to/commerce-inventory \
+BILLING_PROJECT=/absolute/path/to/commerce-billing \
+bash scripts/commerce-grpc-e2e.sh
+```
+
+Order owns the common runner and CI. Each peer retains its independent repository, module, database, deployment, and quality checks. Credentials and fixture certificates remain under ignored `.runtime` directories; CI uploads only logs and revision records. The new local worktrees are `.worktrees/commerce-order-grpc`, `.worktrees/commerce-inventory-grpc`, and `.worktrees/commerce-billing-grpc`.
+
+These results establish protobuf generation and actual RPC interoperability. Business workflows still use HTTP. A broker, monorepo, gateway, business streaming, production deployment, workload capacity, and a new release tag are outside this verification. Maintain the existing paths and choose further capabilities from concrete requirements.
 
 The items below are unverified Commerce operations and product capabilities outside the active plan. They are not boilerplate features or completion requirements for the current engine validation.
 

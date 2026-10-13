@@ -39,6 +39,8 @@ WebSocket work merged through [PR #77](https://github.com/zoe606/gobase/pull/77)
 
 Full projects also include optional `cmd/grpc` and `cmd/grpc-client`, one unary Echo RPC, shared JWT configuration, verified TLS, standard health checks, and bounded shutdown. The gRPC process and port are separate from the chosen HTTP engine. Both optional capabilities are disabled by default. See [gRPC setup](docs/grpc.md) and [#68](https://github.com/zoe606/gobase/issues/68) for configuration and verification. These updates follow v0.1.1; generate from the corresponding source revision to use them. Minimal startup remains free of required infrastructure.
 
+The independent Commerce mini-apps also use a technical Probe RPC to verify calls between Order (Gin), Inventory (stdlib), and Billing (Fiber). Their native and Docker checks exercise six directed pairs, three service chains, HTTP-issued JWTs, verified TLS, bounded peer errors, and recovery. Each repository generates its own protobuf code. See the [application verification report](docs/commerce-verification.md#application-grpc-interoperability) and [#79](https://github.com/zoe606/gobase/issues/79) for revisions and CI evidence.
+
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
 ## Create a Project
