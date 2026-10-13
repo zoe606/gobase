@@ -150,7 +150,9 @@ func (w *captureWriter) Write(data []byte) (int, error) {
 }
 func (w *captureWriter) Unwrap() http.ResponseWriter { return w.ResponseWriter }
 func (w *captureWriter) Hijack() (net.Conn, *bufio.ReadWriter, error) {
-	return http.NewResponseController(w.ResponseWriter).Hijack()
+	conn, rw, err := http.NewResponseController(w.ResponseWriter).Hijack()
+	if err == nil { w.status = http.StatusSwitchingProtocols }
+	return conn, rw, err
 }
 func (w *captureWriter) CloseNotify() <-chan bool { return closeNotify(w.ResponseWriter) }
 func (w *captureWriter) Flush()                   { _ = http.NewResponseController(w.ResponseWriter).Flush() }

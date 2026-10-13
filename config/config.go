@@ -44,6 +44,7 @@ type (
 		PasswordReset     PasswordReset     `mapstructure:"password_reset"`
 		CircuitBreaker    CircuitBreaker    `mapstructure:"circuit_breaker"`
 		Telemetry         Telemetry         `mapstructure:"telemetry"`
+		WebSocket         WebSocket         `mapstructure:"websocket"`
 	}
 
 	// App holds application-specific configuration.
@@ -323,6 +324,7 @@ func (c *Config) Validate() error {
 		errs = append(errs, "POSTGRES_DBNAME is required")
 	}
 	errs = append(errs, c.Asynq.validationErrors()...)
+	errs = append(errs, c.WebSocket.validationErrors()...)
 
 	if len(errs) > 0 {
 		return fmt.Errorf("config validation failed: %s", strings.Join(errs, "; "))
@@ -360,6 +362,7 @@ func (c *Config) Warnings() []string {
 }
 
 func setDefaults() {
+	setWebSocketDefaults()
 	// App defaults
 	viper.SetDefault("app.name", "go-boilerplate")
 	viper.SetDefault("app.version", "1.0.0")

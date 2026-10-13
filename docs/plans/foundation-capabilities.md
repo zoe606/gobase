@@ -2,7 +2,7 @@
 
 Updated: October 13, 2026.
 
-Status: Asynq implementation available; verification and merge evidence are tracked in #66. WebSocket and application gRPC remain planned.
+Status: Asynq is complete and merged through PR #70. Full-profile WebSocket implementation is available; verification and merge evidence are tracked in #67. Application gRPC remains planned.
 
 ## Purpose and Baseline
 
@@ -10,14 +10,14 @@ The standalone Order, Inventory, and Billing applications exist to test gobase's
 
 Phases 1 through 5 are complete. The current release is v0.1.1. Master revision `84685ebafbf12c26b49e0fb3fbcca13c72c566da` also includes the Zap v1.28.0 update. The [roadmap](../roadmap.md) records completed work. The [Commerce report](../commerce-verification.md) retains the existing verification results and their limits.
 
-The full profile already includes Asynq clients, email and image task handlers, and `cmd/worker`. Engine CI checks successful processing and worker shutdown. Application gRPC endpoints and WebSocket endpoints are not implemented. The existing gRPC dependency supports the OpenTelemetry trace exporter.
+The Full profile includes Asynq clients, email and image task handlers, and `cmd/worker`. Engine CI checks processing, failure recovery, and worker shutdown. Optional WebSocket is disabled by default and uses the existing JWT service. Application gRPC endpoints are not implemented. The existing gRPC dependency supports the OpenTelemetry trace exporter.
 
 ## Execution Order and Tracking
 
 | Slice | Outcome | Status | Tracking |
 |-------|---------|--------|----------|
-| 6.1 | Verify and harden existing Asynq processing | Implementation available; verification tracked in issue | [#66](https://github.com/zoe606/gobase/issues/66) |
-| 6.2 | Add optional WebSocket support with native engine integration | Planned; follows 6.1 | [#67](https://github.com/zoe606/gobase/issues/67) |
+| 6.1 | Verify and harden existing Asynq processing | Complete; PR #70 merged as `ab7a30d`, source and six engine/profile jobs passed after merge | [#66](https://github.com/zoe606/gobase/issues/66) |
+| 6.2 | Add optional WebSocket support with native engine integration | Full implementation available; verification tracked in issue | [#67](https://github.com/zoe606/gobase/issues/67) |
 | 6.3 | Add an optional application gRPC server and client example | Planned; follows 6.2 | [#68](https://github.com/zoe606/gobase/issues/68) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
@@ -44,7 +44,7 @@ Confirm that retry configuration matches actual task options. Fix only reproduce
 
 Completion requires reproducible failure and recovery checks, documented task and worker behavior, passing source quality checks, and passing generated-project CI. Exercise the HTTP-to-queue integration through Gin, stdlib, and Fiber. Shared worker behavior needs one implementation.
 
-The implementation applies producer retry and timeout settings, preserves request contexts, and archives malformed JSON without retry. `integration-test/asynq` provides real Redis checks with separate workers and controlled failures. HTTP tests inspect actual queued options, and existing Docker tests verify email and image processing. See [background tasks](../deployment.md#background-tasks) for commands, configuration, and limits. Issue #66 records verification separately from implementation availability.
+The implementation applies producer retry and timeout settings, preserves request contexts, and archives malformed JSON without retry. `integration-test/asynq` provides real Redis checks with separate workers and controlled failures. HTTP tests inspect actual queued options, and existing Docker tests verify email and image processing. See [background tasks](../deployment.md#background-tasks) for commands, configuration, and limits. Issue #66 records completed verification and the merged revision.
 
 ## 6.2 Optional WebSocket Support
 
@@ -63,6 +63,8 @@ Required scenarios:
 - Close active connections during application shutdown within the configured time budget.
 
 Completion requires the same wire-level scenarios against all three engines, race tests, Docker runtime checks, and generated application instructions. Document the supported profiles and library versions. Keep default minimal startup free of new required infrastructure.
+
+The user selected Full first with existing JWT authentication. The implementation adds native upgrades for all three engines and shared bounded sessions. [WebSocket setup](../websocket.md) defines activation, headers, message frames, limits, native library versions, and shutdown. `cmd/ws-client` is the client example. Wire tests use real TCP connections, and `integration-test/websocketcheck` checks the running application. Browser authentication, application broadcasts, and Minimal WebSocket support are outside this slice. Issue #67 records actual verification and merge evidence.
 
 ## 6.3 Optional Application gRPC
 

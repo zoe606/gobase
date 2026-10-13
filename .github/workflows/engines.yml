@@ -84,16 +84,24 @@ jobs:
           STORAGE_DRIVER: local
           STORAGE_LOCAL_PATH: /tmp/uploads
           STORAGE_LOCAL_URL: http://localhost:8080/uploads
+          WEBSOCKET_ENABLED: 'true'
+          WEBSOCKET_ALLOWED_ORIGINS: https://example.com
         run: |
           go build -o ./bin/app ./cmd/app
           mkdir -p /tmp/uploads
-          ./bin/app > "$RUNNER_TEMP/app.log" 2>&1 &
-          echo $! > "$RUNNER_TEMP/app.pid"
+          (
+            ./bin/app &
+            app_pid=$!
+            echo "$app_pid" > "$RUNNER_TEMP/app.pid"
+            status=0
+            wait "$app_pid" || status=$?
+            echo "$status" > "$RUNNER_TEMP/app.exit"
+          ) > "$RUNNER_TEMP/app.log" 2>&1 &
           for attempt in $(seq 1 30); do
             if curl -fsS http://localhost:8080/readyz > /dev/null; then
               exit 0
             fi
-            if ! kill -0 "$(cat "$RUNNER_TEMP/app.pid")" 2>/dev/null; then
+            if [ -f "$RUNNER_TEMP/app.pid" ] && ! kill -0 "$(cat "$RUNNER_TEMP/app.pid")" 2>/dev/null; then
               cat "$RUNNER_TEMP/app.log"
               exit 1
             fi
@@ -110,13 +118,38 @@ jobs:
           TEST_ASYNQ_MAX_RETRY: '1'
           TEST_ASYNQ_JOB_TIMEOUT: '2s'
         run: go test -count=1 -v ./integration-test/... -run 'TestHTTP(Register|Login|GetCurrentUser|RefreshToken|Logout|Unauthorized|CRUD|GeneratedCRUD)V1'
+      - name: Verify native WebSocket and active shutdown
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        run: |
+          go build -o "$RUNNER_TEMP/websocket-check" ./integration-test/websocketcheck
+          "$RUNNER_TEMP/websocket-check" -wait-shutdown > "$RUNNER_TEMP/websocket-native.log" 2>&1 &
+          client_pid=$!
+          trap 'kill "$client_pid" 2>/dev/null || true; cat "$RUNNER_TEMP/websocket-native.log"' EXIT
+          connected=false
+          for attempt in $(seq 1 10); do
+            if grep -q 'WebSocket connected' "$RUNNER_TEMP/websocket-native.log"; then connected=true; break; fi
+            kill -0 "$client_pid"
+            sleep 1
+          done
+          test "$connected" = true
+          kill -TERM "$(cat "$RUNNER_TEMP/app.pid")"
+          wait "$client_pid"
+          grep -q 'WebSocket shutdown verified' "$RUNNER_TEMP/websocket-native.log"
+          for attempt in $(seq 1 20); do
+            if [ -f "$RUNNER_TEMP/app.exit" ]; then break; fi
+            sleep 1
+          done
+          test "$(cat "$RUNNER_TEMP/app.exit")" = 0
       - name: Build and verify Docker app and worker
         working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
         run: |
           app_name="gobase-${{ matrix.engine }}-smoke-app"
           worker_name="gobase-${{ matrix.engine }}-smoke-worker"
           upload_volume="gobase-${{ matrix.engine }}-smoke-uploads"
+          client_pid=''
           cleanup() {
+            if [ -n "$client_pid" ]; then kill "$client_pid" 2>/dev/null || true; fi
+            cat "$RUNNER_TEMP/websocket-docker.log" 2>/dev/null || true
             docker logs "$app_name" 2>&1 || true
             docker logs "$worker_name" 2>&1 || true
             docker rm -f "$app_name" "$worker_name" > /dev/null 2>&1 || true
@@ -131,7 +164,7 @@ jobs:
           test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:app)" = '65532:65532'
           test "$(docker image inspect --format '{{.Config.User}}' gobase-smoke:worker)" = '65532:65532'
           docker volume create "$upload_volume"
-          runtime_env=(--network host --mount "source=$upload_volume,target=/uploads" -e APP_ENV=development -e HTTP_PORT=18080 -e POSTGRES_HOST=localhost -e POSTGRES_DBNAME=test_db -e POSTGRES_SSLMODE=disable -e REDIS_HOST=localhost -e REDIS_DB=1 -e JWT_SECRET_KEY=integration-test-secret-key -e STORAGE_DRIVER=local -e STORAGE_LOCAL_PATH=/uploads)
+          runtime_env=(--network host --mount "source=$upload_volume,target=/uploads" -e APP_ENV=development -e HTTP_PORT=18080 -e POSTGRES_HOST=localhost -e POSTGRES_DBNAME=test_db -e POSTGRES_SSLMODE=disable -e REDIS_HOST=localhost -e REDIS_DB=1 -e JWT_SECRET_KEY=integration-test-secret-key -e STORAGE_DRIVER=local -e STORAGE_LOCAL_PATH=/uploads -e WEBSOCKET_ENABLED=true -e WEBSOCKET_ALLOWED_ORIGINS=https://example.com)
           docker run -d --name "$app_name" "${runtime_env[@]}" gobase-smoke:app
           ready=false
           for attempt in $(seq 1 60); do
@@ -155,7 +188,19 @@ jobs:
             sleep 1
           done
           test "$processed" = true
+          "$RUNNER_TEMP/websocket-check" -url=http://localhost:18080 -wait-shutdown > "$RUNNER_TEMP/websocket-docker.log" 2>&1 &
+          client_pid=$!
+          connected=false
+          for attempt in $(seq 1 10); do
+            if grep -q 'WebSocket connected' "$RUNNER_TEMP/websocket-docker.log"; then connected=true; break; fi
+            kill -0 "$client_pid"
+            sleep 1
+          done
+          test "$connected" = true
           docker stop --time 25 "$app_name" "$worker_name"
+          wait "$client_pid"
+          client_pid=''
+          grep -q 'WebSocket shutdown verified' "$RUNNER_TEMP/websocket-docker.log"
           test "$(docker inspect --format '{{.State.ExitCode}}' "$app_name")" = 0
           test "$(docker inspect --format '{{.State.ExitCode}}' "$worker_name")" = 0
       - name: Stop app

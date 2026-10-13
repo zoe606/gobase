@@ -1,9 +1,14 @@
 package httpserver
 
 import (
+	"context"
 	"net"
 	"time"
 )
+
+func OnShutdown(hook func(context.Context) error) Option {
+	return func(s *Server) { s.shutdownHooks = append(s.shutdownHooks, hook) }
+}
 
 // Option -.
 type Option func(*Server)

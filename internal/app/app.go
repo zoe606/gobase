@@ -39,6 +39,7 @@ import (
 	"go-boilerplate/pkg/ratelimiter"
 	"go-boilerplate/pkg/telemetry"
 	"go-boilerplate/pkg/telemetry/gormtracing"
+	"go-boilerplate/pkg/websocket"
 )
 
 // repositories holds all repository instances.
@@ -313,16 +314,27 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 
 // initHTTPServer creates and starts HTTP server with routes.
 func initHTTPServer(cfg *config.Config, l *logger.Logger, uc *usecases, jwtService jwt.Service, pg *postgres.Postgres, appCache pkgcache.Cache, rateLimitStore ratelimiter.Storage) *httpserver.Server {
-	httpServer := httpserver.New(
-		l,
+	options := []httpserver.Option{
 		httpserver.Port(cfg.HTTP.Port),
 		httpserver.ReadTimeout(cfg.HTTP.Timeout),
 		httpserver.WriteTimeout(cfg.HTTP.Timeout),
 		httpserver.BodyLimit(cfg.HTTP.BodyLimit),
 		httpserver.ShutdownTimeout(cfg.HTTP.ShutdownTimeout),
-	)
+	}
+	var websocketServer *websocket.Server
+	if cfg.WebSocket.Enabled {
+		websocketServer = websocket.New(websocket.Options{
+			HandshakeTimeout: cfg.WebSocket.HandshakeTimeout,
+			MaxMessageSize:   cfg.WebSocket.MaxMessageSize, ReadTimeout: cfg.WebSocket.ReadTimeout,
+			WriteTimeout: cfg.WebSocket.WriteTimeout, PingInterval: cfg.WebSocket.PingInterval,
+			MaxConnections: cfg.WebSocket.MaxConnections,
+		}, l)
+		options = append(options, httpserver.OnShutdown(websocketServer.Shutdown))
+	}
+	httpServer := httpserver.New(l, options...)
 
 	httphandler.SetupRoutes(httpServer.App, cfg, uc.translation, uc.auth, uc.media, uc.profile, uc.article, jwtService, l, pg, rateLimitStore, appCache)
+	httphandler.SetupWebSocketRoutes(httpServer.App, cfg.WebSocket, jwtService, websocketServer)
 	httpServer.Start()
 
 	return httpServer

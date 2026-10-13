@@ -18,6 +18,7 @@ The following application features belong to the default `full` profile. The `mi
 - **Articles** — Full CRUD with draft/publish workflow, cover images, SEO slugs
 - **Translation** — Google Translate API integration with history
 - **Background Jobs** — Asynq workers for emails, image processing
+- **Optional WebSocket** — JWT handshake, native upgrades, bounded sessions, and active shutdown in Full projects
 - **Code Generation** — Scaffold all layers from a single migration file
 - **HTTP Engine Selection** — Create a project with Gin, standard `net/http`, or Fiber
 
@@ -31,7 +32,9 @@ Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pu
 
 Three standalone Commerce applications test the foundation: Order with Gin, Inventory with stdlib, and Billing with Fiber. Each has an independent repository, module, database, and native handlers. All ten HTTP workflow scenarios passed locally and in Ubuntu CI with native processes and Docker containers. The Linux workflow merged through [Order PR #6](https://github.com/zoe606/commerce-order/pull/6), and both modes passed after merge. Issues #60 and #56 are closed. See the [Commerce verification report](docs/commerce-verification.md) for revisions, commands, results, and limits. Further Commerce business features and monorepo generation are outside the active plan.
 
-The [capability plan](docs/plans/foundation-capabilities.md) starts with Asynq failure and recovery, then optional WebSocket support and an optional application gRPC server. The full profile applies retry and timeout settings when submitting email and image tasks. Real Redis tests cover retry, archive, worker restart, repeated execution, Redis failures, and active shutdown. See [background task behavior](docs/deployment.md#background-tasks) and [#66](https://github.com/zoe606/gobase/issues/66) for commands and verification. WebSocket endpoints and application gRPC endpoints remain planned. Minimal startup requires no Redis or worker.
+The [capability plan](docs/plans/foundation-capabilities.md) tracks Asynq failure and recovery, optional WebSocket support, and an optional application gRPC server. Asynq work merged through [PR #70](https://github.com/zoe606/gobase/pull/70), with passing source and six engine/profile jobs. See [background task behavior](docs/deployment.md#background-tasks) and [#66](https://github.com/zoe606/gobase/issues/66) for commands and verification.
+
+Full projects include optional `GET /v1/ws` with existing JWT access tokens, explicit allowed origins, echo and notification frames, connection limits, and graceful shutdown. It is disabled by default. See [WebSocket setup](docs/websocket.md) and [#67](https://github.com/zoe606/gobase/issues/67) for scope and verification. These capability updates follow v0.1.1; generate from the corresponding source revision to use them. Application gRPC remains planned under [#68](https://github.com/zoe606/gobase/issues/68). Minimal startup remains free of required infrastructure.
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
@@ -93,7 +96,7 @@ Once the app is running, Swagger UI is available at:
 http://localhost:8080/swagger/
 ```
 
-All endpoints, request/response schemas, and authentication requirements are documented there.
+HTTP endpoints, request/response schemas, and authentication requirements are documented there. The optional WebSocket handshake and frame contract are documented in [WebSocket setup](docs/websocket.md).
 
 `GET /v1/articles` accepts an omitted or empty `status`, or the exact values `draft` and `published`. Other values return HTTP 400 with `VALIDATION_ERROR` and field details. Malformed queries retain `INVALID_QUERY`. Pagination continues to use `page` and `limit` with the existing defaults and normalization.
 

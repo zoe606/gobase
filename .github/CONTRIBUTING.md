@@ -24,6 +24,8 @@ The runnable checkout uses Fiber. Generated projects use independent endpoint te
 | Shared application behavior | `internal/usecase`, `internal/dto`, `internal/entity`, `internal/repo`, `internal/worker` |
 | Generated application documentation | `pkg/scaffold/application` |
 | Cross-engine HTTP behavior | `internal/handlers/http/engine_contract_test.go` |
+| WebSocket native upgrades and wire contracts | Selected engine's `websocket.go.tmpl`, `internal/handlers/http/websocket_contract_test.go` |
+| Shared WebSocket sessions and shutdown | `pkg/websocket`, `pkg/httpserver` |
 | Minimal service file set and dependencies | `pkg/scaffold/minimal.go` |
 | Minimal bootstrap, native routers, contracts, and documentation | `pkg/scaffold/templates/minimal` |
 
@@ -34,6 +36,8 @@ Run `make check-all` in the checkout and `go run ./pkg/tools/verifyengines -lint
 Generated applications omit template maintenance tools and historical plans. Their README and contribution guide describe the selected engine and application commands.
 
 For minimal-profile changes, also run `go run ./pkg/tools/verifyengines -profile=minimal -lint`. It verifies all three engines without infrastructure, including process startup, health, unsupported generation errors, and shutdown. Minimal Docker CI jobs have no database or Redis services. Keep `full` as the default and preserve legacy metadata without a profile.
+
+WebSocket wire tests run in all Full engine outputs. CI also verifies authenticated message exchange and active shutdown in native app processes and Docker. Keep handshake authentication, origin checks, and upgrades native to the selected engine. See [WebSocket setup](../docs/websocket.md) for activation and the standalone runtime check.
 
 ### Before You Code
 
