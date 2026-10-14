@@ -2,7 +2,7 @@
 
 Updated: October 14, 2026.
 
-This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC verification are complete. The current release is v0.1.1. Asynq adoption is merged in the mini-apps with passing native/Docker PR checks; final post-merge evidence is tracked under #81.
+This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC verification are complete. Asynq and WebSocket adoption are merged in the mini-apps with passing native/Docker PR checks. Final post-merge evidence is tracked under #81 and #83. The current release is v0.1.1. Release readiness is the next bounded outcome.
 
 ## Current Baseline
 
@@ -29,6 +29,8 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | 6. Foundation capability validation | Asynq failure and recovery, optional WebSocket, and optional application gRPC | Complete through PRs #70, #77, and #78; issues #66, #67, and #68 closed with verification evidence |
 | Application gRPC follow-up | Calls between the three independent mini-apps using generated clients | Implemented and merged in Order #8, Inventory #7, and Billing #7; native/Docker evidence tracked in [#79](https://github.com/zoe606/gobase/issues/79) and the [report](commerce-verification.md#application-grpc-interoperability) |
 | Application Asynq follow-up | Normal workers and controlled failure/recovery in each mini-app | Merged through Order #9, Inventory #8, and Billing #8; native/Docker PR checks pass; final evidence in [#81](https://github.com/zoe606/gobase/issues/81) |
+| Application WebSocket follow-up | Actual HTTP processes and client examples for all three native engines | Merged through Order #10, Inventory #9, and Billing #9; thirty connection groups and existing regressions pass in native/Docker PR CI; final evidence in [#83](https://github.com/zoe606/gobase/issues/83) |
+| Capability release readiness | A verified release candidate with current source, generated-project, and application evidence | Next; scope in the [capability plan](plans/foundation-capabilities.md#after-phase-6); a new tag is separate work |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
@@ -263,7 +265,7 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
 
-Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The completed [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. [Asynq application verification #81](https://github.com/zoe606/gobase/issues/81) is implemented and merged in all three apps. WebSocket adoption in the mini-apps follows as a separate slice, then release readiness. Generated template fixtures and application verification are recorded separately.
+Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The completed [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. [Asynq application verification #81](https://github.com/zoe606/gobase/issues/81) and [WebSocket application verification #83](https://github.com/zoe606/gobase/issues/83) are implemented and merged in all three apps. Their common native/Docker checks retain HTTP and RPC regressions. Release readiness is the next bounded outcome. Generated template fixtures and application verification are recorded separately.
 
 Maintain the capability paths and application interoperability checks, and fix reproduced defects. Choose further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming are possible follow-ups. They are not automatic new phases. A new release tag has a separate readiness check. See the [capability plan](plans/foundation-capabilities.md#after-phase-6).
 

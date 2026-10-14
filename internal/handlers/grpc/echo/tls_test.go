@@ -12,12 +12,13 @@ import (
 	"net"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
+	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/credentials"
 	"google.golang.org/grpc/status"
 
 	echousecase "go-boilerplate/internal/usecase/echo"
@@ -53,19 +54,37 @@ func TestGRPCTLS(t *testing.T) {
 	response, err := echov1.NewEchoServiceClient(conn).Echo(authContext(t, svc), &echov1.EchoRequest{Message: "TLS"})
 	require.NoError(t, err)
 	require.Equal(t, "TLS", response.GetMessage())
-	for _, options := range []grpcclient.Options{
-		{Address: server.Address(), Insecure: true},
-		{Address: server.Address()},
-		{Address: strings.Replace(server.Address(), "127.0.0.1", "localhost", 1), CAFile: cfg.TLSCertFile},
+	for _, test := range []struct {
+		name    string
+		options grpcclient.Options
+	}{
+		{"plaintext", grpcclient.Options{Address: server.Address(), Insecure: true}},
+		{"untrusted CA", grpcclient.Options{Address: server.Address()}},
 	} {
-		client, err := grpcclient.New(options)
-		require.NoError(t, err)
-		ctx, cancel := context.WithTimeout(authContext(t, svc), time.Second)
-		_, err = echov1.NewEchoServiceClient(client).Echo(ctx, &echov1.EchoRequest{Message: "untrusted"})
-		cancel()
-		require.Equal(t, codes.Unavailable, status.Code(err))
-		require.NoError(t, client.Close())
+		t.Run(test.name, func(t *testing.T) {
+			client, err := grpcclient.New(test.options)
+			require.NoError(t, err)
+			t.Cleanup(func() { _ = client.Close() })
+			ctx, cancel := context.WithTimeout(authContext(t, svc), time.Second)
+			defer cancel()
+			_, err = echov1.NewEchoServiceClient(client).Echo(ctx, &echov1.EchoRequest{Message: "untrusted"})
+			require.Equal(t, codes.Unavailable, status.Code(err), "transport rejection: %v", err)
+		})
 	}
+	t.Run("wrong hostname", func(t *testing.T) {
+		transport, err := credentials.NewClientTLSFromFile(cfg.TLSCertFile, "")
+		require.NoError(t, err)
+		// Keep the TCP address fixed so this checks certificate identity without DNS or IPv6 retries.
+		client, err := grpc.NewClient(server.Address(), grpc.WithTransportCredentials(transport), grpc.WithAuthority("localhost"))
+		require.NoError(t, err)
+		t.Cleanup(func() { _ = client.Close() })
+		ctx, cancel := context.WithTimeout(authContext(t, svc), time.Second)
+		defer cancel()
+		_, err = echov1.NewEchoServiceClient(client).Echo(ctx, &echov1.EchoRequest{Message: "wrong hostname"})
+		require.Equal(t, codes.Unavailable, status.Code(err), "transport rejection: %v", err)
+		require.ErrorContains(t, err, "certificate")
+		require.ErrorContains(t, err, "localhost")
+	})
 }
 
 func TestGRPCTransportConfiguration(t *testing.T) {
