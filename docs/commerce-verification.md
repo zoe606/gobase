@@ -155,7 +155,7 @@ The initial workflow and local production configuration are verified within the 
 - Run the common workflow with candidate peer revisions before adopting them. Update the pinned revisions after verification.
 - Fix reusable foundation defects in gobase when found and adopt those fixes in affected applications.
 
-The [foundation capability plan](plans/foundation-capabilities.md) records completed Asynq, WebSocket, and application gRPC work. The existing Commerce workflow remains regression coverage. The application gRPC follow-up is recorded below.
+The [foundation capability plan](plans/foundation-capabilities.md) records completed Asynq, WebSocket, and application gRPC work in the template. The existing Commerce workflow remains regression coverage. Application gRPC and Asynq verification are recorded below.
 
 ## Application gRPC Interoperability
 
@@ -226,3 +226,63 @@ The items below are unverified Commerce operations and product capabilities outs
 - Verify credential rotation and database certificate identity. The local fixture uses `sslmode=require`, which encrypts transport but does not verify certificate identity.
 
 Issues [#60](https://github.com/zoe606/gobase/issues/60) and [#56](https://github.com/zoe606/gobase/issues/56) are closed. Later Commerce operations are separate work. [#55](https://github.com/zoe606/gobase/issues/55) is closed as not planned. The [execution plan](plans/commerce-execution.md) and [roadmap](roadmap.md) track maintenance and deferred work.
+
+## Application Asynq Verification
+
+Updated: October 14, 2026. Tracking: [#81](https://github.com/zoe606/gobase/issues/81).
+
+The three independent repositories adopt the existing task policy, context handling, worker configuration, and malformed-JSON behavior from gobase PR #70. The source files are taken from master `3dcb68d70a5495c1994eb2ab0add246a5045b031`. This adoption does not enable WebSocket or change Commerce HTTP business calls.
+
+### Contract and Test Processes
+
+Producer configuration applies `ASYNQ_MAX_RETRY` and `ASYNQ_JOB_TIMEOUT` to newly queued tasks. Existing tasks retain their recorded options. Welcome-email enqueue remains best effort. Image enqueue errors remain logged without failing a completed upload. Malformed JSON is archived without retry. Worker errors report each task's actual retry limit.
+
+Order owns `scripts/commerce-asynq-e2e.sh`. Each repository builds and runs its normal `cmd/worker` against its own migrated PostgreSQL database and a separate Redis database. All three normal workers process retained technical email tasks with the noop sender. Order's existing customer registration route verifies pending task metadata with two retries and a three-second timeout before a normal worker consumes its welcome email. Inventory and Billing keep customer registration routes disabled.
+
+The PostgreSQL fixture health check uses TCP. Its temporary initialization server accepts only Unix-socket connections, so a socket probe can pass before the three application databases are ready. A fresh isolated fixture confirmed TCP health passes after initialization and all three databases exist before migrations begin.
+
+Each application also compiles its own worker constructor, email handler, and Asynq wrapper into a separate test process. A test-only sender injects temporary failures, permanent failures, delays, and a crash after an effect is stored. Its Redis result record provides the observable idempotent effect. Normal application routes expose no failure controls.
+
+### Local Results
+
+Local native and non-root Docker runs passed five controlled-worker groups in each repository: retry/archive, pending/repeated execution, active kill recovery, timeout/active shutdown, and Redis interruption/recovery. The suites verify exact attempt and retry counts, one logical effect after repeated execution, malformed JSON archived without retry, bounded explicit enqueue errors, restart, and clean SIGTERM. Active kill recovery took about 61 seconds while the lease expired.
+
+Each mode also passed the three normal-worker cases and Order's HTTP producer case. The common runner retains all ten HTTP and fourteen gRPC regression cases, which passed in both modes. Docker worker images and fixture processes run as UID/GID `65532`. Normal workers use their standard shutdown budget; controlled fixtures use shorter retry and shutdown intervals.
+
+`make check-all COVERAGE_THRESHOLD=85` passed in each app with the migrated PostgreSQL fixture. Local selective coverage is Order 85.6%, Inventory 85.3%, and Billing 86.9%. Race tests, lint, vulnerability scans, workflow lint, and shell syntax checks passed. The coverage threshold remains 85%.
+
+| Application | Engine | Proposed revision | Merged revision | Local selective coverage |
+|-------------|--------|-------------------|-----------------|--------------------------|
+| Order | Gin | `c4b10b38a6b743ed78e8f11551ed2cfb145e8c7b` | `a0f60e9acf22140fd60f9578e4d515eb641a54d5` | 85.6% |
+| Inventory | stdlib | `9782d94105d781b93a7134178901a80b60216d6a` | `f2551248b1f0da75f776ba85ba850a2068e82574` | 85.3% |
+| Billing | Fiber | `89756b939925f147e3e576f9e1d6bbeee0f83269` | `00c314962377d36aa343dbc0e5947bd1c80f66fa` | 86.9% |
+
+Order [PR #9](https://github.com/zoe606/commerce-order/pull/9), Inventory [PR #8](https://github.com/zoe606/commerce-inventory/pull/8), and Billing [PR #8](https://github.com/zoe606/commerce-billing/pull/8) are merged. Their PR and merged trees match. Order pins the recorded merged peer revisions.
+
+| Application or common check | PR CI | Post-merge CI |
+|-----------------------------|-------|---------------|
+| Inventory Quality | [38428950919](https://github.com/zoe606/commerce-inventory/actions/runs/38428950919), passed | [38429680173](https://github.com/zoe606/commerce-inventory/actions/runs/38429680173), passed |
+| Billing Quality | [38429025299](https://github.com/zoe606/commerce-billing/actions/runs/38429025299), passed | [38429727274](https://github.com/zoe606/commerce-billing/actions/runs/38429727274), passed |
+| Order Quality | [38430570253](https://github.com/zoe606/commerce-order/actions/runs/38430570253), passed | [38507221124](https://github.com/zoe606/commerce-order/actions/runs/38507221124), final result in #81 |
+| Common native and Docker | [38430570404](https://github.com/zoe606/commerce-order/actions/runs/38430570404), both passed | [38507221012](https://github.com/zoe606/commerce-order/actions/runs/38507221012), final results in #81 |
+
+Both common PR artifacts record Order's synthetic merge revision `9f51c2492839b4b6892509dfac464ab1b15db546` and the two merged peer revisions. The Order tree matches the proposed head and the main merge commit. Each raw log contains all fifteen controlled-worker groups, four normal-worker/HTTP producer cases, ten HTTP cases, and fourteen gRPC cases. Each mode uploads 45 files containing only logs and revision records. Issue #81 records final inspection of post-merge runs and source documentation checks.
+
+### Reproduce and Limits
+
+Run from Order with separate peer checkouts:
+
+```bash
+INVENTORY_PROJECT=/absolute/path/to/commerce-inventory \
+BILLING_PROJECT=/absolute/path/to/commerce-billing \
+bash scripts/commerce-asynq-e2e.sh
+
+COMMERCE_E2E_DOCKER=1 \
+INVENTORY_PROJECT=/absolute/path/to/commerce-inventory \
+BILLING_PROJECT=/absolute/path/to/commerce-billing \
+bash scripts/commerce-asynq-e2e.sh
+```
+
+Each repo documents standalone Redis checks in `docs/asynq-verification.md`. The common runner and CI keep logs under Order's ignored `.runtime` directory. CI retains only logs and exact application revisions. It does not upload environment files, certificates, or private keys. Fixture cleanup deletes only its own queues and result keys. Database volumes are retained.
+
+Normal-worker checks use a noop sender. Controlled worker checks verify fixture idempotency, not external email delivery or exactly-once execution. Generated-template HTTP and image tests remain separate evidence. No new Commerce business feature, shared broker, production deployment, capacity measurement, WebSocket adoption, or release tag is part of this slice. WebSocket verification through the mini-apps and release readiness follow separately.
