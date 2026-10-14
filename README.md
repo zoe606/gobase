@@ -41,6 +41,8 @@ Full projects also include optional `cmd/grpc` and `cmd/grpc-client`, one unary 
 
 The independent Commerce mini-apps also use a technical Probe RPC to verify calls between Order (Gin), Inventory (stdlib), and Billing (Fiber). Their native and Docker checks exercise six directed pairs, three service chains, HTTP-issued JWTs, verified TLS, bounded peer errors, and recovery. Each repository generates its own protobuf code. See the [application verification report](docs/commerce-verification.md#application-grpc-interoperability) and [#79](https://github.com/zoe606/gobase/issues/79) for revisions and CI evidence.
 
+The [Asynq application follow-up](https://github.com/zoe606/gobase/issues/81) verifies normal workers and controlled task failures in those same independent repositories. The [capability plan](docs/plans/foundation-capabilities.md) records the scope and later WebSocket and release verification.
+
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
 ## Create a Project
