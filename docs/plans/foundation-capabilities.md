@@ -2,7 +2,7 @@
 
 Updated: October 14, 2026.
 
-Status: Phase 6 and application gRPC verification are complete. Application Asynq changes are merged in all three mini-apps with passing native/Docker PR checks. Final post-merge verification is recorded under #81.
+Status: Phase 6, application gRPC, and application Asynq verification are complete. WebSocket adoption is merged in all three mini-apps with passing native/Docker PR checks. Final post-merge verification is recorded under #83.
 
 ## Purpose and Baseline
 
@@ -21,6 +21,7 @@ The Full profile includes Asynq clients, email and image task handlers, and `cmd
 | 6.3 | Add an optional application gRPC server and client example | Complete; PR #78 merged as `7ae5687`, with seven checks passing before and after merge | [#68](https://github.com/zoe606/gobase/issues/68) |
 | Follow-up | Verify application-to-application RPC calls | Implemented and merged through Order #8, Inventory #7, and Billing #7; native/Docker checks pass; final evidence in issue | [#79](https://github.com/zoe606/gobase/issues/79) |
 | Follow-up | Verify Asynq through the three application repositories | Merged through Order #9, Inventory #8, and Billing #8; native/Docker PR checks pass; final post-merge evidence in issue | [#81](https://github.com/zoe606/gobase/issues/81) |
+| Follow-up | Verify WebSocket through the three application repositories | Merged through Order #10, Inventory #9, and Billing #9; thirty WebSocket groups and existing regressions pass in native/Docker PR CI; final post-merge evidence in issue | [#83](https://github.com/zoe606/gobase/issues/83) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
 
@@ -90,7 +91,13 @@ The implementation follows the Full profile used in 6.2. [gRPC setup](../grpc.md
 
 The Asynq follow-up is implemented and merged in all three mini-apps. Each app compiles its own worker implementation. Order owns the common native/Docker runner. The normal `cmd/worker` processes email tasks with a noop sender in all three apps. Order's existing registration route verifies the HTTP producer policy. Inventory and Billing do not expose customer registration routes. Controlled sender failures use test-only worker processes and real Redis. Both modes passed retry exhaustion, timeout, pending restart, active crash recovery, SIGTERM, and Redis recovery. The [Asynq application report](../commerce-verification.md#application-asynq-verification) records commands, revisions, and limits. Issue #81 records final CI inspection. Fixture idempotency does not prove real email delivery.
 
-WebSocket verification through the mini-apps and release readiness follow Asynq as separate slices. No WebSocket adoption or new tag is part of #81.
+The WebSocket follow-up is implemented and merged in all three mini-apps. It reuses `/v1/ws`, the existing JWT service, and native engine upgrades. Activation remains explicit. Order owns the common runner. Actual processes pass header authentication, explicit origins, frame validation, deadlines, ping/pong, capacity, slow clients, reconnect, and SIGTERM with close code 1001. Each client example connects to its running app. The fixture obtains a token through Order's registration route and shares JWT trust for peer calls. Inventory and Billing keep customer registration disabled. The [application WebSocket report](../commerce-verification.md#application-websocket-verification) records revisions, commands, CI evidence, and limits. Issue #83 records final post-merge inspection. Browser authentication and business broadcasts remain outside this slice.
+
+Release readiness follows WebSocket as separate work. No release tag is part of #83. The next bounded outcome is a verified release candidate:
+
+- Record the source revision and review dependency, Go version, and capability documentation against it.
+- Generate Full and Minimal projects for all three engines from that revision. Verify quick start, code generation, default startup, and the documented optional worker, WebSocket, and gRPC commands with the existing checks.
+- Record the six engine/profile results and the application regressions. Update release notes and select a version before creating a tag in that separate release task.
 
 The approved RPC interoperability follow-up is implemented in the existing mini-apps. They adopt the shared runtime from revision `7ae56879be7d8737295172f1c694dde6436fb003`. Each repository owns its proto, generated code, and optional server. Order owns the common runner. Native and Docker checks verify all six directed pairs, three three-service chains, TLS, JWT, bounded failures, and recovery. Revisions, reproducible commands, and CI evidence are recorded in #79 and the [Commerce report](../commerce-verification.md#application-grpc-interoperability). The technical Probe RPC does not add business workflows.
 

@@ -1,8 +1,8 @@
 # Commerce Verification
 
-Updated: October 12, 2026.
+Updated: October 14, 2026.
 
-## Scope and Revisions
+## Initial Scope and Revisions
 
 The initial Commerce workflow is implemented in three independent private repositories. Each owns its module, native HTTP handlers, migrations, data, tests, configuration, Dockerfile, and CI. The common test fixture belongs to Order. There is no shared Go workspace.
 
@@ -286,3 +286,74 @@ bash scripts/commerce-asynq-e2e.sh
 Each repo documents standalone Redis checks in `docs/asynq-verification.md`. The common runner and CI keep logs under Order's ignored `.runtime` directory. CI retains only logs and exact application revisions. It does not upload environment files, certificates, or private keys. Fixture cleanup deletes only its own queues and result keys. Database volumes are retained.
 
 Normal-worker checks use a noop sender. Controlled worker checks verify fixture idempotency, not external email delivery or exactly-once execution. Generated-template HTTP and image tests remain separate evidence. No new Commerce business feature, shared broker, production deployment, capacity measurement, WebSocket adoption, or release tag is part of this slice. WebSocket verification through the mini-apps and release readiness follow separately.
+
+## Application WebSocket Verification
+
+Updated: October 14, 2026. Tracking: [#83](https://github.com/zoe606/gobase/issues/83).
+
+The three independent apps adopt the Full-profile WebSocket capability from gobase master `7f70b37eb52c2b111eeee69238e6c16ceb2c752f`. Each app owns its configuration, native upgrade handler, shared bounded session code, shutdown hooks, and `cmd/ws-client`. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. The feature remains disabled by default.
+
+### Contract and Actual Processes
+
+The common runner starts each normal `cmd/app` with its migrated PostgreSQL database and Redis fixture. It obtains an access token through Order's existing HTTP registration route. Shared fixture JWT trust allows that token to authenticate with the peers. Inventory and Billing keep customer registration routes disabled. Each included Go client connects to the actual application process.
+
+The endpoint is `GET /v1/ws`. The handshake requires an access token in the Authorization header and an explicit allowed Origin. The server sends a connected notification and accepts text echo messages. Frames use the existing WebSocket contract; rejected handshakes retain the HTTP JSON envelope. The server owns the request ID.
+
+Each engine passes ten actual-process groups in native and non-root Docker modes:
+
+| Group | Verified behavior |
+|-------|-------------------|
+| Disabled default | The route returns 404 before activation |
+| Credentials, origins, and upgrade | Missing, invalid, expired, refresh, and wrong-key tokens, URL tokens, missing or denied origins, and invalid upgrades are rejected |
+| Client example | Each app's built Go client receives the notification and echo |
+| Notification and echo | Frames retain application data and the server request ID; frame compression is absent |
+| Invalid frames and size | Binary, malformed JSON, unsupported types, and oversized frames close with 1003, 1007, 1008, and 1009 |
+| Ping/pong and timeout | Pongs preserve the connection; missing pongs end it within the read budget |
+| Token expiry | An active connection ends when its access token expires |
+| Capacity and reconnect | A full process rejects another connection; disconnects restore capacity |
+| Slow client | Actual transport backpressure closes a non-reading client and restores capacity before the longer read timeout |
+| SIGTERM and restart | Shutdown sends close code 1001 within the HTTP budget; restart accepts a new connection |
+
+Short fixture deadlines make timeout behavior observable. Upgraded sessions remain usable after the short HTTP request timeout. Normal configuration defaults remain unchanged. Docker apps run as UID/GID `65532`; the Go clients run on the host.
+
+### Revisions and Verification
+
+| Application | Proposed revision | Merged revision | Local selective coverage |
+|-------------|-------------------|-----------------|--------------------------|
+| Order | `b2c1e08e03d73afdb676bc972ee1ef018e87bf3c` | `d44d190dd757bf7268dd68a802b92adf8f121031` | 86.0% |
+| Inventory | `6091687f924715561690e5e8ec419b058dbbfa0a` | `a748ba125155151aef88018059401636320671bc` | 85.7% |
+| Billing | `4fbdf175492e92e99bca23cd788cd8b15f47002d` | `264e746944ad8c20828ae77b2c8fb5ee0e39c203` | 87.4% |
+
+Order [PR #10](https://github.com/zoe606/commerce-order/pull/10), Inventory [PR #9](https://github.com/zoe606/commerce-inventory/pull/9), and Billing [PR #9](https://github.com/zoe606/commerce-billing/pull/9) are merged. Each merged tree matches the reviewed PR head. Order pins the recorded merged peer revisions.
+
+Local native and Docker connections pass all thirty WebSocket groups. The common checks retain the fifteen controlled Asynq groups, four normal-worker/HTTP producer cases, ten HTTP cases, and fourteen gRPC cases. The final Docker runner passes all 73 groups. App `make check-all COVERAGE_THRESHOLD=85` passes with the migrated PostgreSQL fixture. Lint, race tests, vulnerability scans, shell syntax, and workflow lint pass. The coverage gate remains 85%.
+
+The TLS hostname rejection test now connects to a fixed TCP address with an explicit wrong authority. This isolates certificate identity from localhost DNS and IPv6 retries. It checks both `Unavailable` and the certificate error. Twenty repeated source race-test runs pass. Application transport configuration is unchanged.
+
+| Check | PR CI | Post-merge CI |
+|-------|-------|---------------|
+| Inventory Quality | [38541326058](https://github.com/zoe606/commerce-inventory/actions/runs/38541326058) | [38542292638](https://github.com/zoe606/commerce-inventory/actions/runs/38542292638) |
+| Billing Quality | [38541596250](https://github.com/zoe606/commerce-billing/actions/runs/38541596250) | [38542751008](https://github.com/zoe606/commerce-billing/actions/runs/38542751008) |
+| Order Quality | [38578900689](https://github.com/zoe606/commerce-order/actions/runs/38578900689) | [38580411960](https://github.com/zoe606/commerce-order/actions/runs/38580411960) |
+| Common native and Docker | [38578900659](https://github.com/zoe606/commerce-order/actions/runs/38578900659) | [38580411740](https://github.com/zoe606/commerce-order/actions/runs/38580411740) |
+
+Both common PR jobs pass all 73 groups. Each artifact contains 51 files with only logs and exact application revisions. Their Order checkout is the synthetic merge revision `a7f7a4a329a8623134393579bbe31690257d9a6a`; its tree matches the PR head and main merge. Issue #83 records inspection of the post-merge runs and the source Quality and six engine/profile checks.
+
+### Reproduce and Limits
+
+Run from Order with the recorded peer revisions:
+
+```bash
+INVENTORY_PROJECT=/absolute/path/to/commerce-inventory \
+BILLING_PROJECT=/absolute/path/to/commerce-billing \
+bash scripts/commerce-websocket-e2e.sh
+
+COMMERCE_E2E_DOCKER=1 \
+INVENTORY_PROJECT=/absolute/path/to/commerce-inventory \
+BILLING_PROJECT=/absolute/path/to/commerce-billing \
+bash scripts/commerce-websocket-e2e.sh
+```
+
+Each app documents activation, settings, frame behavior, the native library versions, and the client command in `docs/websocket.md`. Temporary credentials and Docker environment files remain under ignored `.runtime` directories. CI uploads logs and revision records.
+
+These checks verify header-authenticated technical echo and connection lifecycle. They do not establish browser authentication, business broadcasts, cross-service permission policy, production TLS termination, or workload capacity. Browser clients need a separate authentication design. External deployment requires verified `wss://`. No new Commerce business flow, broker, monorepo, or release tag is included. Release readiness follows as separate work.
