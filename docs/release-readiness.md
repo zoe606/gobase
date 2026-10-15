@@ -179,3 +179,87 @@ This patch includes the panic recovery fix from [PR #64](https://github.com/zoe6
 Engine selection, full and minimal creation commands, native handler APIs, and dependency versions retain the v0.1.0 baseline. Generated applications own their code and need explicit adoption of the relevant middleware and router changes. The three Commerce applications have adopted and verified the fix. See the [Commerce report](commerce-verification.md#panic-recovery-follow-up) for their revisions and CI results.
 
 All seven source checks passed on the merged fix revision `339ad3c777afe3197831b063c57c92be109fbe86`: [Quality](https://github.com/zoe606/gobase/actions/runs/38202661062) and all six [engine jobs](https://github.com/zoe606/gobase/actions/runs/38202661056). These results precede the release documentation update. The release tag must identify a master revision whose Quality and six full/minimal engine jobs passed. Release notes record that exact commit and its CI runs.
+
+## v0.2.0 Capability Release Candidate
+
+Preparation date: October 15, 2026. Tracking: [#85](https://github.com/zoe606/gobase/issues/85).
+
+The candidate baseline is master `b88a84025d0c0ea93e65098a76630b4630a45628`. The latest published release is v0.1.1. v0.2.0 adds optional Full-profile capabilities and hardens existing task processing. Public tag and release publication follow candidate verification. The final candidate revision and readiness PR checks are recorded in #85.
+
+### Dependency and Compatibility Baseline
+
+| Component | Recorded pin |
+|-----------|--------------|
+| Go | 1.27.2; also used by CI and Docker builders |
+| Gin / Fiber | v1.12.0 / v2.52.15 |
+| stdlib router | `net/http` from Go 1.27.2 |
+| Asynq / go-redis | v0.26.0 / v9.21.0 |
+| Gorilla / Fiber WebSocket / fasthttp WebSocket | v1.5.3 / v1.3.4 / v1.5.12 |
+| grpc-go / protobuf-go | v1.83.2 / v1.36.11 |
+| protoc / protoc-gen-go / protoc-gen-go-grpc | v36.2 / v1.36.11 / v1.6.2 |
+| Zap / migrate / x/net | v1.28.0 / v4.20.1 / v0.60.0 |
+
+Go 1.27.2 is listed as stable in the [official downloads](https://go.dev/dl/). Runtime pins are taken from the recorded source and generated modules. This readiness slice keeps those pins. The generated migration CLI instructions and manual Integration workflow now use the existing migrate v4.20.1 module version.
+
+Gin and Full remain creation defaults. Each generated project contains its selected native engine. The source checkout retains Fiber. Existing Full and Minimal creation commands and successful HTTP contracts remain supported. WebSocket and application gRPC remain disabled by default. Minimal output omits these authenticated capabilities and starts without infrastructure. Generated applications own their code; template updates require explicit adoption.
+
+### Fresh Local Generation and Commands
+
+Environment: Go 1.27.2 and golangci-lint 2.14.0 on macOS arm64. Full quick starts use PostgreSQL 17 and Redis 7 containers. Fixture port overrides are PostgreSQL 55460, Redis 56390, HTTP 58080, and gRPC 55051 because default ports are already used locally. Go commands receive exported variables, as documented. Each Full fixture has its own Compose project and volumes.
+
+| Check | Full Gin | Full stdlib | Full Fiber | Minimal Gin | Minimal stdlib | Minimal Fiber |
+|-------|----------|-------------|------------|-------------|----------------|---------------|
+| Fresh generation, module verification, build, race tests, and lint | Passed | Passed | Passed | Passed | Passed | Passed |
+| Dependency isolation and reachable vulnerability scan | Passed; 0 | Passed; 0 | Passed; 0 | Passed; 0 | Passed; 0 | Passed; 0 |
+| CRUD generation, wiring, and Swagger regeneration | Passed | Passed | Passed | Omitted | Omitted | Omitted |
+| `make init` and generated README `make run` | Passed | Passed | Passed | Passed | Passed | Passed |
+| Health, readiness, and disabled WebSocket default | Passed | Passed | Passed | Passed | Passed | Passed |
+| `make run-worker` and actual welcome-task processing | Passed; noop sender | Passed; noop sender | Passed; noop sender | Omitted | Omitted | Omitted |
+| `make proto` reproduces checked-in code | Passed | Passed | Passed | Omitted | Omitted | Omitted |
+| Disabled gRPC rejection, explicit `make run-grpc`, health, and HTTP-issued JWT calls | Passed | Passed | Passed | Omitted | Omitted | Omitted |
+| Included gRPC and WebSocket client commands | Passed | Passed | Passed | Omitted | Omitted | Omitted |
+| Persistence generation and wiring are rejected | Supported | Supported | Supported | Passed | Passed | Passed |
+
+The native quick starts use the documented Go commands and Ctrl+C process-group shutdown. Compiled-process SIGTERM, active WebSocket close 1001, bounded worker shutdown, and non-root Docker checks are verified by the engine and application workflows. Welcome-task checks use the existing noop sender; they establish processing, not delivery to a mail provider.
+
+Repeat generation with a new output directory for each engine/profile pair:
+
+```bash
+go run ./pkg/tools/verifyengines -engine=gin -profile=full -lint -output=/tmp/gobase-v020-full
+go run ./pkg/tools/verifyengines -engine=gin -profile=minimal -lint -output=/tmp/gobase-v020-minimal
+```
+
+Repeat with `stdlib` and `fiber`, then run `go tool govulncheck ./...` in each output. Use the template README for `make init`. Follow each generated README for configuration, infrastructure, app, and worker commands. Full projects also document optional WebSocket and gRPC activation and clients. No external provider is required for these technical checks.
+
+### Existing Exact-Revision CI and Application Evidence
+
+All seven checks passed on baseline `b88a840`: [Quality 38584080948](https://github.com/zoe606/gobase/actions/runs/38584080948) and all six jobs in [Engines 38584081101](https://github.com/zoe606/gobase/actions/runs/38584081101). Full jobs include native and Linux amd64 Docker HTTP, worker, WebSocket, and gRPC checks. Minimal jobs include non-root Docker startup without infrastructure. A Go proxy download error required a failed-job rerun; the final results pass at the same source revision.
+
+| Mini-app | Engine | Verified merged revision |
+|----------|--------|--------------------------|
+| Order | Gin | `d44d190dd757bf7268dd68a802b92adf8f121031` |
+| Inventory | stdlib | `a748ba125155151aef88018059401636320671bc` |
+| Billing | Fiber | `264e746944ad8c20828ae77b2c8fb5ee0e39c203` |
+
+The common [post-merge application workflow 38580411740](https://github.com/zoe606/commerce-order/actions/runs/38580411740) passes 73 groups in each native and non-root Docker mode: 30 WebSocket, 15 controlled Asynq, 4 normal-worker/HTTP producer, 10 HTTP, and 14 gRPC. Both artifacts contain exactly 51 log/revision files. Their revision records match the table. Individual application Quality checks passed; detailed links and limits remain in [#83](https://github.com/zoe606/gobase/issues/83) and the [application report](commerce-verification.md#application-websocket-verification).
+
+Application dependency pins remain independent. Billing's recorded revision uses Fiber v2.52.14; generated candidate Fiber output uses v2.52.15. The application results establish foundation adoption on their recorded revisions. Fresh generation and source engine CI establish the candidate pins.
+
+### Prepared Release Notes
+
+v0.2.0 follows v0.1.1 with these changes:
+
+- Add optional JWT-authenticated WebSocket notification/echo support in Full projects, with native upgrades, explicit origins, bounded sessions, ping/pong, token expiry, and active shutdown.
+- Add a separate optional application gRPC process, unary Echo contract, generated Go client, pinned protobuf generation, JWT metadata, verified TLS, health checks, deadlines, and shutdown.
+- Apply configured Asynq retries and timeouts when enqueueing new tasks, preserve request contexts, archive malformed JSON without retry, and verify real Redis/worker failure recovery. Existing queued tasks retain their recorded options.
+- Include the merged dependency pins, current activation instructions, independent mini-app evidence, and the stable TLS identity rejection fixture.
+
+Release notes must identify the final verified candidate commit and its post-merge Quality and six engine/profile runs. After publication, the versioned creation command is:
+
+```bash
+git clone --branch v0.2.0 https://github.com/zoe606/gobase.git gobase
+cd gobase
+make init ENGINE=gin PROFILE=full MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
+```
+
+The tag is a template baseline. It does not update existing generated applications. It does not establish browser WebSocket authentication, application broadcasts, production deployment, workload capacity, real email delivery, or complete Commerce product readiness. mTLS, streaming RPCs, a broker, and a monorepo remain separate work. Issues #49 and #50 remain deferred. No public tag is created by this readiness report.

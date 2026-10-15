@@ -50,7 +50,7 @@ jobs:
         env:
           POSTGRES_URL: postgres://postgres:postgres@localhost:5432/test_db?sslmode=disable
         run: |
-          go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.19.1 \
+          go run -tags postgres github.com/golang-migrate/migrate/v4/cmd/migrate@v4.20.1 \
             -path migrations \
             -database "$POSTGRES_URL" \
             up

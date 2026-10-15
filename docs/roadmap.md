@@ -1,6 +1,6 @@
 # Gobase Roadmap
 
-Updated: October 14, 2026.
+Updated: October 15, 2026.
 
 This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC verification are complete. Asynq and WebSocket adoption are merged in the mini-apps with passing native/Docker PR checks. Final post-merge evidence is tracked under #81 and #83. The current release is v0.1.1. Release readiness is the next bounded outcome.
 
@@ -30,7 +30,7 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | Application gRPC follow-up | Calls between the three independent mini-apps using generated clients | Implemented and merged in Order #8, Inventory #7, and Billing #7; native/Docker evidence tracked in [#79](https://github.com/zoe606/gobase/issues/79) and the [report](commerce-verification.md#application-grpc-interoperability) |
 | Application Asynq follow-up | Normal workers and controlled failure/recovery in each mini-app | Merged through Order #9, Inventory #8, and Billing #8; native/Docker PR checks pass; final evidence in [#81](https://github.com/zoe606/gobase/issues/81) |
 | Application WebSocket follow-up | Actual HTTP processes and client examples for all three native engines | Merged through Order #10, Inventory #9, and Billing #9; thirty connection groups and existing regressions pass in native/Docker PR CI; final evidence in [#83](https://github.com/zoe606/gobase/issues/83) |
-| Capability release readiness | A verified release candidate with current source, generated-project, and application evidence | Next; scope in the [capability plan](plans/foundation-capabilities.md#after-phase-6); a new tag is separate work |
+| Capability release readiness | A verified v0.2.0 candidate with current source, generated-project, and application evidence | Local verification complete under [#85](https://github.com/zoe606/gobase/issues/85); source `b88a840`; [candidate report](release-readiness.md#v020-capability-release-candidate); final candidate CI in issue; publication follows readiness |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid

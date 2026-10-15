@@ -27,6 +27,8 @@ The following application features belong to the default `full` profile. The `mi
 
 `v0.1.1` is the current template release. It includes full and minimal output for Gin, standard `net/http`, and Fiber. This patch fixes panic responses before a handler writes its response: HTTP 500 with the shared JSON error envelope and request ID, including gzip requests. `v0.1.0` is the first versioned baseline. See the [release readiness report](docs/release-readiness.md) for scope, compatibility, and verification.
 
+The next candidate is `v0.2.0`, tracked in [#85](https://github.com/zoe606/gobase/issues/85). It includes the verified Asynq task policy, optional Full-profile WebSocket, and optional application gRPC server and client. The [candidate report](docs/release-readiness.md#v020-capability-release-candidate) records fresh generation, documented quick starts, dependency pins, application regressions, and release notes. Candidate preparation does not change the published tag used below.
+
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
 Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). Go 1.27.2 and x/net v0.60.0 are the current dependency baseline. Docker images run as UID and GID `65532`.
@@ -296,7 +298,7 @@ make generate            # Regenerate mocks after interface changes
 |----------|-------------|
 | [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
 | [Roadmap](docs/roadmap.md) | Engine foundation, standalone application validation, and HTTP workflow plans |
-| [Release Readiness](docs/release-readiness.md) | Phase 1 implementation, local runtime results, and passing CI evidence |
+| [Release Readiness](docs/release-readiness.md) | Release baselines, the v0.2.0 candidate, runtime results, and CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |
 
