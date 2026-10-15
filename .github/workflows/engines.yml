@@ -65,6 +65,19 @@ jobs:
         env:
           ASYNQ_TEST_REDIS_ADDR: localhost:6379
         run: go test -count=1 -race -timeout=4m -v ./config ./integration-test/asynq
+      - name: Verify auth email HTTP, worker, persistence, and token consumption
+        working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
+        env:
+          AUTH_EMAIL_TEST_ENABLED: 'true'
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: '5432'
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DBNAME: test_db
+          POSTGRES_SSLMODE: disable
+          REDIS_HOST: localhost
+          REDIS_PORT: '6379'
+        run: go test -count=1 -race -timeout=4m -v ./integration-test/authemail
       - name: Build and start app
         working-directory: ${{ runner.temp }}/gobase-engines/${{ matrix.engine }}
         env:

@@ -2,56 +2,13 @@ package auth
 
 import (
 	"context"
-	"errors"
-	"fmt"
-	"time"
 
-	"go-boilerplate/internal/entity"
-	"go-boilerplate/internal/repo"
+	"go-boilerplate/internal/worker/tasks"
 )
 
-// RequestPasswordReset initiates a password reset for the given email.
-// Always returns nil to prevent email enumeration attacks.
 func (uc *UseCase) RequestPasswordReset(ctx context.Context, email string) error {
-	if uc.passwordResetRepo == nil {
-		return fmt.Errorf("RequestPasswordReset: password reset repository not configured")
+	if _, err := uc.emailLink(uc.resetConfig.BaseURL, "reset-password", ""); err != nil || uc.resetConfig.TokenTTL <= 0 {
+		return ErrEmailUnavailable
 	}
-
-	// Get user by email
-	user, err := uc.userRepo.GetByEmail(ctx, email)
-	if err != nil {
-		if errors.Is(err, repo.ErrNotFound) {
-			// Don't reveal if email exists - return nil to prevent enumeration
-			return nil
-		}
-		return fmt.Errorf("RequestPasswordReset - GetByEmail: %w", err)
-	}
-
-	// Delete any existing reset tokens for this user
-	if err := uc.passwordResetRepo.DeleteByUserID(ctx, user.ID); err != nil {
-		return fmt.Errorf("RequestPasswordReset - DeleteByUserID: %w", err)
-	}
-
-	// Generate reset token
-	token, err := generateSecureToken()
-	if err != nil {
-		return fmt.Errorf("RequestPasswordReset - generateSecureToken: %w", err)
-	}
-
-	// Create reset record
-	reset := &entity.PasswordReset{
-		UserID:    user.ID,
-		Token:     token,
-		ExpiresAt: time.Now().Add(uc.resetConfig.TokenTTL),
-	}
-
-	if err := uc.passwordResetRepo.Create(ctx, reset); err != nil {
-		return fmt.Errorf("RequestPasswordReset - Create: %w", err)
-	}
-
-	// Queue password reset email task if asynq is configured
-	// TODO: Enqueue password reset email task when asynq is available
-	_ = uc.asynqClient // Placeholder for future async email task
-
-	return nil
+	return uc.enqueueAuthEmail(ctx, tasks.TypePasswordReset, tasks.AuthEmailPayload{Email: email})
 }

@@ -1,0 +1,155 @@
+package auth
+
+import (
+	"errors"
+	"net/http"
+
+	"github.com/gin-gonic/gin"
+
+	authdto "go-boilerplate/internal/dto/auth"
+	"go-boilerplate/internal/handlers/http/middleware"
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	autherrors "go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/request"
+	"go-boilerplate/pkg/response"
+)
+
+// VerifyEmail godoc
+// @Summary Verify Email
+// @ID auth-verify-email
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authdto.VerifyEmailRequest true "Request"
+// @Success 200 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/verify-email [post]
+func (h *Handler) VerifyEmail(c *gin.Context) {
+	w, r := c.Writer, c.Request
+	var req authdto.VerifyEmailRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+	if err := h.authUC.VerifyEmail(r.Context(), req.Token); err != nil {
+		h.authEmailError(w, r, err)
+		return
+	}
+	response.OK(w, r, authdto.MessageResponse{Message: "Email verified"})
+}
+
+// ResendVerification godoc
+// @Summary Resend Verification
+// @ID auth-resend-verification
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 202 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/resend-verification [post]
+func (h *Handler) ResendVerification(c *gin.Context) {
+	w, r := c.Writer, c.Request
+	userID := middleware.GetUserID(r)
+	if userID == 0 {
+		response.Unauthorized(w, r, "User not found in context")
+		return
+	}
+	if err := h.authUC.SendVerificationEmail(r.Context(), userID); err != nil {
+		h.authEmailError(w, r, err)
+		return
+	}
+	response.Accepted(w, r, authdto.MessageResponse{Message: "Email verification request accepted"})
+}
+
+// ForgotPassword godoc
+// @Summary Forgot Password
+// @ID auth-forgot-password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authdto.ForgotPasswordRequest true "Request"
+// @Success 202 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/forgot-password [post]
+func (h *Handler) ForgotPassword(c *gin.Context) {
+	w, r := c.Writer, c.Request
+	var req authdto.ForgotPasswordRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+	if err := h.authUC.RequestPasswordReset(r.Context(), req.Email); err != nil {
+		h.authEmailError(w, r, err)
+		return
+	}
+	response.Accepted(w, r, authdto.MessageResponse{Message: "If the account exists, a password reset email has been requested."})
+}
+
+// ResetPassword godoc
+// @Summary Reset Password
+// @ID auth-reset-password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authdto.ResetPasswordRequest true "Request"
+// @Success 200 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/reset-password [post]
+func (h *Handler) ResetPassword(c *gin.Context) {
+	w, r := c.Writer, c.Request
+	var req authdto.ResetPasswordRequest
+	if err := request.Body(r, &req); err != nil {
+		response.BadRequest(w, r, "INVALID_JSON", "Invalid request body")
+		return
+	}
+	if err := h.v.Struct(req); err != nil {
+		response.ValidationError(w, r, v1.ParseValidationErrors(err))
+		return
+	}
+	const maxPasswordBytes = 72
+	if len(req.NewPassword) > maxPasswordBytes {
+		response.ValidationError(w, r, map[string]string{"new_password": "must contain at most 72 bytes"})
+		return
+	}
+	input := autherrors.ResetPasswordInput{Token: req.Token, NewPassword: req.NewPassword}
+	if err := h.authUC.ResetPassword(r.Context(), input); err != nil {
+		h.authEmailError(w, r, err)
+		return
+	}
+	response.OK(w, r, authdto.MessageResponse{Message: "Password reset completed"})
+}
+
+func (h *Handler) authEmailError(w http.ResponseWriter, r *http.Request, err error) {
+	switch {
+	case errors.Is(err, autherrors.ErrVerificationDisabled):
+		response.Error(w, r, http.StatusServiceUnavailable, "EMAIL_VERIFICATION_DISABLED", "Email verification is disabled")
+		return
+	case errors.Is(err, autherrors.ErrEmailUnavailable):
+		response.Error(w, r, http.StatusServiceUnavailable, "AUTH_EMAIL_UNAVAILABLE", "Auth email service is unavailable")
+		return
+	case errors.Is(err, autherrors.ErrVerificationNotFound), errors.Is(err, autherrors.ErrVerificationExpired),
+		errors.Is(err, autherrors.ErrVerificationUsed), errors.Is(err, autherrors.ErrEmailAlreadyVerified):
+		response.BadRequest(w, r, "INVALID_VERIFICATION_TOKEN", "Invalid or expired verification token")
+		return
+	case errors.Is(err, autherrors.ErrResetTokenNotFound), errors.Is(err, autherrors.ErrResetTokenExpired), errors.Is(err, autherrors.ErrResetTokenUsed):
+		response.BadRequest(w, r, "INVALID_RESET_TOKEN", "Invalid or expired password reset token")
+		return
+	}
+	h.l.Error(err, "handlers - http - v1 - auth - email")
+	response.InternalError(w, r)
+}
+

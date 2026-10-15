@@ -48,7 +48,7 @@ func StructuredLogger(l *zap.Logger, cfg config.Log) func(http.Handler) http.Han
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			start := time.Now()
 			var body []byte
-			if cfg.LogRequestBody && r.Body != nil {
+			if cfg.LogRequestBody && r.Body != nil && !authEmailBody(r.URL.Path) {
 				body, _ = io.ReadAll(r.Body)
 				r.Body = io.NopCloser(bytes.NewReader(body))
 			}
@@ -74,4 +74,9 @@ func StructuredLogger(l *zap.Logger, cfg config.Log) func(http.Handler) http.Han
 			}
 		})
 	}
+}
+
+func authEmailBody(path string) bool {
+	path = strings.ToLower(strings.TrimRight(path, "/"))
+	return strings.HasSuffix(path, "/auth/reset-password") || strings.HasSuffix(path, "/auth/verify-email")
 }

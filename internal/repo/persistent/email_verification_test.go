@@ -1,6 +1,8 @@
 package persistent_test
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -18,12 +20,15 @@ func TestEmailVerificationRepo_Create(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(`INSERT INTO "email_verifications"`).
+		WithArgs(1, fmt.Sprintf("%x", sha256.Sum256([]byte("abc"))), sqlmock.AnyArg(), nil, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
 	ev := &entity.EmailVerification{UserID: 1, Token: "abc"}
 	err := r.Create(t.Context(), ev)
 	require.NoError(t, err)
+	require.Equal(t, "abc", ev.Token)
+	require.Equal(t, uint(1), ev.ID)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -38,7 +43,7 @@ func TestEmailVerificationRepo_GetByToken(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"id", "user_id", "token"}).
 			AddRow(1, 1, "abc")
 		mock.ExpectQuery(`SELECT \* FROM "email_verifications" WHERE token = \$1`).
-			WithArgs("abc", 1).
+			WithArgs(fmt.Sprintf("%x", sha256.Sum256([]byte("abc"))), 1).
 			WillReturnRows(rows)
 
 		ev, err := r.GetByToken(t.Context(), "abc")
@@ -53,7 +58,7 @@ func TestEmailVerificationRepo_GetByToken(t *testing.T) {
 		r := persistent.NewEmailVerificationRepo(gormDB)
 
 		mock.ExpectQuery(`SELECT \* FROM "email_verifications" WHERE token = \$1`).
-			WithArgs("missing", 1).
+			WithArgs(fmt.Sprintf("%x", sha256.Sum256([]byte("missing"))), 1).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 		_, err := r.GetByToken(t.Context(), "missing")
@@ -104,7 +109,7 @@ func TestEmailVerificationRepo_MarkAsUsed(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`UPDATE "email_verifications" SET "used_at"=\$1 WHERE id = \$2`).
-		WithArgs(sqlmock.AnyArg(), 1).
+		WithArgs(sqlmock.AnyArg(), 1, sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 

@@ -11,8 +11,12 @@ import (
 
 // VerifyEmail verifies a user's email using the provided token.
 func (uc *UseCase) VerifyEmail(ctx context.Context, token string) error {
+	return uc.inTransaction(ctx, func(ctx context.Context) error { return uc.verifyEmail(ctx, token) })
+}
+
+func (uc *UseCase) verifyEmail(ctx context.Context, token string) error {
 	if !uc.verificationConfig.Enabled {
-		return nil // Verification disabled, silently succeed
+		return ErrVerificationDisabled
 	}
 
 	if uc.emailVerificationRepo == nil {
@@ -54,13 +58,15 @@ func (uc *UseCase) VerifyEmail(ctx context.Context, token string) error {
 
 	// Mark token as used
 	if err := uc.emailVerificationRepo.MarkAsUsed(ctx, verification.ID); err != nil {
+		if errors.Is(err, repo.ErrTokenConsumed) {
+			return ErrVerificationUsed
+		}
 		return fmt.Errorf("VerifyEmail - MarkAsUsed: %w", err)
 	}
 
 	// Mark user email as verified
 	now := time.Now()
-	user.EmailVerifiedAt = &now
-	if err := uc.userRepo.Update(ctx, user); err != nil {
+	if err := uc.userRepo.SetEmailVerified(ctx, user.ID, now); err != nil {
 		return fmt.Errorf("VerifyEmail - Update: %w", err)
 	}
 

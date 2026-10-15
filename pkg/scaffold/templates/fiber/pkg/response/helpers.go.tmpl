@@ -46,6 +46,10 @@ func Created[T any](c *fiber.Ctx, data T) error {
 	})
 }
 
+func Accepted[T any](c *fiber.Ctx, data T) error {
+	return c.Status(http.StatusAccepted).JSON(Response[T]{Success: true, Data: data, RequestID: getRequestID(c)})
+}
+
 // NoContent sends a 204 No Content response.
 func NoContent(c *fiber.Ctx) error {
 	return c.SendStatus(http.StatusNoContent)

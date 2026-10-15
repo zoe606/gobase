@@ -103,7 +103,7 @@ Release readiness is complete under [#85](https://github.com/zoe606/gobase/issue
 
 The approved RPC interoperability follow-up is implemented in the existing mini-apps. They adopt the shared runtime from revision `7ae56879be7d8737295172f1c694dde6436fb003`. Each repository owns its proto, generated code, and optional server. Order owns the common runner. Native and Docker checks verify all six directed pairs, three three-service chains, TLS, JWT, bounded failures, and recovery. Revisions, reproducible commands, and CI evidence are recorded in #79 and the [Commerce report](../commerce-verification.md#application-grpc-interoperability). The technical Probe RPC does not add business workflows.
 
-Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced foundation defects. Select further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. Keep issues #49 and #50 deferred until needed. A new release tag requires its own readiness verification.
+Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced foundation defects. Select further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. Version v0.2.0 is published. The approved next task is [auth email integration #49](auth-email-flows.md), including native handlers, workers, and token-consumption verification for all Full engines. Keep #50 deferred. A new release tag requires its own readiness verification.
 
 ## Verification and Compatibility
 
@@ -113,6 +113,6 @@ Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced founda
 - Generate and verify one engine at a time when the combined verifier reaches its 15-minute limit. Record the commands and actual results.
 - Record source, generated-project, and application revisions separately. Do not report an enabled configuration or installed dependency as verified runtime support.
 - Update template and generated application documentation when implemented capabilities change setup or feature availability.
-- Keep email verification, password reset, and metrics export deferred under issues #49 and #50.
+- Complete the resumed email verification and password reset slice under #49 with its dedicated plan and verification. Keep metrics export deferred under #50.
 
 Monorepo generation, new Commerce business flows, an additional cross-service broker, and a general feature-composition system are outside this plan. gRPC and WebSocket are optional capabilities. Minimal projects retain infrastructure-free default startup.

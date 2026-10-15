@@ -109,6 +109,8 @@ Task execution can repeat after a crash or incomplete shutdown. The template doe
 
 Welcome-email submission remains best effort and does not fail registration. Image submission errors are logged without failing the completed upload. Both enqueue calls use the request context. Explicit callers should use `EnqueueContext` with a deadline and handle its error when Redis is unavailable. Readiness continues to check PostgreSQL; it does not assert Redis availability.
 
+Verification and password reset use dedicated auth tasks. Their HTTP requests return 202 only after queue acceptance, or 503 when delivery configuration or the queue is unavailable. Token consumption remains available during a provider outage. Configure Resend credentials, frontend URLs, and auto-verification in both app and worker processes. See [auth email setup](auth-email.md) for the complete contract and fixture commands.
+
 ### Failure and Recovery Verification
 
 Run against a dedicated Redis 7 instance:

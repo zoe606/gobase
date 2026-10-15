@@ -1,0 +1,134 @@
+package auth
+
+import (
+	"errors"
+	"net/http"
+
+	"github.com/gofiber/fiber/v2"
+
+	authdto "go-boilerplate/internal/dto/auth"
+	"go-boilerplate/internal/handlers/http/middleware"
+	v1 "go-boilerplate/internal/handlers/http/v1"
+	autherrors "go-boilerplate/internal/usecase/auth"
+	"go-boilerplate/pkg/response"
+)
+
+// VerifyEmail godoc
+// @Summary Verify Email
+// @ID auth-verify-email
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authdto.VerifyEmailRequest true "Request"
+// @Success 200 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/verify-email [post]
+func (h *Handler) VerifyEmail(ctx *fiber.Ctx) error {
+	var req authdto.VerifyEmailRequest
+	if err := ctx.BodyParser(&req); err != nil {
+		return response.BadRequest(ctx, "INVALID_JSON", "Invalid request body")
+	}
+	if err := h.v.Struct(req); err != nil {
+		return response.ValidationError(ctx, v1.ParseValidationErrors(err))
+	}
+	if err := h.authUC.VerifyEmail(ctx.UserContext(), req.Token); err != nil {
+		return h.authEmailError(ctx, err)
+	}
+	return response.OK(ctx, authdto.MessageResponse{Message: "Email verified"})
+}
+
+// ResendVerification godoc
+// @Summary Resend Verification
+// @ID auth-resend-verification
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Security BearerAuth
+// @Success 202 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 401 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/resend-verification [post]
+func (h *Handler) ResendVerification(ctx *fiber.Ctx) error {
+	userID := middleware.GetUserID(ctx)
+	if userID == 0 {
+		return response.Unauthorized(ctx, "User not found in context")
+	}
+	if err := h.authUC.SendVerificationEmail(ctx.UserContext(), userID); err != nil {
+		return h.authEmailError(ctx, err)
+	}
+	return response.Accepted(ctx, authdto.MessageResponse{Message: "Email verification request accepted"})
+}
+
+// ForgotPassword godoc
+// @Summary Forgot Password
+// @ID auth-forgot-password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authdto.ForgotPasswordRequest true "Request"
+// @Success 202 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/forgot-password [post]
+func (h *Handler) ForgotPassword(ctx *fiber.Ctx) error {
+	var req authdto.ForgotPasswordRequest
+	if err := ctx.BodyParser(&req); err != nil {
+		return response.BadRequest(ctx, "INVALID_JSON", "Invalid request body")
+	}
+	if err := h.v.Struct(req); err != nil {
+		return response.ValidationError(ctx, v1.ParseValidationErrors(err))
+	}
+	if err := h.authUC.RequestPasswordReset(ctx.UserContext(), req.Email); err != nil {
+		return h.authEmailError(ctx, err)
+	}
+	return response.Accepted(ctx, authdto.MessageResponse{Message: "If the account exists, a password reset email has been requested."})
+}
+
+// ResetPassword godoc
+// @Summary Reset Password
+// @ID auth-reset-password
+// @Tags auth
+// @Accept json
+// @Produce json
+// @Param request body authdto.ResetPasswordRequest true "Request"
+// @Success 200 {object} response.Response[authdto.MessageResponse]
+// @Failure 400 {object} response.ErrorResponse
+// @Failure 503 {object} response.ErrorResponse
+// @Router /auth/reset-password [post]
+func (h *Handler) ResetPassword(ctx *fiber.Ctx) error {
+	var req authdto.ResetPasswordRequest
+	if err := ctx.BodyParser(&req); err != nil {
+		return response.BadRequest(ctx, "INVALID_JSON", "Invalid request body")
+	}
+	if err := h.v.Struct(req); err != nil {
+		return response.ValidationError(ctx, v1.ParseValidationErrors(err))
+	}
+	const maxPasswordBytes = 72
+	if len(req.NewPassword) > maxPasswordBytes {
+		return response.ValidationError(ctx, map[string]string{"new_password": "must contain at most 72 bytes"})
+	}
+	input := autherrors.ResetPasswordInput{Token: req.Token, NewPassword: req.NewPassword}
+	if err := h.authUC.ResetPassword(ctx.UserContext(), input); err != nil {
+		return h.authEmailError(ctx, err)
+	}
+	return response.OK(ctx, authdto.MessageResponse{Message: "Password reset completed"})
+}
+
+func (h *Handler) authEmailError(ctx *fiber.Ctx, err error) error {
+	switch {
+	case errors.Is(err, autherrors.ErrVerificationDisabled):
+		return response.Error(ctx, http.StatusServiceUnavailable, "EMAIL_VERIFICATION_DISABLED", "Email verification is disabled")
+	case errors.Is(err, autherrors.ErrEmailUnavailable):
+		return response.Error(ctx, http.StatusServiceUnavailable, "AUTH_EMAIL_UNAVAILABLE", "Auth email service is unavailable")
+	case errors.Is(err, autherrors.ErrVerificationNotFound), errors.Is(err, autherrors.ErrVerificationExpired),
+		errors.Is(err, autherrors.ErrVerificationUsed), errors.Is(err, autherrors.ErrEmailAlreadyVerified):
+		return response.BadRequest(ctx, "INVALID_VERIFICATION_TOKEN", "Invalid or expired verification token")
+	case errors.Is(err, autherrors.ErrResetTokenNotFound), errors.Is(err, autherrors.ErrResetTokenExpired), errors.Is(err, autherrors.ErrResetTokenUsed):
+		return response.BadRequest(ctx, "INVALID_RESET_TOKEN", "Invalid or expired password reset token")
+	}
+	h.l.Error(err, "handlers - http - v1 - auth - email")
+	return response.InternalError(ctx)
+}
+

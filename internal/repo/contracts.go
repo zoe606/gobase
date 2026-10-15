@@ -3,6 +3,7 @@ package repo
 
 import (
 	"context"
+	"time"
 
 	"go-boilerplate/internal/entity"
 )
@@ -28,6 +29,8 @@ type (
 		GetByEmail(ctx context.Context, email string) (*entity.User, error)
 		EmailExists(ctx context.Context, email string) (bool, error)
 		Update(ctx context.Context, user *entity.User) error
+		SetEmailVerified(ctx context.Context, id uint, verifiedAt time.Time) error
+		SetPassword(ctx context.Context, id uint, passwordHash string) error
 	}
 
 	// RoleRepo defines the role repository interface.

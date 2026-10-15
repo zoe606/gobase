@@ -310,6 +310,52 @@ const docTemplate = `{
                 ]
             }
         },
+        "/auth/forgot-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Forgot Password",
+                "operationId": "auth-forgot-password",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_internal_dto_auth.ForgotPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/auth/login": {
             "post": {
                 "description": "Authenticate user and get tokens",
@@ -525,6 +571,144 @@ const docTemplate = `{
                     },
                     "409": {
                         "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/resend-verification": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Resend Verification",
+                "operationId": "auth-resend-verification",
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/auth/reset-password": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Reset Password",
+                "operationId": "auth-reset-password",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_internal_dto_auth.ResetPasswordRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/auth/verify-email": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "auth"
+                ],
+                "summary": "Verify Email",
+                "operationId": "auth-verify-email",
+                "parameters": [
+                    {
+                        "description": "Request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_internal_dto_auth.VerifyEmailRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
+                        }
+                    },
+                    "503": {
+                        "description": "Service Unavailable",
                         "schema": {
                             "$ref": "#/definitions/go-boilerplate_pkg_response.ErrorResponse"
                         }
@@ -1273,6 +1457,18 @@ const docTemplate = `{
                 }
             }
         },
+        "go-boilerplate_internal_dto_auth.ForgotPasswordRequest": {
+            "type": "object",
+            "required": [
+                "email"
+            ],
+            "properties": {
+                "email": {
+                    "type": "string",
+                    "maxLength": 254
+                }
+            }
+        },
         "go-boilerplate_internal_dto_auth.LoginRequest": {
             "type": "object",
             "required": [
@@ -1304,6 +1500,14 @@ const docTemplate = `{
                 },
                 "user": {
                     "$ref": "#/definitions/go-boilerplate_internal_dto_auth.UserResponse"
+                }
+            }
+        },
+        "go-boilerplate_internal_dto_auth.MessageResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
                 }
             }
         },
@@ -1342,6 +1546,23 @@ const docTemplate = `{
                 }
             }
         },
+        "go-boilerplate_internal_dto_auth.ResetPasswordRequest": {
+            "type": "object",
+            "required": [
+                "new_password",
+                "token"
+            ],
+            "properties": {
+                "new_password": {
+                    "type": "string",
+                    "maxLength": 72,
+                    "minLength": 8
+                },
+                "token": {
+                    "type": "string"
+                }
+            }
+        },
         "go-boilerplate_internal_dto_auth.TokenResponse": {
             "type": "object",
             "properties": {
@@ -1369,6 +1590,17 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "role": {
+                    "type": "string"
+                }
+            }
+        },
+        "go-boilerplate_internal_dto_auth.VerifyEmailRequest": {
+            "type": "object",
+            "required": [
+                "token"
+            ],
+            "properties": {
+                "token": {
                     "type": "string"
                 }
             }
@@ -1688,6 +1920,23 @@ const docTemplate = `{
             "properties": {
                 "data": {
                     "$ref": "#/definitions/go-boilerplate_internal_dto_auth.LoginResponse"
+                },
+                "meta": {
+                    "$ref": "#/definitions/go-boilerplate_pkg_response.Meta"
+                },
+                "request_id": {
+                    "type": "string"
+                },
+                "success": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "$ref": "#/definitions/go-boilerplate_internal_dto_auth.MessageResponse"
                 },
                 "meta": {
                     "$ref": "#/definitions/go-boilerplate_pkg_response.Meta"

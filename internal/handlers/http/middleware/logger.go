@@ -75,7 +75,7 @@ func StructuredLogger(zapLogger *zap.Logger, cfg config.Log) fiber.Handler {
 
 		// Capture request body before handler if enabled
 		var reqBody string
-		if cfg.LogRequestBody {
+		if cfg.LogRequestBody && !authEmailBody(ctx.Path()) {
 			reqBody = string(ctx.Body())
 		}
 
@@ -134,4 +134,9 @@ func StructuredLogger(zapLogger *zap.Logger, cfg config.Log) fiber.Handler {
 
 		return err
 	}
+}
+
+func authEmailBody(path string) bool {
+	path = strings.ToLower(strings.TrimRight(path, "/"))
+	return strings.HasSuffix(path, "/auth/reset-password") || strings.HasSuffix(path, "/auth/verify-email")
 }

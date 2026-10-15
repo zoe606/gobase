@@ -14,6 +14,7 @@ import (
 	entity "go-boilerplate/internal/entity"
 	repo "go-boilerplate/internal/repo"
 	reflect "reflect"
+	time "time"
 
 	gomock "go.uber.org/mock/gomock"
 )
@@ -192,6 +193,34 @@ func (m *MockUserRepo) GetByID(ctx context.Context, id uint) (*entity.User, erro
 func (mr *MockUserRepoMockRecorder) GetByID(ctx, id any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetByID", reflect.TypeOf((*MockUserRepo)(nil).GetByID), ctx, id)
+}
+
+// SetEmailVerified mocks base method.
+func (m *MockUserRepo) SetEmailVerified(ctx context.Context, id uint, verifiedAt time.Time) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetEmailVerified", ctx, id, verifiedAt)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetEmailVerified indicates an expected call of SetEmailVerified.
+func (mr *MockUserRepoMockRecorder) SetEmailVerified(ctx, id, verifiedAt any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetEmailVerified", reflect.TypeOf((*MockUserRepo)(nil).SetEmailVerified), ctx, id, verifiedAt)
+}
+
+// SetPassword mocks base method.
+func (m *MockUserRepo) SetPassword(ctx context.Context, id uint, passwordHash string) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "SetPassword", ctx, id, passwordHash)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// SetPassword indicates an expected call of SetPassword.
+func (mr *MockUserRepoMockRecorder) SetPassword(ctx, id, passwordHash any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetPassword", reflect.TypeOf((*MockUserRepo)(nil).SetPassword), ctx, id, passwordHash)
 }
 
 // Update mocks base method.

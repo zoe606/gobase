@@ -1,7 +1,11 @@
 package persistent_test
 
 import (
+	"context"
+	"fmt"
+	"regexp"
 	"testing"
+	"time"
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
@@ -165,4 +169,32 @@ func TestUserRepo_Update(t *testing.T) {
 	err := r.Update(t.Context(), user)
 	require.NoError(t, err)
 	require.NoError(t, mock.ExpectationsWereMet())
+}
+
+func TestUserRepo_SetAuthFields(t *testing.T) {
+	t.Parallel()
+	for _, field := range []string{"password", "email_verified_at"} {
+		for _, affected := range []int64{0, 1} {
+			t.Run(fmt.Sprintf("%s/rows=%d", field, affected), func(t *testing.T) {
+				t.Parallel()
+				db, mock := newTestDB(t)
+				r := persistent.NewUserRepo(db)
+				update := func(ctx context.Context) error { return r.SetPassword(ctx, 1, "hash") }
+				if field == "email_verified_at" {
+					update = func(ctx context.Context) error { return r.SetEmailVerified(ctx, 1, time.Now()) }
+				}
+				mock.ExpectBegin()
+				mock.ExpectExec(regexp.QuoteMeta(`UPDATE "users" SET "`+field+`"=$1,"updated_at"=$2 WHERE id = $3`)).
+					WithArgs(sqlmock.AnyArg(), sqlmock.AnyArg(), 1).WillReturnResult(sqlmock.NewResult(0, affected))
+				mock.ExpectCommit()
+				err := update(t.Context())
+				if affected == 0 {
+					require.ErrorIs(t, err, repo.ErrNotFound)
+				} else {
+					require.NoError(t, err)
+				}
+				require.NoError(t, mock.ExpectationsWereMet())
+			})
+		}
+	}
 }

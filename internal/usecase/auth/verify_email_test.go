@@ -68,13 +68,13 @@ func TestVerifyEmail(t *testing.T) {
 					Return(nil)
 
 				userRepo.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
+					SetEmailVerified(gomock.Any(), uint(1), gomock.Any()).
 					Return(nil)
 			},
 			wantErr: nil,
 		},
 		{
-			name: "verification disabled - returns nil",
+			name: "verification disabled",
 			args: args{
 				ctx:   context.Background(),
 				token: "any-token",
@@ -87,7 +87,7 @@ func TestVerifyEmail(t *testing.T) {
 			setupMock: func(_ *MockUserRepo, _ *MockEmailVerificationRepo) {
 				// No mock calls expected
 			},
-			wantErr: nil,
+			wantErr: auth.ErrVerificationDisabled,
 		},
 		{
 			name: "repo not configured",
@@ -351,7 +351,7 @@ func TestVerifyEmail(t *testing.T) {
 					MarkAsUsed(gomock.Any(), uint(1)).
 					Return(nil)
 				userRepo.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
+					SetEmailVerified(gomock.Any(), uint(1), gomock.Any()).
 					Return(errors.New("update error"))
 			},
 			wantErr: errors.New("update error"),

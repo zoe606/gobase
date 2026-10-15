@@ -26,9 +26,12 @@ func NewPasswordResetRepo(db *gorm.DB) *PasswordResetRepo {
 // Create creates a new password reset token.
 func (r *PasswordResetRepo) Create(ctx context.Context, reset *entity.PasswordReset) error {
 	db := tx.DBFromContext(ctx, r.db)
-	if err := db.Create(reset).Error; err != nil {
+	stored := *reset
+	stored.Token = hashAuthToken(reset.Token)
+	if err := db.Create(&stored).Error; err != nil {
 		return fmt.Errorf("PasswordResetRepo - Create: %w", err)
 	}
+	reset.ID, reset.CreatedAt = stored.ID, stored.CreatedAt
 	return nil
 }
 
@@ -36,7 +39,7 @@ func (r *PasswordResetRepo) Create(ctx context.Context, reset *entity.PasswordRe
 func (r *PasswordResetRepo) GetByToken(ctx context.Context, token string) (*entity.PasswordReset, error) {
 	db := tx.DBFromContext(ctx, r.db)
 	var reset entity.PasswordReset
-	if err := db.Where("token = ?", token).First(&reset).Error; err != nil {
+	if err := db.Where("token = ?", hashAuthToken(token)).First(&reset).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, repo.ErrNotFound
 		}
@@ -49,8 +52,13 @@ func (r *PasswordResetRepo) GetByToken(ctx context.Context, token string) (*enti
 func (r *PasswordResetRepo) MarkAsUsed(ctx context.Context, id uint) error {
 	db := tx.DBFromContext(ctx, r.db)
 	now := time.Now()
-	if err := db.Model(&entity.PasswordReset{}).Where("id = ?", id).Update("used_at", now).Error; err != nil {
-		return fmt.Errorf("PasswordResetRepo - MarkAsUsed: %w", err)
+	result := db.Model(&entity.PasswordReset{}).
+		Where("id = ? AND used_at IS NULL AND expires_at > ?", id, now).Update("used_at", now)
+	if result.Error != nil {
+		return fmt.Errorf("PasswordResetRepo - MarkAsUsed: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return repo.ErrTokenConsumed
 	}
 	return nil
 }

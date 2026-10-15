@@ -56,6 +56,21 @@ asynq:
   max_retry: 3
   job_timeout: 5m
 
+# Auth email (Full profile). See docs/auth-email.md.
+email:
+  provider: resend  # resend or noop
+  api_key: ""
+  from_email: noreply@yourdomain.com
+  from_name: Go Boilerplate
+email_verification:
+  enabled: true
+  auto_verify: true  # Development only. Set false to send verification links.
+  token_ttl: 24h
+  base_url: http://localhost:3000
+password_reset:
+  token_ttl: 1h
+  base_url: http://localhost:3000
+
 # Application gRPC (Full profile)
 grpc:
   enabled: false

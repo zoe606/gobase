@@ -9,6 +9,29 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestEmail_CanSend(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name, provider, key, from string
+		want                      bool
+	}{
+		{"resend", "resend", "key", "sender@example.com", true},
+		{"default provider", "", "key", "Sender <sender@example.com>", true},
+		{"missing key", "resend", "", "sender@example.com", false},
+		{"blank key", "resend", "  ", "sender@example.com", false},
+		{"missing sender", "resend", "key", "", false},
+		{"invalid sender", "resend", "key", "invalid", false},
+		{"noop", "noop", "key", "sender@example.com", false},
+		{"unsupported provider", "brevo", "key", "sender@example.com", false},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := Email{Provider: tt.provider, APIKey: tt.key, FromEmail: tt.from}
+			require.Equal(t, tt.want, cfg.CanSend())
+		})
+	}
+}
+
 func TestNewConfig_WithDefaults(t *testing.T) {
 	// Clear any existing env vars that might interfere
 	originalEnvs := map[string]string{
