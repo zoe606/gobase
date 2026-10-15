@@ -26,9 +26,12 @@ func NewEmailVerificationRepo(db *gorm.DB) *EmailVerificationRepo {
 // Create creates a new email verification token.
 func (r *EmailVerificationRepo) Create(ctx context.Context, verification *entity.EmailVerification) error {
 	db := tx.DBFromContext(ctx, r.db)
-	if err := db.Create(verification).Error; err != nil {
+	stored := *verification
+	stored.Token = hashAuthToken(verification.Token)
+	if err := db.Create(&stored).Error; err != nil {
 		return fmt.Errorf("EmailVerificationRepo - Create: %w", err)
 	}
+	verification.ID, verification.CreatedAt = stored.ID, stored.CreatedAt
 	return nil
 }
 
@@ -36,7 +39,7 @@ func (r *EmailVerificationRepo) Create(ctx context.Context, verification *entity
 func (r *EmailVerificationRepo) GetByToken(ctx context.Context, token string) (*entity.EmailVerification, error) {
 	db := tx.DBFromContext(ctx, r.db)
 	var verification entity.EmailVerification
-	if err := db.Where("token = ?", token).First(&verification).Error; err != nil {
+	if err := db.Where("token = ?", hashAuthToken(token)).First(&verification).Error; err != nil {
 		if errors.Is(err, gorm.ErrRecordNotFound) {
 			return nil, repo.ErrNotFound
 		}
@@ -62,8 +65,13 @@ func (r *EmailVerificationRepo) GetLatestByUserID(ctx context.Context, userID ui
 func (r *EmailVerificationRepo) MarkAsUsed(ctx context.Context, id uint) error {
 	db := tx.DBFromContext(ctx, r.db)
 	now := time.Now()
-	if err := db.Model(&entity.EmailVerification{}).Where("id = ?", id).Update("used_at", now).Error; err != nil {
-		return fmt.Errorf("EmailVerificationRepo - MarkAsUsed: %w", err)
+	result := db.Model(&entity.EmailVerification{}).
+		Where("id = ? AND used_at IS NULL AND expires_at > ?", id, now).Update("used_at", now)
+	if result.Error != nil {
+		return fmt.Errorf("EmailVerificationRepo - MarkAsUsed: %w", result.Error)
+	}
+	if result.RowsAffected != 1 {
+		return repo.ErrTokenConsumed
 	}
 	return nil
 }

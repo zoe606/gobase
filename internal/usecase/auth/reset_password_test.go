@@ -67,7 +67,7 @@ func TestResetPassword(t *testing.T) {
 					Return(user, nil)
 
 				userRepo.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
+					SetPassword(gomock.Any(), uint(1), gomock.Any()).
 					Return(nil)
 
 				prRepo.EXPECT().
@@ -77,6 +77,7 @@ func TestResetPassword(t *testing.T) {
 				refreshRepo.EXPECT().
 					DeleteByUserID(gomock.Any(), uint(1)).
 					Return(nil)
+				prRepo.EXPECT().DeleteByUserID(gomock.Any(), uint(1)).Return(nil)
 			},
 			wantErr: nil,
 		},
@@ -291,8 +292,9 @@ func TestResetPassword(t *testing.T) {
 				userRepo.EXPECT().
 					GetByID(gomock.Any(), uint(1)).
 					Return(user, nil)
+				prRepo.EXPECT().MarkAsUsed(gomock.Any(), uint(1)).Return(nil)
 				userRepo.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
+					SetPassword(gomock.Any(), uint(1), gomock.Any()).
 					Return(errors.New("update error"))
 			},
 			wantErr: errors.New("update error"),
@@ -332,9 +334,6 @@ func TestResetPassword(t *testing.T) {
 				userRepo.EXPECT().
 					GetByID(gomock.Any(), uint(1)).
 					Return(user, nil)
-				userRepo.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
-					Return(nil)
 				prRepo.EXPECT().
 					MarkAsUsed(gomock.Any(), uint(1)).
 					Return(errors.New("mark as used error"))
@@ -377,7 +376,7 @@ func TestResetPassword(t *testing.T) {
 					GetByID(gomock.Any(), uint(1)).
 					Return(user, nil)
 				userRepo.EXPECT().
-					Update(gomock.Any(), gomock.Any()).
+					SetPassword(gomock.Any(), uint(1), gomock.Any()).
 					Return(nil)
 				prRepo.EXPECT().
 					MarkAsUsed(gomock.Any(), uint(1)).

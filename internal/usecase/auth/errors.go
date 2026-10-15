@@ -12,6 +12,8 @@ var (
 
 	// Email verification errors.
 	ErrEmailAlreadyVerified = errors.New("email already verified")
+	ErrVerificationDisabled = errors.New("email verification is disabled")
+	ErrEmailUnavailable     = errors.New("auth email service is unavailable")
 	ErrVerificationNotFound = errors.New("verification token not found")
 	ErrVerificationExpired  = errors.New("verification token expired")
 	ErrVerificationUsed     = errors.New("verification token already used")

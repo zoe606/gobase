@@ -39,6 +39,7 @@ import (
 	"go-boilerplate/pkg/ratelimiter"
 	"go-boilerplate/pkg/telemetry"
 	"go-boilerplate/pkg/telemetry/gormtracing"
+	"go-boilerplate/pkg/tx"
 	"go-boilerplate/pkg/websocket"
 )
 
@@ -52,6 +53,9 @@ type repositories struct {
 	media          repo.MediaRepo
 	profile        repo.ProfileRepo
 	article        repo.ArticleRepo
+	verification   repo.EmailVerificationRepo
+	passwordReset  repo.PasswordResetRepo
+	transactions   tx.Helper
 }
 
 // usecases holds all usecase instances.
@@ -266,6 +270,9 @@ func initRepositories(db *gorm.DB) *repositories {
 		media:          persistent.NewMediaRepo(db),
 		profile:        persistent.NewProfileRepo(db),
 		article:        persistent.NewArticleRepo(db),
+		verification:   persistent.NewEmailVerificationRepo(db),
+		passwordReset:  persistent.NewPasswordResetRepo(db),
+		transactions:   tx.New(db),
 	}
 }
 
@@ -283,7 +290,16 @@ func initUseCases(cfg *config.Config, repos *repositories, jwtService jwt.Servic
 	taskOptions := []libasynq.Option{libasynq.MaxRetry(cfg.Asynq.MaxRetry), libasynq.Timeout(cfg.Asynq.JobTimeout)}
 	authUC := auth.New(repos.user, repos.role, repos.refreshToken, jwtService, auditLogger).
 		WithAsynq(asynqClient, cfg.App.Name).
-		WithTaskOptions(taskOptions...)
+		WithTaskOptions(taskOptions...).
+		WithEmailVerification(repos.verification, auth.VerificationConfig{
+			Enabled: cfg.EmailVerification.Enabled, AutoVerify: cfg.EmailVerification.AutoVerify,
+			TokenTTL: cfg.EmailVerification.TokenTTL, BaseURL: cfg.EmailVerification.BaseURL,
+		}).
+		WithPasswordReset(repos.passwordReset, auth.ResetConfig{
+			TokenTTL: cfg.PasswordReset.TokenTTL, BaseURL: cfg.PasswordReset.BaseURL,
+		}).
+		WithEmailDelivery(cfg.Email.CanSend(), cfg.App.IsProduction()).
+		WithTransactions(repos.transactions)
 
 	mediaUC := media.New(
 		repos.media,

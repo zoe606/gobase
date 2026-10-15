@@ -79,6 +79,14 @@ definitions:
       title:
         type: string
     type: object
+  go-boilerplate_internal_dto_auth.ForgotPasswordRequest:
+    properties:
+      email:
+        maxLength: 254
+        type: string
+    required:
+    - email
+    type: object
   go-boilerplate_internal_dto_auth.LoginRequest:
     properties:
       email:
@@ -101,6 +109,11 @@ definitions:
         type: string
       user:
         $ref: '#/definitions/go-boilerplate_internal_dto_auth.UserResponse'
+    type: object
+  go-boilerplate_internal_dto_auth.MessageResponse:
+    properties:
+      message:
+        type: string
     type: object
   go-boilerplate_internal_dto_auth.RefreshRequest:
     properties:
@@ -127,6 +140,18 @@ definitions:
     - name
     - password
     type: object
+  go-boilerplate_internal_dto_auth.ResetPasswordRequest:
+    properties:
+      new_password:
+        maxLength: 72
+        minLength: 8
+        type: string
+      token:
+        type: string
+    required:
+    - new_password
+    - token
+    type: object
   go-boilerplate_internal_dto_auth.TokenResponse:
     properties:
       access_token:
@@ -146,6 +171,13 @@ definitions:
         type: string
       role:
         type: string
+    type: object
+  go-boilerplate_internal_dto_auth.VerifyEmailRequest:
+    properties:
+      token:
+        type: string
+    required:
+    - token
     type: object
   go-boilerplate_internal_dto_media.MediaListResponse:
     properties:
@@ -358,6 +390,17 @@ definitions:
     properties:
       data:
         $ref: '#/definitions/go-boilerplate_internal_dto_auth.LoginResponse'
+      meta:
+        $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
+      request_id:
+        type: string
+      success:
+        type: boolean
+    type: object
+  go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse:
+    properties:
+      data:
+        $ref: '#/definitions/go-boilerplate_internal_dto_auth.MessageResponse'
       meta:
         $ref: '#/definitions/go-boilerplate_pkg_response.Meta'
       request_id:
@@ -820,6 +863,36 @@ paths:
       summary: Update article
       tags:
       - articles
+  /auth/forgot-password:
+    post:
+      consumes:
+      - application/json
+      operationId: auth-forgot-password
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.ForgotPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Forgot Password
+      tags:
+      - auth
   /auth/login:
     post:
       consumes:
@@ -962,6 +1035,95 @@ paths:
           schema:
             $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
       summary: Register a new user
+      tags:
+      - auth
+  /auth/resend-verification:
+    post:
+      consumes:
+      - application/json
+      operationId: auth-resend-verification
+      produces:
+      - application/json
+      responses:
+        "202":
+          description: Accepted
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      security:
+      - BearerAuth: []
+      summary: Resend Verification
+      tags:
+      - auth
+  /auth/reset-password:
+    post:
+      consumes:
+      - application/json
+      operationId: auth-reset-password
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.ResetPasswordRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Reset Password
+      tags:
+      - auth
+  /auth/verify-email:
+    post:
+      consumes:
+      - application/json
+      operationId: auth-verify-email
+      parameters:
+      - description: Request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/go-boilerplate_internal_dto_auth.VerifyEmailRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.Response-go-boilerplate_internal_dto_auth_MessageResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+        "503":
+          description: Service Unavailable
+          schema:
+            $ref: '#/definitions/go-boilerplate_pkg_response.ErrorResponse'
+      summary: Verify Email
       tags:
       - auth
   /config:

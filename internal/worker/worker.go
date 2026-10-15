@@ -17,6 +17,12 @@ type Worker struct {
 	mailer    email.Sender
 	mediaRepo repo.MediaRepo
 	storage   storage.Provider
+	authEmail tasks.AuthEmailProcessor
+}
+
+func (w *Worker) WithAuthEmail(processor tasks.AuthEmailProcessor) *Worker {
+	w.authEmail = processor
+	return w
 }
 
 // New creates a new Worker instance.
@@ -35,6 +41,11 @@ func (w *Worker) RegisterHandlers() {
 	// Email notification handler.
 	emailHandler := tasks.NewEmailHandler(w.l, w.mailer)
 	w.server.HandleFunc(tasks.TypeEmailNotification, emailHandler.ProcessTask)
+	if w.authEmail != nil {
+		handler := tasks.AuthEmailHandler(w.authEmail)
+		w.server.HandleFunc(tasks.TypeEmailVerification, handler)
+		w.server.HandleFunc(tasks.TypePasswordReset, handler)
+	}
 
 	// Image processing handler.
 	if w.mediaRepo != nil && w.storage != nil {

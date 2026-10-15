@@ -13,9 +13,11 @@ import (
 
 	"go-boilerplate/internal/entity"
 	"go-boilerplate/internal/repo"
+	"go-boilerplate/internal/repo/webapi/email"
 	"go-boilerplate/pkg/asynq"
 	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/jwt"
+	"go-boilerplate/pkg/tx"
 )
 
 // UseCase implements authentication business logic.
@@ -32,6 +34,10 @@ type UseCase struct {
 	appName               string
 	verificationConfig    VerificationConfig
 	resetConfig           ResetConfig
+	emailDeliveryReady    bool
+	production            bool
+	mailer                email.Sender
+	transactions          tx.Helper
 }
 
 // VerificationConfig holds email verification configuration.

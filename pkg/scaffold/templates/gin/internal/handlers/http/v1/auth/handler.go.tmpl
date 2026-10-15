@@ -36,6 +36,10 @@ func (h *Handler) RegisterRoutes(router *routing.Router) {
 		auth.Handle("POST", "/register", routing.HandlerFunc(h.Register))
 		auth.Handle("POST", "/login", routing.HandlerFunc(h.Login))
 		auth.Handle("POST", "/refresh", routing.HandlerFunc(h.Refresh))
+		auth.Handle("POST", "/verify-email", routing.HandlerFunc(h.VerifyEmail))
+		auth.Handle("POST", "/forgot-password", routing.HandlerFunc(h.ForgotPassword))
+		auth.Handle("POST", "/reset-password", routing.HandlerFunc(h.ResetPassword))
+		auth.Handle("POST", "/resend-verification", middleware.JWTAuth(h.jwtService, h.l)(routing.HandlerFunc(h.ResendVerification)))
 
 		// Protected routes
 		auth.Handle("POST", "/logout", middleware.JWTAuth(h.jwtService, h.l)(routing.HandlerFunc(h.Logout)))

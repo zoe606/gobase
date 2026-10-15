@@ -1,6 +1,8 @@
 package persistent_test
 
 import (
+	"crypto/sha256"
+	"fmt"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
@@ -18,12 +20,15 @@ func TestPasswordResetRepo_Create(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectQuery(`INSERT INTO "password_resets"`).
+		WithArgs(1, fmt.Sprintf("%x", sha256.Sum256([]byte("reset-token"))), sqlmock.AnyArg(), nil, sqlmock.AnyArg()).
 		WillReturnRows(sqlmock.NewRows([]string{"id"}).AddRow(1))
 	mock.ExpectCommit()
 
 	pr := &entity.PasswordReset{UserID: 1, Token: "reset-token"}
 	err := r.Create(t.Context(), pr)
 	require.NoError(t, err)
+	require.Equal(t, "reset-token", pr.Token)
+	require.Equal(t, uint(1), pr.ID)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
@@ -38,7 +43,7 @@ func TestPasswordResetRepo_GetByToken(t *testing.T) {
 		rows := sqlmock.NewRows([]string{"id", "user_id", "token"}).
 			AddRow(1, 1, "reset-token")
 		mock.ExpectQuery(`SELECT \* FROM "password_resets" WHERE token = \$1`).
-			WithArgs("reset-token", 1).
+			WithArgs(fmt.Sprintf("%x", sha256.Sum256([]byte("reset-token"))), 1).
 			WillReturnRows(rows)
 
 		pr, err := r.GetByToken(t.Context(), "reset-token")
@@ -53,7 +58,7 @@ func TestPasswordResetRepo_GetByToken(t *testing.T) {
 		r := persistent.NewPasswordResetRepo(gormDB)
 
 		mock.ExpectQuery(`SELECT \* FROM "password_resets" WHERE token = \$1`).
-			WithArgs("missing", 1).
+			WithArgs(fmt.Sprintf("%x", sha256.Sum256([]byte("missing"))), 1).
 			WillReturnRows(sqlmock.NewRows([]string{"id"}))
 
 		_, err := r.GetByToken(t.Context(), "missing")
@@ -69,7 +74,7 @@ func TestPasswordResetRepo_MarkAsUsed(t *testing.T) {
 
 	mock.ExpectBegin()
 	mock.ExpectExec(`UPDATE "password_resets" SET "used_at"=\$1 WHERE id = \$2`).
-		WithArgs(sqlmock.AnyArg(), 1).
+		WithArgs(sqlmock.AnyArg(), 1, sqlmock.AnyArg()).
 		WillReturnResult(sqlmock.NewResult(0, 1))
 	mock.ExpectCommit()
 

@@ -166,6 +166,27 @@ func TestStructuredLogger_RequestBodyRedaction(t *testing.T) {
 	assert.Contains(t, reqBody, "john")
 }
 
+func TestStructuredLogger_AuthEmailBodiesAreOmitted(t *testing.T) {
+	t.Parallel()
+	for _, path := range []string{"/v1/auth/reset-password", "/v1/auth/verify-email", "/v1/AUTH/ReSeT-PaSsWoRd/", "/v1/auth/VERIFY-EMAIL/"} {
+		t.Run(path, func(t *testing.T) {
+			t.Parallel()
+			for _, body := range []string{`{"new_password":"private","token":"secret"}`, `{"new_password":"private","token":"secret"`} {
+				logger, logs := newObservedLogger()
+				app := fiber.New()
+				app.Use(middleware.StructuredLogger(logger, config.Log{LogRequestBody: true}))
+				app.Post(path, func(c *fiber.Ctx) error { return c.SendStatus(400) })
+				request := httptest.NewRequestWithContext(t.Context(), "POST", path, bytes.NewBufferString(body))
+				result, err := app.Test(request)
+				require.NoError(t, err)
+				require.NoError(t, result.Body.Close())
+				require.Len(t, logs.All(), 1)
+				require.NotContains(t, logs.All()[0].ContextMap(), "request_body")
+			}
+		})
+	}
+}
+
 func TestStructuredLogger_ResponseBodyLogged(t *testing.T) {
 	t.Parallel()
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"gorm.io/gorm"
 
@@ -72,6 +73,25 @@ func (r *UserRepo) Update(ctx context.Context, user *entity.User) error {
 	db := tx.DBFromContext(ctx, r.db)
 	if err := db.Save(user).Error; err != nil {
 		return fmt.Errorf("UserRepo - Update: %w", err)
+	}
+	return nil
+}
+
+func (r *UserRepo) SetEmailVerified(ctx context.Context, id uint, verifiedAt time.Time) error {
+	return r.updateAuthField(ctx, id, "email_verified_at", verifiedAt)
+}
+
+func (r *UserRepo) SetPassword(ctx context.Context, id uint, passwordHash string) error {
+	return r.updateAuthField(ctx, id, "password", passwordHash)
+}
+
+func (r *UserRepo) updateAuthField(ctx context.Context, id uint, field string, value any) error {
+	result := tx.DBFromContext(ctx, r.db).Model(&entity.User{}).Where("id = ?", id).Update(field, value)
+	if result.Error != nil {
+		return fmt.Errorf("UserRepo - update auth field: %w", result.Error)
+	}
+	if result.RowsAffected == 0 {
+		return repo.ErrNotFound
 	}
 	return nil
 }

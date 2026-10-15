@@ -13,9 +13,9 @@ The engine and profile are recorded in `.gobase.json` for code generation. Editi
 
 ## Included Functionality
 
-The application includes HTTP routes for register, login, refresh, logout, and the current user. It also includes article CRUD, profile management, media storage, translation, background workers, optional WebSocket, and an optional separate gRPC server.
+The application includes HTTP routes for register, login, refresh, logout, the current user, email verification, and password reset. It also includes article CRUD, profile management, media storage, translation, background workers, optional WebSocket, and an optional separate gRPC server.
 
-Email verification and password reset have use cases and token persistence. Their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export are deferred template features. OpenTelemetry initializes tracing. The application bootstrap closes cache and rate limiter Redis clients after HTTP shutdown. Docker app and worker images run as UID and GID `65532`.
+Email verification and password reset use native HTTP handlers, Asynq tasks, the configured Resend sender, and single-use hashed tokens. Configure the sender, frontend URLs, and development auto-verification before enabling email delivery. See [auth email setup](docs/auth-email.md) for routes, configuration, error behavior, and verification. Existing register and login responses remain unchanged. Verification does not prevent login. OpenTelemetry metrics export remains deferred. OpenTelemetry initializes tracing. The application bootstrap closes cache and rate limiter Redis clients after HTTP shutdown. Docker app and worker images run as UID and GID `65532`.
 
 ## Run Locally
 
@@ -75,7 +75,8 @@ The app and worker share the `upload_data` Docker volume for local storage. Fres
 flowchart LR
     HTTP[Selected HTTP engine] --> Handler[Native handlers]
     Handler --> UseCase[Use cases]
-    Worker[Asynq worker] --> Repo
+    Worker[Asynq worker] --> UseCase
+    Worker --> Repo
     UseCase --> Repo[Repository interfaces]
     Repo --> Database[(PostgreSQL)]
     UseCase --> Queue[(Redis)]

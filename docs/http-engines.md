@@ -44,6 +44,10 @@ Standard HTTP middleware can wrap a Gin or stdlib router with `func(http.Handler
 
 When a handler panics before writing a response, recovery returns HTTP 500 with the shared `INTERNAL_ERROR` JSON envelope and request ID. Panic details remain in server logs. Recovery runs inside compression so gzip cannot commit HTTP 200 while the panic is being handled. Gin and stdlib cannot replace a response whose headers have already been sent.
 
+### Auth Email in Full Projects
+
+Each engine has native handlers for verification, authenticated resend, password reset requests, and token consumption. They use shared DTOs, use cases, repositories, and Asynq processing. Workers resolve the user and generate tokens. PostgreSQL stores token hashes. Token consumption and user changes run in one transaction. Password reset also invalidates refresh tokens. Existing register and login contracts remain unchanged. See [auth email setup](auth-email.md) for configuration, frontend links, response codes, and the real HTTP/worker fixture run for every Full engine.
+
 ### Optional WebSocket in Full Projects
 
 Each engine has a native `GET /v1/ws` upgrade handler. Gin and stdlib use Gorilla WebSocket v1.5.3. Fiber v2 uses contrib/websocket v1.3.4 with fasthttp/websocket v1.5.12. Gin and stdlib do not acquire a Fiber runtime dependency. Shared `pkg/websocket` code owns frame messages, deadlines, connection reservations, and reader/writer cleanup. HTTP server shutdown invokes this registry before stopping ordinary requests because upgraded connections have a separate lifecycle.

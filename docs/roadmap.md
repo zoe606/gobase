@@ -238,18 +238,15 @@ Each slice has a separate issue and implementation PR. Complete and merge one sl
 
 ## Optional Application Features
 
-These issues remain open as deferred work. They are not unconditional prerequisites for application validation. Resume them when one of the selected applications requires the capability.
+These features are selected separately from engine foundation and application validation. Email verification and password reset were resumed under #49. Metrics export remains deferred under #50.
 
 ### Email Verification and Password Reset
 
 Tracking: [#49](https://github.com/zoe606/gobase/issues/49).
 
-The auth use cases and tests exist. HTTP auth routes cover register, login, refresh, logout, and the current user. Verification and reset use cases still contain email enqueue placeholders.
+The unreleased source implements native verification, authenticated resend, forgot-password, and reset-password routes for all Full engines. Shared use cases submit Asynq requests. The worker performs account lookup, replaces hashed tokens, and sends configured frontend links. Token consumption and password changes are transactional. Register and login contracts remain unchanged.
 
-- Register the missing HTTP flows using each engine's native handler API.
-- Connect verification, resend, and password reset requests to the existing Asynq email worker.
-- Test request, queued email, worker processing, and token consumption together. Include expired tokens, repeated consumption, delivery failure, and the existing password reset response for an unknown email.
-- Update DTOs, Swagger, configuration instructions, and shared HTTP contracts.
+The Engines workflow runs the same real HTTP, PostgreSQL, Redis, and worker fixture for Gin, stdlib, and Fiber. It covers expiry, replay, concurrent reset, rollback, unknown accounts, queue failure, delivery retry, and explicit configuration errors. This uses a controlled sender and does not claim real inbox delivery. See [setup and verification](auth-email.md) and the [execution plan](plans/auth-email-flows.md). Close #49 only after its implementation PR merges with passing checks. A release and adoption by existing applications are separate tasks.
 
 ### OpenTelemetry Metrics
 
@@ -264,9 +261,9 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issues #49 and #50 remain open and deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
+Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issue #49 tracks the resumed auth email work; #50 remains deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
 
-Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The completed [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. [Asynq application verification #81](https://github.com/zoe606/gobase/issues/81) and [WebSocket application verification #83](https://github.com/zoe606/gobase/issues/83) are implemented and merged in all three apps. Their common native/Docker checks retain HTTP and RPC regressions. Release readiness is the next bounded outcome. Generated template fixtures and application verification are recorded separately.
+Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The completed [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. [Asynq application verification #81](https://github.com/zoe606/gobase/issues/81) and [WebSocket application verification #83](https://github.com/zoe606/gobase/issues/83) are implemented and merged in all three apps. Their common native/Docker checks retain HTTP and RPC regressions. Release v0.2.0 is published and readiness #85 is complete. The next bounded outcome is #49. Generated template fixtures and application verification are recorded separately.
 
 Maintain the capability paths and application interoperability checks, and fix reproduced defects. Choose further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming are possible follow-ups. They are not automatic new phases. A new release tag has a separate readiness check. See the [capability plan](plans/foundation-capabilities.md#after-phase-6).
 

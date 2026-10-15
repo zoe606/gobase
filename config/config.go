@@ -3,6 +3,7 @@ package config
 import (
 	"errors"
 	"fmt"
+	"net/mail"
 	"strings"
 	"time"
 
@@ -141,7 +142,7 @@ type (
 
 	// Email holds email service configuration.
 	Email struct {
-		Provider  string `mapstructure:"provider"`   // resend, brevo
+		Provider  string `mapstructure:"provider"`   // resend or noop
 		APIKey    string `mapstructure:"api_key"`    // API key for the email provider
 		FromEmail string `mapstructure:"from_email"` // Sender email address
 		FromName  string `mapstructure:"from_name"`  // Sender name
@@ -236,6 +237,11 @@ func (p *Postgres) URL() string {
 // Addr returns the Redis address in host:port format.
 func (r *Redis) Addr() string {
 	return fmt.Sprintf("%s:%d", r.Host, r.Port)
+}
+
+func (e Email) CanSend() bool {
+	_, err := mail.ParseAddress(e.FromEmail)
+	return (e.Provider == "" || e.Provider == "resend") && strings.TrimSpace(e.APIKey) != "" && err == nil
 }
 
 // NewConfig reads configuration from file and environment variables.
@@ -384,7 +390,7 @@ func setDefaults() {
 	viper.SetDefault("log.file", "") // Empty = stdout only
 	viper.SetDefault("log.log_request_body", false)
 	viper.SetDefault("log.log_response_body", false)
-	viper.SetDefault("log.redact_fields", "password,token,secret,authorization,credit_card")
+	viper.SetDefault("log.redact_fields", "password,new_password,token,secret,authorization,credit_card")
 
 	// Postgres defaults
 	viper.SetDefault("postgres.host", "localhost")

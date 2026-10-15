@@ -12,7 +12,7 @@ Go HTTP template with full application and minimal service profiles. Select Gin,
 
 The following application features belong to the default `full` profile. The `minimal` profile includes configuration, logging, native HTTP routing, request and response helpers, health probes, and graceful shutdown without required infrastructure.
 
-- **Authentication** — Register, login, JWT access/refresh tokens, logout, and current user endpoints
+- **Authentication** — Register, login, JWT access/refresh tokens, logout, current user, email verification, and password reset
 - **Authorization** — JWT role and permission middleware
 - **Media Management** — S3/Local storage, polymorphic attachments, image processing, presigned URLs
 - **Articles** — Full CRUD with draft/publish workflow, cover images, SEO slugs
@@ -45,7 +45,7 @@ The independent Commerce mini-apps also use a technical Probe RPC to verify call
 
 The [Asynq application follow-up](https://github.com/zoe606/gobase/issues/81) verifies normal workers and controlled task failures in those same independent repositories. The [WebSocket application follow-up](https://github.com/zoe606/gobase/issues/83) verifies each actual HTTP process and client example through thirty native/Docker connection scenarios. See the [application report](docs/commerce-verification.md#application-websocket-verification) for revisions, CI evidence, and limits. The [capability plan](docs/plans/foundation-capabilities.md#after-phase-6) records completed readiness and continued maintenance of these verified paths.
 
-Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
+The unreleased source adds native email verification and password reset routes, Asynq processing, and single-use hashed tokens for Full projects. See [auth email setup](docs/auth-email.md) and [#49](https://github.com/zoe606/gobase/issues/49). This addition is not included in the published v0.2.0 tag. OpenTelemetry metrics export remains deferred under #50.
 
 ## Create a Project
 
@@ -56,6 +56,8 @@ git clone --branch v0.2.0 https://github.com/zoe606/gobase.git gobase
 cd gobase
 make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
 ```
+
+This command uses the published release. To use unreleased features after they merge, select `--branch master` before generating the project.
 
 Gin v1.12.0 is the default. Use `ENGINE=stdlib` for `http.ServeMux`, or `ENGINE=fiber` for Fiber v2. Each output contains one engine. See [HTTP Engines](docs/http-engines.md) for the architecture and compatibility rules.
 

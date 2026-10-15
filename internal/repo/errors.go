@@ -5,3 +5,5 @@ import "errors"
 
 // ErrNotFound is returned when a record is not found in the database.
 var ErrNotFound = errors.New("record not found")
+
+var ErrTokenConsumed = errors.New("token is expired or already consumed")

@@ -13,12 +13,15 @@ import (
 	"go-boilerplate/internal/repo/persistent"
 	"go-boilerplate/internal/repo/storage"
 	"go-boilerplate/internal/repo/webapi/email"
+	"go-boilerplate/internal/usecase/auth"
 	"go-boilerplate/internal/worker"
 	"go-boilerplate/pkg/asynq"
+	"go-boilerplate/pkg/audit"
 	"go-boilerplate/pkg/logger"
 	"go-boilerplate/pkg/postgres"
 	"go-boilerplate/pkg/telemetry"
 	"go-boilerplate/pkg/telemetry/asynqtracing"
+	"go-boilerplate/pkg/tx"
 )
 
 func main() {
@@ -85,7 +88,19 @@ func main() {
 	}
 
 	// Create worker with dependencies
-	w := worker.New(srv, l, mailer, mediaRepo, storageProvider)
+	authEmail := auth.New(persistent.NewUserRepo(pg.DB), persistent.NewRoleRepo(pg.DB), persistent.NewRefreshTokenRepo(pg.DB), nil, audit.NewNoop()).
+		WithAsynq(nil, cfg.App.Name).
+		WithEmailVerification(persistent.NewEmailVerificationRepo(pg.DB), auth.VerificationConfig{
+			Enabled: cfg.EmailVerification.Enabled, AutoVerify: cfg.EmailVerification.AutoVerify,
+			TokenTTL: cfg.EmailVerification.TokenTTL, BaseURL: cfg.EmailVerification.BaseURL,
+		}).
+		WithPasswordReset(persistent.NewPasswordResetRepo(pg.DB), auth.ResetConfig{
+			TokenTTL: cfg.PasswordReset.TokenTTL, BaseURL: cfg.PasswordReset.BaseURL,
+		}).
+		WithEmailDelivery(cfg.Email.CanSend(), cfg.App.IsProduction()).
+		WithEmailSender(mailer).
+		WithTransactions(tx.New(pg.DB))
+	w := worker.New(srv, l, mailer, mediaRepo, storageProvider).WithAuthEmail(authEmail)
 
 	// Start worker in goroutine
 	go func() {
@@ -117,8 +132,8 @@ func initLogger(cfg *config.Config) *logger.Logger {
 
 // initEmailSender creates an email sender based on config.
 func initEmailSender(cfg *config.Config, l *logger.Logger) email.Sender {
-	if cfg.Email.APIKey == "" {
-		l.Info("Email API key not configured, using noop mailer")
+	if !cfg.Email.CanSend() {
+		l.Info("Email delivery not configured, using noop mailer")
 
 		return email.NewNoopSender(l)
 	}

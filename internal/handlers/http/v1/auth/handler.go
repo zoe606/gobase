@@ -36,6 +36,10 @@ func (h *Handler) RegisterRoutes(router fiber.Router) {
 		auth.Post("/register", h.Register)
 		auth.Post("/login", h.Login)
 		auth.Post("/refresh", h.Refresh)
+		auth.Post("/verify-email", h.VerifyEmail)
+		auth.Post("/forgot-password", h.ForgotPassword)
+		auth.Post("/reset-password", h.ResetPassword)
+		auth.Post("/resend-verification", middleware.JWTAuth(h.jwtService, h.l), h.ResendVerification)
 
 		// Protected routes
 		auth.Post("/logout", middleware.JWTAuth(h.jwtService, h.l), h.Logout)
