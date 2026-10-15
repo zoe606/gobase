@@ -184,7 +184,7 @@ All seven source checks passed on the merged fix revision `339ad3c777afe3197831b
 
 Preparation date: October 15, 2026. Tracking: [#85](https://github.com/zoe606/gobase/issues/85).
 
-The candidate baseline is master `b88a84025d0c0ea93e65098a76630b4630a45628`. The latest published release is v0.1.1. v0.2.0 adds optional Full-profile capabilities and hardens existing task processing. Public tag and release publication follow candidate verification. The final candidate revision and readiness PR checks are recorded in #85.
+The candidate baseline is master `b88a84025d0c0ea93e65098a76630b4630a45628`. At preparation, the latest published release was v0.1.1. v0.2.0 adds optional Full-profile capabilities and hardens existing task processing. Public tag and release publication follow candidate verification. The final candidate revision and readiness PR checks are recorded in #85.
 
 ### Dependency and Compatibility Baseline
 
@@ -263,3 +263,13 @@ make init ENGINE=gin PROFILE=full MODULE=github.com/your-org/myapp APP_NAME=myap
 ```
 
 The tag is a template baseline. It does not update existing generated applications. It does not establish browser WebSocket authentication, application broadcasts, production deployment, workload capacity, real email delivery, or complete Commerce product readiness. mTLS, streaming RPCs, a broker, and a monorepo remain separate work. Issues #49 and #50 remain deferred. No public tag is created by this readiness report.
+
+## v0.2.0 Capability Release
+
+Release preparation date: October 15, 2026.
+
+Readiness is complete under [#85](https://github.com/zoe606/gobase/issues/85). [PR #86](https://github.com/zoe606/gobase/pull/86) merged as `862c65d2542b93a48c9ae14df13da50363ab120c`. All seven checks passed on that exact candidate: [Quality](https://github.com/zoe606/gobase/actions/runs/38678084378) and all six [engine/profile jobs](https://github.com/zoe606/gobase/actions/runs/38678084374). Quality reported 87% coverage, zero lint issues, and no reachable vulnerabilities. All six generated scans found no reachable vulnerabilities.
+
+The release includes the optional Full-profile Asynq, WebSocket, and gRPC capabilities and dependency pins recorded above. The fresh generation, documented quick starts, and exact-revision mini-app results retain their recorded scope and limits. The publication change updates only README, roadmap, capability-plan, and release-report text. It directs new projects to v0.2.0 and records completed readiness.
+
+The tag must identify a master revision whose Quality and all six Full/Minimal engine jobs passed. [Release notes](https://github.com/zoe606/gobase/releases/tag/v0.2.0) record the exact tag commit and its passing post-merge workflows. The tag follows those checks. The 85% coverage gate remains unchanged. Generated applications require explicit adoption of relevant template updates. Continue maintaining the verified paths and fix reproduced foundation defects. Issues #49 and #50 remain deferred until needed by an application.

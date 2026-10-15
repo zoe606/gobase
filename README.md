@@ -25,9 +25,9 @@ The following application features belong to the default `full` profile. The `mi
 
 ## Project Status
 
-`v0.1.1` is the current template release. It includes full and minimal output for Gin, standard `net/http`, and Fiber. This patch fixes panic responses before a handler writes its response: HTTP 500 with the shared JSON error envelope and request ID, including gzip requests. `v0.1.0` is the first versioned baseline. See the [release readiness report](docs/release-readiness.md) for scope, compatibility, and verification.
+`v0.2.0` is the current template release. It includes Full and Minimal output for Gin, standard `net/http`, and Fiber. Full projects add the verified Asynq task policy, optional JWT-authenticated WebSocket, and an optional application gRPC server and client. It retains the HTTP panic recovery fix from v0.1.1. See the [release report](docs/release-readiness.md#v020-capability-release) and [release notes](https://github.com/zoe606/gobase/releases/tag/v0.2.0) for compatibility, dependency pins, and verification.
 
-The next candidate is `v0.2.0`, tracked in [#85](https://github.com/zoe606/gobase/issues/85). It includes the verified Asynq task policy, optional Full-profile WebSocket, and optional application gRPC server and client. The [candidate report](docs/release-readiness.md#v020-capability-release-candidate) records fresh generation, documented quick starts, dependency pins, application regressions, and release notes. Candidate preparation does not change the published tag used below.
+Release readiness is complete under [#85](https://github.com/zoe606/gobase/issues/85). All six fresh engine/profile outputs and documented quick starts passed. The three independent mini-apps also passed their native and Docker capability checks. The release notes identify the exact tag commit and its passing CI runs. Generated applications own their code and require explicit adoption of template updates.
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
@@ -39,11 +39,11 @@ The [capability plan](docs/plans/foundation-capabilities.md) tracks Asynq failur
 
 WebSocket work merged through [PR #77](https://github.com/zoe606/gobase/pull/77), with all seven checks passing before and after merge. Full projects include optional `GET /v1/ws` with existing JWT access tokens, explicit allowed origins, echo and notification frames, connection limits, and graceful shutdown. See [WebSocket setup](docs/websocket.md) and [#67](https://github.com/zoe606/gobase/issues/67) for scope and verification.
 
-Full projects also include optional `cmd/grpc` and `cmd/grpc-client`, one unary Echo RPC, shared JWT configuration, verified TLS, standard health checks, and bounded shutdown. The gRPC process and port are separate from the chosen HTTP engine. Both optional capabilities are disabled by default. See [gRPC setup](docs/grpc.md) and [#68](https://github.com/zoe606/gobase/issues/68) for configuration and verification. These updates follow v0.1.1; generate from the corresponding source revision to use them. Minimal startup remains free of required infrastructure.
+Full projects also include optional `cmd/grpc` and `cmd/grpc-client`, one unary Echo RPC, shared JWT configuration, verified TLS, standard health checks, and bounded shutdown. The gRPC process and port are separate from the chosen HTTP engine. Both optional capabilities are disabled by default. See [gRPC setup](docs/grpc.md) and [#68](https://github.com/zoe606/gobase/issues/68) for configuration and verification. These capabilities are included in v0.2.0. Minimal startup remains free of required infrastructure.
 
 The independent Commerce mini-apps also use a technical Probe RPC to verify calls between Order (Gin), Inventory (stdlib), and Billing (Fiber). Their native and Docker checks exercise six directed pairs, three service chains, HTTP-issued JWTs, verified TLS, bounded peer errors, and recovery. Each repository generates its own protobuf code. See the [application verification report](docs/commerce-verification.md#application-grpc-interoperability) and [#79](https://github.com/zoe606/gobase/issues/79) for revisions and CI evidence.
 
-The [Asynq application follow-up](https://github.com/zoe606/gobase/issues/81) verifies normal workers and controlled task failures in those same independent repositories. The [WebSocket application follow-up](https://github.com/zoe606/gobase/issues/83) verifies each actual HTTP process and client example through thirty native/Docker connection scenarios. See the [application report](docs/commerce-verification.md#application-websocket-verification) for revisions, CI evidence, and limits. The [capability plan](docs/plans/foundation-capabilities.md#after-phase-6) records release readiness as the next bounded outcome.
+The [Asynq application follow-up](https://github.com/zoe606/gobase/issues/81) verifies normal workers and controlled task failures in those same independent repositories. The [WebSocket application follow-up](https://github.com/zoe606/gobase/issues/83) verifies each actual HTTP process and client example through thirty native/Docker connection scenarios. See the [application report](docs/commerce-verification.md#application-websocket-verification) for revisions, CI evidence, and limits. The [capability plan](docs/plans/foundation-capabilities.md#after-phase-6) records completed readiness and continued maintenance of these verified paths.
 
 Email verification and password reset have use cases and token persistence, but their HTTP routes and queued email tasks still need to be connected. These flows and OpenTelemetry metrics export remain deferred application features.
 
@@ -52,7 +52,7 @@ Email verification and password reset have use cases and token persistence, but 
 Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
-git clone --branch v0.1.1 https://github.com/zoe606/gobase.git gobase
+git clone --branch v0.2.0 https://github.com/zoe606/gobase.git gobase
 cd gobase
 make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
 ```
@@ -298,7 +298,7 @@ make generate            # Regenerate mocks after interface changes
 |----------|-------------|
 | [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
 | [Roadmap](docs/roadmap.md) | Engine foundation, standalone application validation, and HTTP workflow plans |
-| [Release Readiness](docs/release-readiness.md) | Release baselines, the v0.2.0 candidate, runtime results, and CI evidence |
+| [Release Readiness](docs/release-readiness.md) | Release baselines, v0.2.0 verification, runtime results, and CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |
 
