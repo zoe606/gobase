@@ -1,5 +1,7 @@
 # Template Release Readiness
 
+Current release: [v0.3.0](https://github.com/zoe606/gobase/releases/tag/v0.3.0). See the [auth email release report](#v030-auth-email-release). Earlier sections retain evidence for their recorded revisions.
+
 Date: October 5, 2026.
 
 Status: Phase 1 is merged. Local checks and GitHub Actions checks passed.
@@ -273,3 +275,32 @@ Readiness is complete under [#85](https://github.com/zoe606/gobase/issues/85). [
 The release includes the optional Full-profile Asynq, WebSocket, and gRPC capabilities and dependency pins recorded above. The fresh generation, documented quick starts, and exact-revision mini-app results retain their recorded scope and limits. The publication change updates only README, roadmap, capability-plan, and release-report text. It directs new projects to v0.2.0 and records completed readiness.
 
 The tag must identify a master revision whose Quality and all six Full/Minimal engine jobs passed. [Release notes](https://github.com/zoe606/gobase/releases/tag/v0.2.0) record the exact tag commit and its passing post-merge workflows. The tag follows those checks. The 85% coverage gate remains unchanged. Generated applications require explicit adoption of relevant template updates. Continue maintaining the verified paths and fix reproduced foundation defects. Issues #49 and #50 remain deferred until needed by an application.
+
+## v0.3.0 Auth Email Release
+
+Release preparation date: October 15, 2026.
+
+The feature baseline is merged revision `e7ecfc03a2f2c938a1507f9b3d81a6a85496cfc4` from [PR #88](https://github.com/zoe606/gobase/pull/88). [Issue #49](https://github.com/zoe606/gobase/issues/49) is complete and closed. Version v0.3.0 adds native email verification and password reset to each Full engine. The [auth email guide](auth-email.md) records routes, configuration, frontend links, and error behavior.
+
+### Changes and Compatibility
+
+- Add verification, JWT-protected resend, forgot-password, and reset-password routes for Gin, stdlib, and Fiber. Existing register, login, refresh, logout, and current-user contracts remain unchanged. Verification does not prevent login.
+- Queue requests before password-reset account lookup. Known and unknown addresses receive the same HTTP response. Queue and delivery configuration failures return explicit HTTP 503 errors.
+- Generate random tokens in workers and store SHA-256 hashes. Tokens expire and can be consumed once. Consumption and user changes run in one transaction. Password reset also deletes refresh tokens and outstanding reset tokens. Existing access JWTs retain their configured expiry.
+- Use configured frontend URLs and the existing Resend sender. Frontends read link fragments and submit tokens through the API. Auth tasks contain user IDs or email addresses rather than raw tokens. Sensitive verification and reset bodies are omitted from request logs.
+
+Gin and Full remain creation defaults. Minimal retains infrastructure-free startup. Optional WebSocket and application gRPC remain disabled by default. Runtime source and dependency pins retain the verified feature baseline. Go remains 1.27.2, Gin v1.12.0, Fiber v2.52.15, Asynq v0.26.0, grpc-go v1.83.2, and protobuf-go v1.36.11. The [v0.2.0 baseline](#dependency-and-compatibility-baseline) records the remaining pins.
+
+Generated applications adopt changes explicitly. Previously issued plaintext auth tokens do not match the new hash lookup; request new tokens after adoption. No schema change is required. Production token-email delivery requires Resend credentials, a verified sender, HTTPS frontend URLs, and `EMAIL_VERIFICATION_AUTO_VERIFY=false`. Development auto-verification remains explicit in the configuration. The template includes no frontend pages.
+
+### Verification
+
+All seven jobs passed on the exact feature baseline: [Quality](https://github.com/zoe606/gobase/actions/runs/38764476320) and all six [Full and Minimal engine jobs](https://github.com/zoe606/gobase/actions/runs/38764476455). Quality reported 86% coverage against the 85% gate and no called vulnerabilities. The [execution plan](plans/auth-email-flows.md#local-results-2026-10-15) records local quality checks and generation results.
+
+Each Full engine passed 12 real HTTP, PostgreSQL, Redis, and separate-worker scenarios. They cover trusted links, hash persistence, expiry, replay and concurrent consumption, transaction rollback, refresh-token revocation, unknown accounts, delivery retries and exhaustion, malformed input, queue failures, configuration behavior, and process logs. Existing HTTP, Asynq recovery, native gRPC, WebSocket shutdown, and non-root Docker app/worker checks passed. All three Minimal jobs passed native and Docker startup without infrastructure.
+
+The publication change updates only Markdown documentation. Runtime code, native templates, configuration, dependency pins, and Swagger retain the verified feature baseline. The tag must identify a master revision whose Quality and all six engine/profile jobs pass. [Release notes](https://github.com/zoe606/gobase/releases/tag/v0.3.0) record that exact commit and its CI runs. After publication, a fresh HTTPS clone must generate and build the default Full/Gin project using the README command.
+
+Local publication checks passed `make check-all COVERAGE_THRESHOLD=85` with 86% coverage, clean lint, and no called vulnerabilities. All 72 local Markdown links and anchors in the five changed documents passed validation. The README's `make init` command generated a fresh Full/Gin project with the expected module, and that project passed `go build ./...`.
+
+Delivery tests use a controlled sender. Real Resend inbox verification is deferred at the maintainer's request. Frontend pages, external deployment, workload capacity, and adoption by the independent Commerce applications need separate evidence. Metrics export #50 remains deferred. The existing application reports retain their own recorded revisions and limits.

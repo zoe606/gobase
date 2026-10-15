@@ -2,7 +2,7 @@
 
 Tracking: [#49](https://github.com/zoe606/gobase/issues/49).
 Baseline: v0.2.0, `369deaef2b9dfa591e05c0c44666331002c6604c`.
-Status: Implemented and verified locally. CI acceptance and PR merge are tracked in #49.
+Status: Complete. [PR #88](https://github.com/zoe606/gobase/pull/88) merged as `e7ecfc03a2f2c938a1507f9b3d81a6a85496cfc4`. All seven post-merge CI jobs passed and #49 is closed. Included in v0.3.0.
 
 ## HTTP Contract
 
@@ -54,3 +54,9 @@ Generation used `go run ./pkg/tools/verifyengines -engine=<engine> -output=<dire
 The fixture verifies transaction rollback, concurrent replay rejection, refresh-token revocation, expiry, known and unknown addresses, retry exhaustion, malformed tasks and HTTP bodies, queue failure, and configuration behavior. It also checks that auth tokens and replacement passwords are absent from process logs when request body logging is enabled, including mixed-case paths and trailing slashes.
 
 The Engines workflow now runs this fixture for every Full engine. Existing Full and Minimal jobs remain required regressions. Provider delivery uses a controlled sender in these tests. Real Resend inbox delivery requires separate provider verification.
+
+## Post-merge Results and Remaining Verification
+
+All seven jobs passed on merged revision `e7ecfc03a2f2c938a1507f9b3d81a6a85496cfc4`: [Quality](https://github.com/zoe606/gobase/actions/runs/38764476320) and all six [Full and Minimal engine jobs](https://github.com/zoe606/gobase/actions/runs/38764476455). Quality reported 86% coverage against the 85% gate and no called vulnerabilities. Each Full engine passed all 12 auth email scenarios. Existing native HTTP, Asynq recovery, gRPC, WebSocket, and Docker app/worker checks passed.
+
+The maintainer deferred the real Resend inbox smoke test. Controlled-sender tests remain the delivery evidence. This limitation is retained in the [v0.3.0 release report](../release-readiness.md#v030-auth-email-release). Metrics export #50 remains deferred.

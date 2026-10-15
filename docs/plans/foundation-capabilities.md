@@ -2,13 +2,13 @@
 
 Updated: October 15, 2026.
 
-Status: Phase 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge verification is recorded under #79, #81, and #83. v0.2.0 readiness is complete under #85. The release notes record the final tag revision and passing CI runs.
+Status: Phase 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge verification is recorded under #79, #81, and #83. Auth email integration #49 is complete and included in v0.3.0. Version v0.2.0 readiness remains recorded under #85. Release notes record exact tag revisions and passing CI runs.
 
 ## Purpose and Baseline
 
 The standalone Order, Inventory, and Billing applications exist to test gobase's foundation with Gin, stdlib, and Fiber. Their existing business workflow is sufficient for that purpose. Customer cancellation, invoice voiding, refunds, real payment processing, and further product features are outside the active plan.
 
-Phases 1 through 6 are complete. The current release is v0.2.0. The [release report](../release-readiness.md#v020-capability-release) records the dependency baseline and verification scope. The [roadmap](../roadmap.md) records completed work. The [Commerce report](../commerce-verification.md) retains the existing verification results and their limits.
+Phases 1 through 6 are complete. The current release is v0.3.0. The [release report](../release-readiness.md#v030-auth-email-release) records the auth email changes, retained dependency baseline, and verification scope. The [roadmap](../roadmap.md) records completed work. The [Commerce report](../commerce-verification.md) retains the existing verification results and their limits.
 
 The Full profile includes Asynq clients, email and image task handlers, and `cmd/worker`. Engine CI checks processing, failure recovery, and worker shutdown. Optional WebSocket and application gRPC use the existing JWT service and remain disabled by default. The telemetry trace exporter is separate from the application RPC server.
 
@@ -24,6 +24,8 @@ The Full profile includes Asynq clients, email and image task handlers, and `cmd
 | Follow-up | Verify WebSocket through the three application repositories | Merged through Order #10, Inventory #9, and Billing #9; thirty WebSocket groups and existing regressions pass in native/Docker PR CI; final post-merge evidence in issue | [#83](https://github.com/zoe606/gobase/issues/83) |
 | Release readiness | Prepare a verified v0.2.0 capability release candidate | Complete; PR #86 merged as `862c65d`; all seven post-merge checks, six fresh outputs, and documented quick starts passed | [#85](https://github.com/zoe606/gobase/issues/85) |
 | Release publication | Publish the verified template with current creation instructions | Exact tag revision and passing CI runs are recorded in the release notes | [v0.2.0](https://github.com/zoe606/gobase/releases/tag/v0.2.0) |
+| Auth email integration | Connect native HTTP, queue, worker, and token consumption for each Full engine | Complete; PR #88 merged as `e7ecfc0`; all seven post-merge checks passed | [#49](https://github.com/zoe606/gobase/issues/49) |
+| Auth email release | Publish the verified auth email template | Exact tag revision and passing CI runs are recorded in release notes; real inbox verification is deferred | [v0.3.0](https://github.com/zoe606/gobase/releases/tag/v0.3.0) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
 
@@ -103,7 +105,7 @@ Release readiness is complete under [#85](https://github.com/zoe606/gobase/issue
 
 The approved RPC interoperability follow-up is implemented in the existing mini-apps. They adopt the shared runtime from revision `7ae56879be7d8737295172f1c694dde6436fb003`. Each repository owns its proto, generated code, and optional server. Order owns the common runner. Native and Docker checks verify all six directed pairs, three three-service chains, TLS, JWT, bounded failures, and recovery. Revisions, reproducible commands, and CI evidence are recorded in #79 and the [Commerce report](../commerce-verification.md#application-grpc-interoperability). The technical Probe RPC does not add business workflows.
 
-Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced foundation defects. Select further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. Version v0.2.0 is published. The approved next task is [auth email integration #49](auth-email-flows.md), including native handlers, workers, and token-consumption verification for all Full engines. Keep #50 deferred. A new release tag requires its own readiness verification.
+Maintain the verified Asynq, WebSocket, gRPC, and auth email paths and fix reproduced foundation defects. Select further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming remain possible follow-up work, not automatic new phases. [Auth email integration #49](auth-email-flows.md) is complete and included in v0.3.0. Real Resend inbox verification is deferred at the maintainer's request. Keep metrics export #50 optional and deferred. A new release tag requires its own readiness verification.
 
 ## Verification and Compatibility
 
@@ -113,6 +115,6 @@ Maintain the verified Asynq, WebSocket, and gRPC paths and fix reproduced founda
 - Generate and verify one engine at a time when the combined verifier reaches its 15-minute limit. Record the commands and actual results.
 - Record source, generated-project, and application revisions separately. Do not report an enabled configuration or installed dependency as verified runtime support.
 - Update template and generated application documentation when implemented capabilities change setup or feature availability.
-- Complete the resumed email verification and password reset slice under #49 with its dedicated plan and verification. Keep metrics export deferred under #50.
+- Maintain the completed email verification and password reset paths under #49 with their existing coverage. Keep real inbox verification and metrics export #50 deferred.
 
 Monorepo generation, new Commerce business flows, an additional cross-service broker, and a general feature-composition system are outside this plan. gRPC and WebSocket are optional capabilities. Minimal projects retain infrastructure-free default startup.
