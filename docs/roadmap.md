@@ -2,7 +2,7 @@
 
 Updated: October 15, 2026.
 
-This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge evidence is recorded under #79, #81, and #83. The current release is v0.2.0. Readiness is complete under #85. Continue maintaining the verified foundation and fix reproduced defects.
+This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge evidence is recorded under #79, #81, and #83. The current release is v0.3.0, including completed auth email integration under #49. Version v0.2.0 readiness remains recorded under #85. Continue maintaining the verified foundation and fix reproduced defects.
 
 ## Current Baseline
 
@@ -32,7 +32,9 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | Application WebSocket follow-up | Actual HTTP processes and client examples for all three native engines | Merged through Order #10, Inventory #9, and Billing #9; thirty connection groups and existing regressions pass in native/Docker PR CI; final evidence in [#83](https://github.com/zoe606/gobase/issues/83) |
 | Capability release readiness | A verified v0.2.0 candidate with current source, generated-project, and application evidence | Complete under [#85](https://github.com/zoe606/gobase/issues/85); candidate `862c65d`; source Quality and all six engine/profile checks passed after merge |
 | Capability release | Versioned template with current creation instructions and release notes | [v0.2.0](https://github.com/zoe606/gobase/releases/tag/v0.2.0); [release report](release-readiness.md#v020-capability-release); exact tag commit and passing CI runs in release notes |
-| Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
+| Auth email integration | Native email verification and password reset with workers and single-use tokens | Complete; PR #88 merged as `e7ecfc0`; all seven post-merge jobs passed; [#49](https://github.com/zoe606/gobase/issues/49) closed |
+| Auth email release | Versioned template including the verified auth email flows | [v0.3.0](https://github.com/zoe606/gobase/releases/tag/v0.3.0); exact tag commit and CI runs in release notes; [release report](release-readiness.md#v030-auth-email-release) |
+| Optional metrics export | Configure OpenTelemetry metrics export and shutdown | Deferred under [#50](https://github.com/zoe606/gobase/issues/50) |
 
 ```mermaid
 flowchart LR
@@ -45,7 +47,7 @@ Gobase remains the source template and generator. The applications are separate 
 
 Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
 
-Use v0.2.0 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. The applications are test environments for the template. Customer cancellation, refunds, real charging, and further Commerce product development are outside the active plan. External deployment, backup and restore, and capacity measurements remain unverified limits of the existing report.
+Use v0.3.0 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. The applications are test environments for the template. Customer cancellation, refunds, real charging, and further Commerce product development are outside the active plan. External deployment, backup and restore, and capacity measurements remain unverified limits of the existing report.
 
 ## Phase 1: Template Release Readiness
 
@@ -238,15 +240,15 @@ Each slice has a separate issue and implementation PR. Complete and merge one sl
 
 ## Optional Application Features
 
-These features are selected separately from engine foundation and application validation. Email verification and password reset were resumed under #49. Metrics export remains deferred under #50.
+These features are selected separately from engine foundation and application validation. Email verification and password reset are complete under #49. Metrics export remains deferred under #50.
 
 ### Email Verification and Password Reset
 
 Tracking: [#49](https://github.com/zoe606/gobase/issues/49).
 
-The unreleased source implements native verification, authenticated resend, forgot-password, and reset-password routes for all Full engines. Shared use cases submit Asynq requests. The worker performs account lookup, replaces hashed tokens, and sends configured frontend links. Token consumption and password changes are transactional. Register and login contracts remain unchanged.
+Full projects include native verification, authenticated resend, forgot-password, and reset-password routes for all engines. Shared use cases submit Asynq requests. The worker performs account lookup, replaces hashed tokens, and sends configured frontend links. Token consumption and password changes are transactional. Register and login contracts remain unchanged.
 
-The Engines workflow runs the same real HTTP, PostgreSQL, Redis, and worker fixture for Gin, stdlib, and Fiber. It covers expiry, replay, concurrent reset, rollback, unknown accounts, queue failure, delivery retry, and explicit configuration errors. This uses a controlled sender and does not claim real inbox delivery. See [setup and verification](auth-email.md) and the [execution plan](plans/auth-email-flows.md). Close #49 only after its implementation PR merges with passing checks. A release and adoption by existing applications are separate tasks.
+The Engines workflow runs the same real HTTP, PostgreSQL, Redis, and worker fixture for Gin, stdlib, and Fiber. It covers expiry, replay, concurrent reset, rollback, unknown accounts, queue failure, delivery retry, and explicit configuration errors. [PR #88](https://github.com/zoe606/gobase/pull/88) merged as `e7ecfc03a2f2c938a1507f9b3d81a6a85496cfc4`; all seven post-merge jobs passed and #49 is closed. Tests use a controlled sender. Real Resend inbox verification is deferred at the maintainer's request. See [setup and verification](auth-email.md) and the [execution plan](plans/auth-email-flows.md). Existing applications adopt the code explicitly.
 
 ### OpenTelemetry Metrics
 
@@ -261,9 +263,9 @@ Tracking: [#50](https://github.com/zoe606/gobase/issues/50).
 
 ## GitHub Issue Tracking
 
-Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issue #49 tracks the resumed auth email work; #50 remains deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
+Issues #48, #51, and #52 closed when PRs #53, #57, and #58 merged. Issue #49 closed when PR #88 merged and all seven post-merge checks passed; #50 remains deferred. Issue #54 closed when minimal output merged through PR #59. Issue #55 records the superseded monorepo plan and is not planned. Issues #60 and #56 closed after the application and HTTP workflow checks passed on the merged revisions.
 
-Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The completed [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. [Asynq application verification #81](https://github.com/zoe606/gobase/issues/81) and [WebSocket application verification #83](https://github.com/zoe606/gobase/issues/83) are implemented and merged in all three apps. Their common native/Docker checks retain HTTP and RPC regressions. Release v0.2.0 is published and readiness #85 is complete. The next bounded outcome is #49. Generated template fixtures and application verification are recorded separately.
+Phase 6 is complete under [#66](https://github.com/zoe606/gobase/issues/66), [#67](https://github.com/zoe606/gobase/issues/67), and [#68](https://github.com/zoe606/gobase/issues/68). PRs #70, #77, and #78 merged and master checks passed. The completed [application follow-up #79](https://github.com/zoe606/gobase/issues/79) verifies real RPC calls between the existing Order, Inventory, and Billing repositories. [Asynq application verification #81](https://github.com/zoe606/gobase/issues/81) and [WebSocket application verification #83](https://github.com/zoe606/gobase/issues/83) are implemented and merged in all three apps. Their common native/Docker checks retain HTTP and RPC regressions. Version v0.3.0 includes completed auth email integration #49. Continue maintenance after release. Metrics export #50 remains optional and deferred. Generated template fixtures and application verification are recorded separately.
 
 Maintain the capability paths and application interoperability checks, and fix reproduced defects. Choose further capabilities from a concrete application requirement. Browser WebSocket authentication, mTLS, and application RPC streaming are possible follow-ups. They are not automatic new phases. A new release tag has a separate readiness check. See the [capability plan](plans/foundation-capabilities.md#after-phase-6).
 

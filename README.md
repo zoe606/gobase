@@ -25,9 +25,9 @@ The following application features belong to the default `full` profile. The `mi
 
 ## Project Status
 
-`v0.2.0` is the current template release. It includes Full and Minimal output for Gin, standard `net/http`, and Fiber. Full projects add the verified Asynq task policy, optional JWT-authenticated WebSocket, and an optional application gRPC server and client. It retains the HTTP panic recovery fix from v0.1.1. See the [release report](docs/release-readiness.md#v020-capability-release) and [release notes](https://github.com/zoe606/gobase/releases/tag/v0.2.0) for compatibility, dependency pins, and verification.
+`v0.3.0` is the current template release. It adds email verification and password reset to Full projects for Gin, standard `net/http`, and Fiber. It retains the Full and Minimal profiles, Asynq task policy, optional WebSocket and gRPC capabilities, and dependency pins from v0.2.0. See the [release report](docs/release-readiness.md#v030-auth-email-release) and [release notes](https://github.com/zoe606/gobase/releases/tag/v0.3.0) for compatibility and verification.
 
-Release readiness is complete under [#85](https://github.com/zoe606/gobase/issues/85). All six fresh engine/profile outputs and documented quick starts passed. The three independent mini-apps also passed their native and Docker capability checks. The release notes identify the exact tag commit and its passing CI runs. Generated applications own their code and require explicit adoption of template updates.
+Auth email integration is complete under [#49](https://github.com/zoe606/gobase/issues/49), merged through [PR #88](https://github.com/zoe606/gobase/pull/88). All seven checks passed on its merged revision, including 12 auth email scenarios for each Full engine. The v0.2.0 readiness and mini-app results remain recorded under [#85](https://github.com/zoe606/gobase/issues/85). Release notes identify the exact tag commit and passing CI runs. Generated applications own their code and require explicit adoption of template updates.
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
@@ -45,19 +45,19 @@ The independent Commerce mini-apps also use a technical Probe RPC to verify call
 
 The [Asynq application follow-up](https://github.com/zoe606/gobase/issues/81) verifies normal workers and controlled task failures in those same independent repositories. The [WebSocket application follow-up](https://github.com/zoe606/gobase/issues/83) verifies each actual HTTP process and client example through thirty native/Docker connection scenarios. See the [application report](docs/commerce-verification.md#application-websocket-verification) for revisions, CI evidence, and limits. The [capability plan](docs/plans/foundation-capabilities.md#after-phase-6) records completed readiness and continued maintenance of these verified paths.
 
-The unreleased source adds native email verification and password reset routes, Asynq processing, and single-use hashed tokens for Full projects. See [auth email setup](docs/auth-email.md) and [#49](https://github.com/zoe606/gobase/issues/49). This addition is not included in the published v0.2.0 tag. OpenTelemetry metrics export remains deferred under #50.
+Full projects include native email verification and password reset routes, Asynq processing, and single-use hashed tokens. See [auth email setup](docs/auth-email.md) for sender configuration, frontend links, and development auto-verification. Delivery tests use a controlled sender. Real Resend inbox verification is deferred at the maintainer's request. OpenTelemetry metrics export remains deferred under #50.
 
 ## Create a Project
 
 Install Go 1.27.2 or newer. Select the engine when creating the project:
 
 ```bash
-git clone --branch v0.2.0 https://github.com/zoe606/gobase.git gobase
+git clone --branch v0.3.0 https://github.com/zoe606/gobase.git gobase
 cd gobase
 make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
 ```
 
-This command uses the published release. To use unreleased features after they merge, select `--branch master` before generating the project.
+This command uses the published release. Select `--branch master` to generate from the current development source.
 
 Gin v1.12.0 is the default. Use `ENGINE=stdlib` for `http.ServeMux`, or `ENGINE=fiber` for Fiber v2. Each output contains one engine. See [HTTP Engines](docs/http-engines.md) for the architecture and compatibility rules.
 
@@ -300,7 +300,7 @@ make generate            # Regenerate mocks after interface changes
 |----------|-------------|
 | [HTTP Engines](docs/http-engines.md) | Engine selection, independent templates, shared core, and compatibility |
 | [Roadmap](docs/roadmap.md) | Engine foundation, standalone application validation, and HTTP workflow plans |
-| [Release Readiness](docs/release-readiness.md) | Release baselines, v0.2.0 verification, runtime results, and CI evidence |
+| [Release Readiness](docs/release-readiness.md) | Release baselines, v0.3.0 auth email verification, runtime results, and CI evidence |
 | [Code Patterns](docs/code-patterns.md) | Error handling, validation, transactions, response format, SOLID file organization, reusable packages |
 | [Deployment](docs/deployment.md) | Docker setup, production build, environment variables, production checklist |
 
