@@ -1,6 +1,6 @@
 # Foundation Capability Validation
 
-Updated: October 14, 2026.
+Updated: October 15, 2026.
 
 Status: Phase 6, application gRPC, and application Asynq verification are complete. WebSocket adoption is merged in all three mini-apps with passing native/Docker PR checks. Final post-merge verification is recorded under #83.
 
@@ -22,6 +22,7 @@ The Full profile includes Asynq clients, email and image task handlers, and `cmd
 | Follow-up | Verify application-to-application RPC calls | Implemented and merged through Order #8, Inventory #7, and Billing #7; native/Docker checks pass; final evidence in issue | [#79](https://github.com/zoe606/gobase/issues/79) |
 | Follow-up | Verify Asynq through the three application repositories | Merged through Order #9, Inventory #8, and Billing #8; native/Docker PR checks pass; final post-merge evidence in issue | [#81](https://github.com/zoe606/gobase/issues/81) |
 | Follow-up | Verify WebSocket through the three application repositories | Merged through Order #10, Inventory #9, and Billing #9; thirty WebSocket groups and existing regressions pass in native/Docker PR CI; final post-merge evidence in issue | [#83](https://github.com/zoe606/gobase/issues/83) |
+| Release readiness | Prepare a verified v0.2.0 capability release candidate | Local verification complete from master `b88a840`; all six fresh outputs and documented quick starts pass; final candidate CI and revision in issue | [#85](https://github.com/zoe606/gobase/issues/85) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
 
@@ -93,7 +94,7 @@ The Asynq follow-up is implemented and merged in all three mini-apps. Each app c
 
 The WebSocket follow-up is implemented and merged in all three mini-apps. It reuses `/v1/ws`, the existing JWT service, and native engine upgrades. Activation remains explicit. Order owns the common runner. Actual processes pass header authentication, explicit origins, frame validation, deadlines, ping/pong, capacity, slow clients, reconnect, and SIGTERM with close code 1001. Each client example connects to its running app. The fixture obtains a token through Order's registration route and shares JWT trust for peer calls. Inventory and Billing keep customer registration disabled. The [application WebSocket report](../commerce-verification.md#application-websocket-verification) records revisions, commands, CI evidence, and limits. Issue #83 records final post-merge inspection. Browser authentication and business broadcasts remain outside this slice.
 
-Release readiness follows WebSocket as separate work. No release tag is part of #83. The next bounded outcome is a verified release candidate:
+Release readiness is tracked under [#85](https://github.com/zoe606/gobase/issues/85). The candidate is v0.2.0, based on source master `b88a84025d0c0ea93e65098a76630b4630a45628`. The [candidate report](../release-readiness.md#v020-capability-release-candidate) records pins, fresh generated projects, documented commands, application evidence, and release notes. Public tag and release publication follow the completed readiness result. The bounded outcome is a verified release candidate:
 
 - Record the source revision and review dependency, Go version, and capability documentation against it.
 - Generate Full and Minimal projects for all three engines from that revision. Verify quick start, code generation, default startup, and the documented optional worker, WebSocket, and gRPC commands with the existing checks.
