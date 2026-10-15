@@ -2,7 +2,7 @@
 
 Updated: October 15, 2026.
 
-This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC verification are complete. Asynq and WebSocket adoption are merged in the mini-apps with passing native/Docker PR checks. Final post-merge evidence is tracked under #81 and #83. The current release is v0.1.1. Release readiness is the next bounded outcome.
+This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge evidence is recorded under #79, #81, and #83. The current release is v0.2.0. Readiness is complete under #85. Continue maintaining the verified foundation and fix reproduced defects.
 
 ## Current Baseline
 
@@ -30,7 +30,8 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | Application gRPC follow-up | Calls between the three independent mini-apps using generated clients | Implemented and merged in Order #8, Inventory #7, and Billing #7; native/Docker evidence tracked in [#79](https://github.com/zoe606/gobase/issues/79) and the [report](commerce-verification.md#application-grpc-interoperability) |
 | Application Asynq follow-up | Normal workers and controlled failure/recovery in each mini-app | Merged through Order #9, Inventory #8, and Billing #8; native/Docker PR checks pass; final evidence in [#81](https://github.com/zoe606/gobase/issues/81) |
 | Application WebSocket follow-up | Actual HTTP processes and client examples for all three native engines | Merged through Order #10, Inventory #9, and Billing #9; thirty connection groups and existing regressions pass in native/Docker PR CI; final evidence in [#83](https://github.com/zoe606/gobase/issues/83) |
-| Capability release readiness | A verified v0.2.0 candidate with current source, generated-project, and application evidence | Local verification complete under [#85](https://github.com/zoe606/gobase/issues/85); source `b88a840`; [candidate report](release-readiness.md#v020-capability-release-candidate); final candidate CI in issue; publication follows readiness |
+| Capability release readiness | A verified v0.2.0 candidate with current source, generated-project, and application evidence | Complete under [#85](https://github.com/zoe606/gobase/issues/85); candidate `862c65d`; source Quality and all six engine/profile checks passed after merge |
+| Capability release | Versioned template with current creation instructions and release notes | [v0.2.0](https://github.com/zoe606/gobase/releases/tag/v0.2.0); [release report](release-readiness.md#v020-capability-release); exact tag commit and passing CI runs in release notes |
 | Optional application features | Email verification, password reset, and OpenTelemetry metrics export | Deferred until needed by a generated application |
 
 ```mermaid
@@ -44,7 +45,7 @@ Gobase remains the source template and generator. The applications are separate 
 
 Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
 
-Use v0.1.1 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. The applications are test environments for the template. Customer cancellation, refunds, real charging, and further Commerce product development are outside the active plan. External deployment, backup and restore, and capacity measurements remain unverified limits of the existing report.
+Use v0.2.0 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. The applications are test environments for the template. Customer cancellation, refunds, real charging, and further Commerce product development are outside the active plan. External deployment, backup and restore, and capacity measurements remain unverified limits of the existing report.
 
 ## Phase 1: Template Release Readiness
 
