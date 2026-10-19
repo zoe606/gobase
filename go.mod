@@ -47,7 +47,7 @@ require (
 	golang.org/x/mod v0.42.0
 	golang.org/x/sync v0.23.0
 	golang.org/x/tools v0.51.0
-	google.golang.org/grpc v1.83.2
+	google.golang.org/grpc v1.84.0
 	google.golang.org/protobuf v1.36.11
 	gorm.io/driver/postgres v1.6.0
 	gorm.io/gorm v1.31.2
