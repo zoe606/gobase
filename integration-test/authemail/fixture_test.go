@@ -174,7 +174,8 @@ func (f *authFixture) startProcess(t *testing.T, binary string, args []string, e
 		select {
 		case processErr := <-done:
 			require.NoError(t, processErr)
-		case <-time.After(10 * time.Second):
+		// The app allows 15 seconds for shutdown, followed by resource cleanup.
+		case <-time.After(20 * time.Second):
 			_ = cmd.Process.Kill()
 			<-done
 			t.Error("fixture process required forced shutdown")
@@ -191,6 +192,30 @@ func (f *authFixture) startProcess(t *testing.T, binary string, args []string, e
 type controlledAuthSender struct {
 	data   *redis.Client
 	prefix string
+}
+
+func TestFixtureAllowsApplicationShutdownBudget(t *testing.T) {
+	ready := filepath.Join(t.TempDir(), "ready")
+	f := &authFixture{root: t.TempDir()}
+	f.startProcess(t, os.Args[0], []string{"-test.run=^TestFixtureShutdownProcess$", "-test.timeout=30s"}, map[string]string{
+		"AUTH_EMAIL_SHUTDOWN_PROCESS": "true",
+		"AUTH_EMAIL_SHUTDOWN_READY":   ready,
+	})
+	require.Eventually(t, func() bool {
+		_, err := os.Stat(ready)
+		return err == nil
+	}, 5*time.Second, 10*time.Millisecond)
+}
+
+func TestFixtureShutdownProcess(t *testing.T) {
+	if os.Getenv("AUTH_EMAIL_SHUTDOWN_PROCESS") != "true" {
+		t.Skip("shutdown subprocess entry point")
+	}
+	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGTERM)
+	defer stop()
+	require.NoError(t, os.WriteFile(os.Getenv("AUTH_EMAIL_SHUTDOWN_READY"), nil, 0o600))
+	<-ctx.Done()
+	time.Sleep(11 * time.Second)
 }
 
 func (s *controlledAuthSender) Send(ctx context.Context, message email.Email) error {

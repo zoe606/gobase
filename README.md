@@ -25,15 +25,15 @@ The following application features belong to the default `full` profile. The `mi
 
 ## Project Status
 
-`v0.3.0` is the current template release. It adds email verification and password reset to Full projects for Gin, standard `net/http`, and Fiber. It retains the Full and Minimal profiles, Asynq task policy, optional WebSocket and gRPC capabilities, and dependency pins from v0.2.0. See the [release report](docs/release-readiness.md#v030-auth-email-release) and [release notes](https://github.com/zoe606/gobase/releases/tag/v0.3.0) for compatibility and verification.
+`v0.3.1` is the current template release. It includes Go 1.27.4 security fixes, dependency maintenance, and a corrected shutdown wait in the auth email test fixture. It retains the three HTTP engines, Full and Minimal profiles, and auth email features from v0.3.0. See the [release report](docs/release-readiness.md#v031-security-and-maintenance-patch) and [release notes](https://github.com/zoe606/gobase/releases/tag/v0.3.1) for compatibility and verification.
 
 Auth email integration is complete under [#49](https://github.com/zoe606/gobase/issues/49), merged through [PR #88](https://github.com/zoe606/gobase/pull/88). All seven checks passed on its merged revision, including 12 auth email scenarios for each Full engine. The v0.2.0 readiness and mini-app results remain recorded under [#85](https://github.com/zoe606/gobase/issues/85). Release notes identify the exact tag commit and passing CI runs. Generated applications own their code and require explicit adoption of template updates.
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
-Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). The development toolchain is Go 1.27.4. Dependency versions are pinned in [go.mod](go.mod). Docker images run as UID and GID `65532`.
+Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). The template uses Go 1.27.4. Dependency versions are pinned in [go.mod](go.mod). Docker images run as UID and GID `65532`.
 
-Development security updates are recorded in the [maintenance report](docs/release-readiness.md#unreleased-november-14-security-maintenance). Published v0.3.0 retains its recorded dependency versions. These updates apply when generating from this development checkout. Existing applications need to adopt them explicitly.
+Security maintenance is included in v0.3.1 and recorded in the [release report](docs/release-readiness.md#v031-security-and-maintenance-patch). Older releases retain their recorded dependency versions. Existing generated applications need to adopt updates explicitly.
 
 Three standalone Commerce applications test the foundation: Order with Gin, Inventory with stdlib, and Billing with Fiber. Each has an independent repository, module, database, and native handlers. All ten HTTP workflow scenarios passed locally and in Ubuntu CI with native processes and Docker containers. The Linux workflow merged through [Order PR #6](https://github.com/zoe606/commerce-order/pull/6), and both modes passed after merge. Issues #60 and #56 are closed. See the [Commerce verification report](docs/commerce-verification.md) for revisions, commands, results, and limits. Further Commerce business features and monorepo generation are outside the active plan.
 
@@ -54,7 +54,7 @@ Full projects include native email verification and password reset routes, Asynq
 Install Go 1.27.4 or newer. Select the engine when creating the project:
 
 ```bash
-git clone --branch v0.3.0 https://github.com/zoe606/gobase.git gobase
+git clone --branch v0.3.1 https://github.com/zoe606/gobase.git gobase
 cd gobase
 make init ENGINE=gin MODULE=github.com/your-org/myapp APP_NAME=myapp OUTPUT=../myapp
 ```

@@ -329,3 +329,29 @@ The next development update combines the dependency changes from PRs #90 through
 Dependabot groups minor and patch updates per ecosystem, with separate version and security groups. Verified Dependabot PRs can enable auto-merge after the required checks pass. Major updates remain manual. Master protection requires Quality and all six engine/profile checks from GitHub Actions and an up-to-date branch, including for admins. The source-only automation does not check out PR code and is omitted from generated applications.
 
 Local `make check-all COVERAGE_THRESHOLD=85` passed with 86% coverage and no called vulnerabilities. Workflow validation with actionlint and grouping YAML checks passed. A regression test first reproduced the automation being copied into generated applications, then passed after the source-only exclusion was added. The replacement PR must pass all seven GitHub checks before merge or closure of the superseded PRs.
+
+## v0.3.1 Security and Maintenance Patch
+
+Release preparation date: November 15, 2026.
+
+The dependency baseline is `e36e26ae3b7ba89b6c12e11b4e088aab8bad575c`, merged through [PR #100](https://github.com/zoe606/gobase/pull/100). This patch includes the security and dependency maintenance from PRs #96 through #100. The exact tag revision and its passing post-merge CI runs are recorded in the [release notes](https://github.com/zoe606/gobase/releases/tag/v0.3.1).
+
+### Changes and Compatibility
+
+- Use Go 1.27.4 in the module, CI, Docker builders, and generated setup instructions. Retain the patched brotli and klauspost/compress pins in Full outputs and Minimal Fiber output.
+- Include the updated Go dependencies in `go.mod`, including Fiber v2.52.16, gRPC v1.85.0, protobuf v1.36.12, and go-json v0.12.0. Protobuf output matches the selected generator.
+- Group Dependabot minor and patch updates per ecosystem in the source repository. Keep major updates manual. Require the seven quality/engine checks and the auto-merge eligibility check on an up-to-date branch. Keep the privileged source workflow out of generated applications.
+- Use canonical agent guidance that checks the active checkout and distinguishes source Fiber handlers from the three generated engines.
+- Allow the auth email fixture 20 seconds to wait for process exit. The previous 10-second limit could kill an app still within its configured 15-second shutdown budget. Application shutdown behavior is unchanged.
+
+Gin and Full remain the creation defaults. Minimal retains infrastructure-free startup. Optional WebSocket and gRPC remain disabled by default. This patch does not change application routes, DTOs, protobuf messages, or database migrations. Generated applications adopt dependency updates explicitly. Published older tags remain unchanged.
+
+### Verification and Publication
+
+PR #100 passed all seven quality/engine checks. Its post-merge Full/Fiber run later failed because the auth email fixture forced process shutdown. Release preparation treats that failed master run as a blocker rather than using the earlier PR result as release evidence.
+
+A deterministic regression subprocess takes 11 seconds to stop after SIGTERM. The old fixture killed it at 10 seconds. The corrected fixture passes this test. Three repeated local auth email runs, including that regression, passed with the race detector and dedicated PostgreSQL 17 and Redis 7 fixtures.
+
+The release preparation PR and its merged master revision must both pass Quality and all six Full/Minimal engine jobs. The tag is created only after the post-merge checks pass on that exact revision. Release notes record those CI links. After publication, verify a fresh HTTPS clone of v0.3.1 with the README's default Full/Gin creation command, build, database startup, health probes, worker startup, and shutdown.
+
+Real Resend inbox verification and OpenTelemetry metrics export remain deferred. Existing Commerce application reports keep their recorded revisions. External deployment, workload capacity, and adoption by existing generated applications require separate evidence.
