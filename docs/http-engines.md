@@ -5,7 +5,7 @@ Projects select an HTTP engine and a `full` or `minimal` profile during creation
 | Engine | Router | Handler API | Version |
 |--------|--------|-------------|---------|
 | `gin` (default) | Gin | `*gin.Context` | v1.12.0 |
-| `stdlib` | `http.ServeMux` | `http.ResponseWriter`, `*http.Request` | Go 1.27.2 |
+| `stdlib` | `http.ServeMux` | `http.ResponseWriter`, `*http.Request` | Go 1.27.4 |
 | `fiber` | Fiber | `*fiber.Ctx` | v2, current template dependency |
 
 ```bash
