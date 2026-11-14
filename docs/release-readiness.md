@@ -321,3 +321,11 @@ Local verification used Go 1.27.4 and golangci-lint 2.14.0 on macOS arm64:
 - `go tool govulncheck ./...` passed in all six generated outputs. Minimal Fiber retained brotli v1.2.7 and klauspost/compress v1.20.2 after module tidy.
 
 Docker builds and runtime checks, the infrastructure-backed integration suite, and GitHub Actions were not repeated in this session.
+
+## Grouped Dependency Maintenance
+
+The next development update combines the dependency changes from PRs #90 through #94: protobuf v1.36.12, gRPC v1.84.0, the OTLP gRPC exporter v1.47.0, fiberprometheus v2.18.0, and go-redis v9.23.0. Module selection also updates their required dependencies, including OpenTelemetry SDK v1.47.0. Protobuf files are regenerated with the selected plugin so the reproducibility check remains enabled.
+
+Dependabot groups minor and patch updates per ecosystem, with separate version and security groups. Verified Dependabot PRs can enable auto-merge after the required checks pass. Major updates remain manual. Master protection requires Quality and all six engine/profile checks from GitHub Actions and an up-to-date branch, including for admins. The source-only automation does not check out PR code and is omitted from generated applications.
+
+Local `make check-all COVERAGE_THRESHOLD=85` passed with 86% coverage and no called vulnerabilities. Workflow validation with actionlint and grouping YAML checks passed. A regression test first reproduced the automation being copied into generated applications, then passed after the source-only exclusion was added. The replacement PR must pass all seven GitHub checks before merge or closure of the superseded PRs.

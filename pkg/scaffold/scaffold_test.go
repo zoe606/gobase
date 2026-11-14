@@ -52,6 +52,7 @@ func TestGenerateEngines(t *testing.T) {
 			require.Contains(t, string(copied), "example.com/app/")
 			require.NoFileExists(t, filepath.Join(output, ".env"))
 			require.NoFileExists(t, filepath.Join(output, "config", "config.yaml"))
+			require.NoFileExists(t, filepath.Join(output, ".github", "workflows", "dependabot-auto-merge.yml"))
 			require.NoDirExists(t, filepath.Join(output, "pkg", "scaffold"))
 			require.FileExists(t, filepath.Join(output, ".dockerignore"))
 			require.NoFileExists(t, filepath.Join(output, "docs", "http-engines.md"))

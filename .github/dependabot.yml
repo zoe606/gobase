@@ -9,6 +9,14 @@ updates:
       day: monday
       time: "09:00"
     open-pull-requests-limit: 5
+    groups:
+      go-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      go-security-minor-and-patch:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: "deps"
     labels:
@@ -23,6 +31,14 @@ updates:
       day: monday
       time: "09:00"
     open-pull-requests-limit: 5
+    groups:
+      actions-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      actions-security-minor-and-patch:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: "ci"
     labels:
@@ -37,6 +53,14 @@ updates:
       day: monday
       time: "09:00"
     open-pull-requests-limit: 3
+    groups:
+      docker-minor-and-patch:
+        patterns: ["*"]
+        update-types: [minor, patch]
+      docker-security-minor-and-patch:
+        applies-to: security-updates
+        patterns: ["*"]
+        update-types: [minor, patch]
     commit-message:
       prefix: "docker"
     labels:
