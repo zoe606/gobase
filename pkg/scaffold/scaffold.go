@@ -184,8 +184,11 @@ func (c *projectCopier) copyPath(root string) error {
 }
 
 func skipPrivateFile(path string) bool {
+	if path == ".github/workflows/engines.yml" || path == ".github/workflows/dependabot-auto-merge.yml" {
+		return true
+	}
 	name := filepath.Base(path)
-	return path == ".github/workflows/engines.yml" || path == "docs/http-engines.md" || path == "docs/http-engines-verification.md" || path == "docs/roadmap.md" || path == "docs/minimal-services.md" || path == "docs/release-readiness.md" || path == "docs/commerce-verification.md" || path == "config/config.yaml" || strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") || (strings.HasPrefix(name, ".env") && name != ".env.example")
+	return path == "docs/http-engines.md" || path == "docs/http-engines-verification.md" || path == "docs/roadmap.md" || path == "docs/minimal-services.md" || path == "docs/release-readiness.md" || path == "docs/commerce-verification.md" || path == "config/config.yaml" || strings.HasSuffix(name, ".pem") || strings.HasSuffix(name, ".key") || (strings.HasPrefix(name, ".env") && name != ".env.example")
 }
 
 func (c *projectCopier) copyFile(path string, entry fs.DirEntry) error {

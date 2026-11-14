@@ -10,6 +10,14 @@ Thank you for your interest in contributing to this project!
 4. **Activate git hooks**: `git config core.hooksPath .githooks`
 5. **Start services**: `make docker-services`
 
+## Dependency Maintenance
+
+Dependabot groups minor and patch updates per ecosystem. Version updates and security updates use separate groups. Major updates remain separate and require manual review.
+
+The source repository enables auto-merge for verified Dependabot minor and patch PRs. Master requires Quality and all six Full/Minimal engine checks from GitHub Actions, with an up-to-date branch. The automation reads metadata without checking out PR code. This workflow is omitted from generated applications because their repository settings and required checks are independent.
+
+When a protobuf update changes the Go generator, run `make proto` and commit its output. Keep the reproducibility check enabled. Adopt Go toolchain changes consistently in the module, workflows, Docker builders, and current documentation. Close superseded PRs after their replacement has merged and its checks have passed.
+
 ## Development Workflow
 
 ### Maintaining HTTP Engines
