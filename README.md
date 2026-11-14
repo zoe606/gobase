@@ -2,7 +2,7 @@
 
 Go HTTP template with full application and minimal service profiles. Select Gin, standard `net/http`, or Fiber when creating a project. The default full profile includes Clean Architecture, JWT authentication, media uploads, and background workers.
 
-[![Go Version](https://img.shields.io/badge/Go-1.27.2-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![Go Version](https://img.shields.io/badge/Go-1.27.4-00ADD8?style=flat&logo=go)](https://go.dev/)
 [![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![HTTP Engines](https://img.shields.io/badge/HTTP-Gin%20%7C%20net%2Fhttp%20%7C%20Fiber-00ACD7?logo=go)](docs/http-engines.md)
 [![GORM](https://img.shields.io/badge/GORM-ORM-00ADD8)](https://gorm.io/)
@@ -31,7 +31,9 @@ Auth email integration is complete under [#49](https://github.com/zoe606/gobase/
 
 The HTTP engine refactor and Phase 1 release readiness work are merged into `master` through [PR #46](https://github.com/zoe606/gobase/pull/46). Quality and all three engine jobs passed after the merge. Verification covers project generation, native handlers, CRUD generation, Swagger, HTTP integration, and Docker app and worker execution. See the [release readiness report](docs/release-readiness.md) for the tested revisions and workflow links.
 
-Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). Go 1.27.2 and x/net v0.60.0 are the current dependency baseline. Docker images run as UID and GID `65532`.
+Engine foundation is merged through [PR #53](https://github.com/zoe606/gobase/pull/53), [PR #57](https://github.com/zoe606/gobase/pull/57), and [PR #58](https://github.com/zoe606/gobase/pull/58). Minimal service generation merged in [PR #59](https://github.com/zoe606/gobase/pull/59). Go 1.27.4 and x/net v0.60.0 are the current development dependency baseline. Docker images run as UID and GID `65532`.
+
+The development source also pins brotli v1.2.7 and klauspost/compress v1.20.2 for security fixes. Published v0.3.0 retains its recorded dependency versions. These updates apply when generating from this development checkout. Existing applications need to adopt them explicitly.
 
 Three standalone Commerce applications test the foundation: Order with Gin, Inventory with stdlib, and Billing with Fiber. Each has an independent repository, module, database, and native handlers. All ten HTTP workflow scenarios passed locally and in Ubuntu CI with native processes and Docker containers. The Linux workflow merged through [Order PR #6](https://github.com/zoe606/commerce-order/pull/6), and both modes passed after merge. Issues #60 and #56 are closed. See the [Commerce verification report](docs/commerce-verification.md) for revisions, commands, results, and limits. Further Commerce business features and monorepo generation are outside the active plan.
 
@@ -49,7 +51,7 @@ Full projects include native email verification and password reset routes, Asynq
 
 ## Create a Project
 
-Install Go 1.27.2 or newer. Select the engine when creating the project:
+Install Go 1.27.4 or newer. Select the engine when creating the project:
 
 ```bash
 git clone --branch v0.3.0 https://github.com/zoe606/gobase.git gobase

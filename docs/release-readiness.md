@@ -304,3 +304,20 @@ The publication change updates only Markdown documentation. Runtime code, native
 Local publication checks passed `make check-all COVERAGE_THRESHOLD=85` with 86% coverage, clean lint, and no called vulnerabilities. All 72 local Markdown links and anchors in the five changed documents passed validation. The README's `make init` command generated a fresh Full/Gin project with the expected module, and that project passed `go build ./...`.
 
 Delivery tests use a controlled sender. Real Resend inbox verification is deferred at the maintainer's request. Frontend pages, external deployment, workload capacity, and adoption by the independent Commerce applications need separate evidence. Metrics export #50 remains deferred. The existing application reports retain their own recorded revisions and limits.
+
+## Unreleased November 14 Security Maintenance
+
+The development source updates Go from 1.27.2 to 1.27.4, brotli from v1.2.0 to v1.2.7, and klauspost/compress from v1.18.4 to v1.20.2. The initial source scan reported four called vulnerabilities: [GO-2026-6859](https://pkg.go.dev/vuln/GO-2026-6859), [GO-2026-6809](https://pkg.go.dev/vuln/GO-2026-6809), [GO-2026-6888](https://pkg.go.dev/vuln/GO-2026-6888), and [GO-2026-6865](https://pkg.go.dev/vuln/GO-2026-6865).
+
+CI workflows, Docker builders, engine documentation, and generated README files use Go 1.27.4. Minimal Fiber generation carries the source module's compression dependency pins into its independent module. Full generation retains the source module versions. No other module versions change.
+
+The published v0.3.0 tag and its recorded verification remain unchanged. New outputs must be generated from the patched development source to include these versions. Existing applications need explicit dependency updates.
+
+Local verification used Go 1.27.4 and golangci-lint 2.14.0 on macOS arm64:
+
+- `make check-all COVERAGE_THRESHOLD=85` passed with 86% coverage, clean lint, and no called vulnerabilities.
+- Full Gin, stdlib, and Fiber outputs passed module verification, builds, race tests, CRUD generation and wiring, Swagger checks, protobuf regeneration, and lint.
+- Minimal Gin, stdlib, and Fiber outputs passed module verification, builds, race tests, dependency isolation, native startup and health checks, occupied-port failure, and SIGTERM shutdown without infrastructure. Their lint checks ran separately in sequence.
+- `go tool govulncheck ./...` passed in all six generated outputs. Minimal Fiber retained brotli v1.2.7 and klauspost/compress v1.20.2 after module tidy.
+
+Docker builds and runtime checks, the infrastructure-backed integration suite, and GitHub Actions were not repeated in this session.
