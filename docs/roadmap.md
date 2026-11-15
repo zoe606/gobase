@@ -1,8 +1,8 @@
 # Gobase Roadmap
 
-Updated: October 15, 2026.
+Updated: November 15, 2026.
 
-This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge evidence is recorded under #79, #81, and #83. The current release is v0.3.0, including completed auth email integration under #49. Version v0.2.0 readiness remains recorded under #85. Continue maintaining the verified foundation and fix reproduced defects.
+This document records the gobase template baseline and its validation through standalone test applications. Order uses Gin, Inventory uses stdlib, and Billing uses Fiber. Each application has its own repository. Their existing Commerce workflow is sufficient for foundation validation. Phases 1 through 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge evidence is recorded under #79, #81, and #83. The current release is v0.3.1, including security and dependency maintenance while retaining the completed auth email integration under #49. Version v0.2.0 readiness remains recorded under #85. Continue maintaining the verified foundation and fix reproduced defects.
 
 ## Current Baseline
 
@@ -34,6 +34,7 @@ All three generated projects passed local builds, race tests, lint, shared HTTP 
 | Capability release | Versioned template with current creation instructions and release notes | [v0.2.0](https://github.com/zoe606/gobase/releases/tag/v0.2.0); [release report](release-readiness.md#v020-capability-release); exact tag commit and passing CI runs in release notes |
 | Auth email integration | Native email verification and password reset with workers and single-use tokens | Complete; PR #88 merged as `e7ecfc0`; all seven post-merge jobs passed; [#49](https://github.com/zoe606/gobase/issues/49) closed |
 | Auth email release | Versioned template including the verified auth email flows | [v0.3.0](https://github.com/zoe606/gobase/releases/tag/v0.3.0); exact tag commit and CI runs in release notes; [release report](release-readiness.md#v030-auth-email-release) |
+| Security and maintenance patch | Publish the patched dependency baseline and corrected auth fixture shutdown wait | [v0.3.1](https://github.com/zoe606/gobase/releases/tag/v0.3.1); exact tag commit and CI runs in release notes; [release report](release-readiness.md#v031-security-and-maintenance-patch) |
 | Optional metrics export | Configure OpenTelemetry metrics export and shutdown | Deferred under [#50](https://github.com/zoe606/gobase/issues/50) |
 
 ```mermaid
@@ -47,7 +48,7 @@ Gobase remains the source template and generator. The applications are separate 
 
 Issue #55 records the superseded monorepo work and is closed as not planned. The [Commerce verification report](commerce-verification.md) records implemented business workflows, local production configuration, dependency failures, retries, restarts, and Docker shutdown. External deployment, backup and restore, workload criteria, coordinated cancellation, and real payment processing remain unverified.
 
-Use v0.3.0 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. The applications are test environments for the template. Customer cancellation, refunds, real charging, and further Commerce product development are outside the active plan. External deployment, backup and restore, and capacity measurements remain unverified limits of the existing report.
+Use v0.3.1 for new projects. Run the common workflow with candidate peer revisions before adopting them. Continue applying reusable foundation fixes to gobase when application verification finds them. The applications are test environments for the template. Customer cancellation, refunds, real charging, and further Commerce product development are outside the active plan. External deployment, backup and restore, and capacity measurements remain unverified limits of the existing report.
 
 ## Phase 1: Template Release Readiness
 

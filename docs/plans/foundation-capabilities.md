@@ -1,14 +1,14 @@
 # Foundation Capability Validation
 
-Updated: October 15, 2026.
+Updated: November 15, 2026.
 
-Status: Phase 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge verification is recorded under #79, #81, and #83. Auth email integration #49 is complete and included in v0.3.0. Version v0.2.0 readiness remains recorded under #85. Release notes record exact tag revisions and passing CI runs.
+Status: Phase 6 and application gRPC, Asynq, and WebSocket verification are complete. Final post-merge verification is recorded under #79, #81, and #83. Auth email integration #49 is complete and retained in v0.3.1, which adds security and dependency maintenance. Version v0.2.0 readiness remains recorded under #85. Release notes record exact tag revisions and passing CI runs.
 
 ## Purpose and Baseline
 
 The standalone Order, Inventory, and Billing applications exist to test gobase's foundation with Gin, stdlib, and Fiber. Their existing business workflow is sufficient for that purpose. Customer cancellation, invoice voiding, refunds, real payment processing, and further product features are outside the active plan.
 
-Phases 1 through 6 are complete. The current release is v0.3.0. The [release report](../release-readiness.md#v030-auth-email-release) records the auth email changes, retained dependency baseline, and verification scope. The [roadmap](../roadmap.md) records completed work. The [Commerce report](../commerce-verification.md) retains the existing verification results and their limits.
+Phases 1 through 6 are complete. The current release is v0.3.1. The [release report](../release-readiness.md#v031-security-and-maintenance-patch) records the security maintenance, fixture cleanup fix, and verification scope. The [roadmap](../roadmap.md) records completed work. The [Commerce report](../commerce-verification.md) retains the existing verification results and their limits.
 
 The Full profile includes Asynq clients, email and image task handlers, and `cmd/worker`. Engine CI checks processing, failure recovery, and worker shutdown. Optional WebSocket and application gRPC use the existing JWT service and remain disabled by default. The telemetry trace exporter is separate from the application RPC server.
 
@@ -26,6 +26,7 @@ The Full profile includes Asynq clients, email and image task handlers, and `cmd
 | Release publication | Publish the verified template with current creation instructions | Exact tag revision and passing CI runs are recorded in the release notes | [v0.2.0](https://github.com/zoe606/gobase/releases/tag/v0.2.0) |
 | Auth email integration | Connect native HTTP, queue, worker, and token consumption for each Full engine | Complete; PR #88 merged as `e7ecfc0`; all seven post-merge checks passed | [#49](https://github.com/zoe606/gobase/issues/49) |
 | Auth email release | Publish the verified auth email template | Exact tag revision and passing CI runs are recorded in release notes; real inbox verification is deferred | [v0.3.0](https://github.com/zoe606/gobase/releases/tag/v0.3.0) |
+| Maintenance release | Publish the security and dependency updates with the corrected auth fixture shutdown wait | Exact tag revision and passing CI runs are recorded in release notes | [v0.3.1](https://github.com/zoe606/gobase/releases/tag/v0.3.1) |
 
 Each slice has its own issue and implementation PR. Record the proposed revision, verification commands, CI runs, and remaining limitations in that issue. Complete one slice before starting the next. Merge only after the required checks pass. A documentation PR does not complete an implementation issue.
 
